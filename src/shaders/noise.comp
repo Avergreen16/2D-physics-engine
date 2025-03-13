@@ -1,0 +1,107 @@
+#version 460 core
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+layout(rgba32f, binding = 0) uniform image2D output_img;
+
+uint hash(uint x) {
+    x ^= x >> 16;
+    x *= 0x7feb352dU;
+    x ^= x >> 15;
+    x *= 0x846ca68bU;
+    x ^= x >> 16;
+    return x;
+}
+
+uint hash(uvec2 v) { 
+    return hash(v.x ^ hash(v.y)); 
+}
+
+uint hash(uvec3 v) { 
+    return hash(v.x ^ hash(v.y)) ^ hash(v.z); 
+}
+
+uint hash(uvec4 v) {
+    return hash(v.x ^ hash(v.y)) ^ hash(v.z) ^ hash(v.w); 
+}
+
+float to_float(uint m) {
+    const uint ieeeMantissa = 0x007FFFFFu; // binary32 mantissa bitmask
+    const uint ieeeOne = 0x3F800000u; // 1.0 in IEEE binary32
+
+    m &= ieeeMantissa;                     // Keep only mantissa bits (fractional part)
+    m |= ieeeOne;                          // Add fractional part to 1.0
+
+    float  f = uintBitsToFloat(m);       // Range [1:2]
+    return f * 2.0 - 3.0;                // Range [-1:1]
+}
+
+vec2 random_vector(ivec2 seed_a, uint seed_b) {
+    uvec2 new_seed_a = uvec2(seed_a);
+    
+    uint hash_b = seed_b;
+
+    vec2 unit_vector;
+    float u_length = 10;
+    while(u_length > 1.0 || u_length == 0.0) {
+        hash_b = hash(hash_b);
+        float x = to_float(hash(new_seed_a) ^ hash_b);
+        hash_b = hash(hash_b);
+        float y = to_float(hash(new_seed_a) ^ hash_b);
+
+        unit_vector = vec2(x, y);
+        u_length = length(unit_vector);
+    }
+
+    return normalize(unit_vector);
+}
+
+uint seed = 56;
+
+float frequency = 5;
+float octaves = 3;
+vec2 origin = vec2(-1.0, -1.0);
+vec2 range = vec2(1.0, 1.0);
+
+void main() {
+    ivec2 texel_coord = ivec2(gl_GlobalInvocationID.xy);
+    
+    vec2 screen_pos = vec2(texel_coord) / gl_NumWorkGroups.xy;
+    vec2 global_loc = (origin + range * screen_pos) * frequency;
+
+    float sum = 0.0;
+    float v = 0.0;
+    for(int i = 0; i < octaves; ++i) {
+        ivec2 corner_id = ivec2(floor(global_loc));
+        vec2 fractional = fract(global_loc);
+        ivec2 vector_origins[4] = {
+            corner_id,
+            corner_id + ivec2(1, 0),
+            corner_id + ivec2(0, 1),
+            corner_id + ivec2(1, 1)
+        };
+        
+        vec2 vectors[4] = {
+            random_vector(vector_origins[0], seed),
+            random_vector(vector_origins[1], seed),
+            random_vector(vector_origins[2], seed),
+            random_vector(vector_origins[3], seed)
+        };
+
+        fractional = smoothstep(0.0, 1.0, fractional);
+
+        float cv = mix(mix(dot(vectors[0], global_loc - vector_origins[0]), dot(vectors[1], global_loc - vector_origins[1]), fractional.x), mix(dot(vectors[2], global_loc - vector_origins[2]), dot(vectors[3], global_loc - vector_origins[3]), fractional.x), fractional.y);
+        float power = pow(0.5, i);
+        sum += power;
+        v += cv * power;
+
+        global_loc *= 2;
+    }
+
+    v /= sum;
+    v = v * 0.5 + 0.5;
+    
+	vec4 value = vec4(v, v, v, 1.0);
+
+    imageStore(output_img, texel_coord, value);
+}
