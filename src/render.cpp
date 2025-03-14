@@ -1,6 +1,7 @@
 #include "render.hpp"
 #include "input.hpp"
 #include "core.hpp"
+#include "physics.hpp"
 
 float ellipsoid_height(vec3 pos, vec3 radii) {
     return sqrt(1.0f / (pos.x * pos.x / (radii.x * radii.x) + pos.y * pos.y / (radii.y * radii.y) + pos.z * pos.z / (radii.z * radii.z)));
@@ -83,12 +84,19 @@ void Render_system::render_object(uint32_t object, uint32_t camera) {
     Input_system& is = ecs.get_system<Input_system>();
 
     mat4 view = scale(vec3(cc.scale, cc.scale, 1.0f)) * translate(vec3(-ct.position, 0.0f));
-    mat4 model = translate(vec3(0.0f));
+    mat4 model = translate(vec3(ot.position, 0.0f));
 
     float aspect_ratio = float(core.window.screen_size.y) / core.window.screen_size.x;
     mat4 proj = scale(vec3(1.0f, 1.0f / aspect_ratio, 1.0f));
 
-    vec4 color = vec4(1.0f, 0.3f, 0.3f, 1.0f);
+    vec4 color = vec4(0.3f, 0.3f, 1.0f, 1.0f);
+
+    if(ecs.has_component<Collider>(object)) {
+        Collider& oc = ecs.get_component<Collider>(object);
+
+        if(oc.colliding) color = vec4(1.0f, 0.3f, 0.3f, 1.0f);
+        else color = vec4(0.3f, 1.0f, 0.3f, 1.0f);
+    }
 
     core.shaders["color_shader"]->use();
 
@@ -101,6 +109,59 @@ void Render_system::render_object(uint32_t object, uint32_t camera) {
 
     glLineWidth(2);
     om.vertices->draw_vertices(GL_LINES);
+}
+
+void Render_system::render_marker(vec2 pos, uint32_t camera) {
+    Transform ct = ecs.get_component<Transform>(camera);
+    Camera& cc = ecs.get_component<Camera>(camera);
+
+    vec2 size = {10, 10};
+    vec4 tex_range = {5, 0, 5, 5};
+
+    size /= float(core.window.viewport_size.x) * 0.5f;
+    size /= cc.scale;
+
+    Vertices vertices;
+
+    std::vector<Texture_vertex> v = {
+        Texture_vertex({-size.x * 0.5f, -size.y * 0.5f, 0.5}, tex_range.xy()),
+        Texture_vertex({size.x * 0.5f, -size.y * 0.5f, 0.5}, tex_range.xy() + vec2(tex_range.z, 0)),
+        Texture_vertex({-size.x * 0.5f, size.y * 0.5f, 0.5}, tex_range.xy() + vec2(0, tex_range.w)),
+        Texture_vertex({size.x * 0.5f, size.y * 0.5f, 0.5}, tex_range.xy() + vec2(tex_range.z, tex_range.w)),
+    };
+    std::shared_ptr<Texture> texture = core.textures["cursor"];
+
+    for(Texture_vertex& vv : v) {
+        vv.tex /= vec2(texture->size.xy());
+    }
+
+    v = {v[0], v[1], v[3], v[0], v[3], v[2]};
+
+    vertices.init();
+    vertices.vertex_buffer_data(v.data(), v.size(), sizeof(Texture_vertex), GL_STREAM_DRAW);
+
+    vertices.add_vertex_attribute(0, 3, GL_FLOAT, false, sizeof(Texture_vertex), 0);
+    vertices.add_vertex_attribute(1, 2, GL_FLOAT, false, sizeof(Texture_vertex), 3 * sizeof(float));
+
+    Input_system& is = ecs.get_system<Input_system>();
+
+    mat4 view = scale(vec3(cc.scale, cc.scale, 1.0f)) * translate(vec3(-ct.position, 0.0f));
+    mat4 model = translate(vec3(pos, 0.0f));
+
+    float aspect_ratio = float(core.window.screen_size.y) / core.window.screen_size.x;
+    mat4 proj = scale(vec3(1.0f, 1.0f / aspect_ratio, 1.0f));
+
+    vec4 color = vec4(0.3f, 0.3f, 1.0f, 1.0f);
+
+    core.shaders["texture_shader"]->use();
+    texture->bind(0);
+    vertices.bind();
+
+    glUniformMatrix4fv(0, 1, false, &view[0][0]);
+    glUniformMatrix4fv(1, 1, false, &proj[0][0]);
+    glUniformMatrix4fv(2, 1, false, &model[0][0]);
+
+    vertices.draw_vertices(GL_TRIANGLES);
 }
 
 /*void Render_system::render_ring(uint32_t entity, uint32_t camera, pvec3 light_pos) {
@@ -177,6 +238,8 @@ void Render_system::call() {
         for(uint32_t entity : collectors[1].entities) {
             render_object(entity, camera);
         }
+
+        for(vec2 v : marker_points) render_marker(v, camera);
     }
 
 
@@ -203,50 +266,57 @@ void Render_system::call() {
 
     Input_system& input_system = ecs.get_system<Input_system>();
 
-    /*if(!input_system.cursor_disabled) {
+    if(!input_system.cursor_disabled) {
         Vertices vertices;
 
         vec2 size = {10, 16};
-        vec4 tex_range = {0, 5, 5, 8};
+        vec4 tex_range = {0, 0, 5, 8};
 
-        std::vector<Ui_vertex> v = {
-            Ui_vertex({0, -size.y, 0.5}, tex_range.xy()),
-            Ui_vertex({size.x, -size.y, 0.5}, tex_range.xy() + vec2(tex_range.z, 0)),
-            Ui_vertex({0, 0, 0.5}, tex_range.xy() + vec2(0, tex_range.w)),
-            Ui_vertex({size.x, 0, 0.5}, tex_range.xy() + vec2(tex_range.z, tex_range.w)),
+        std::vector<Texture_vertex> v = {
+            Texture_vertex({0, -size.y, 0.5}, tex_range.xy()),
+            Texture_vertex({size.x, -size.y, 0.5}, tex_range.xy() + vec2(tex_range.z, 0)),
+            Texture_vertex({0, 0, 0.5}, tex_range.xy() + vec2(0, tex_range.w)),
+            Texture_vertex({size.x, 0, 0.5}, tex_range.xy() + vec2(tex_range.z, tex_range.w)),
         };
+        std::shared_ptr<Texture> texture = core.textures["cursor"];
+
+        for(Texture_vertex& vv : v) {
+            vv.tex /= vec2(texture->size.xy());
+        }
 
         v = {v[0], v[1], v[3], v[0], v[3], v[2]};
 
         vertices.init();
-        vertices.vertex_buffer_data(v.data(), v.size(), sizeof(Ui_vertex), GL_STREAM_DRAW);
+        vertices.vertex_buffer_data(v.data(), v.size(), sizeof(Texture_vertex), GL_STREAM_DRAW);
 
-        vertices.add_vertex_attribute(0, 3, GL_FLOAT, false, sizeof(Ui_vertex), 0);
-        vertices.add_vertex_attribute(1, 2, GL_FLOAT, false, sizeof(Ui_vertex), 3 * sizeof(float));
+        vertices.add_vertex_attribute(0, 3, GL_FLOAT, false, sizeof(Texture_vertex), 0);
+        vertices.add_vertex_attribute(1, 2, GL_FLOAT, false, sizeof(Texture_vertex), 3 * sizeof(float));
     
+        uint32_t camera = *collectors[0].entities.begin();
 
+        Transform ct = ecs.get_component<Transform>(camera);
+        Camera& cc = ecs.get_component<Camera>(camera);
+        
+        std::shared_ptr<Shader> shader = core.shaders["texture_shader"];
 
         
-        std::shared_ptr<Shader> ui_shader = core.shaders["gui_shader"];
-        std::shared_ptr<Texture> ui_texture = core.textures["gui_texture"];
 
-        glm::mat3 view_mat;
-        glm::mat3 trans_mat;
+        glm::vec2 half_viewport_size = vec2(core.window.viewport_size) / 2.0f;
 
-        glm::ivec2 half_viewport_size = core.window.viewport_size / 2;
+        mat4 view = glm::translate(vec3{-1, -1, 0.0f}) * glm::scale(glm::vec3{1.0 / half_viewport_size.x, 1.0 / half_viewport_size.y, 1.0f});
+        mat4 model = glm::translate(glm::vec3(input_system.cursor_pos.x, input_system.cursor_pos.y, 0.0f));
+        mat4 proj = identity<mat4>();
 
-        view_mat = glm::scale(glm::translate(glm::identity<glm::mat3>(), {-1, -1}), glm::vec2{1.0 / half_viewport_size.x, 1.0 / half_viewport_size.y});
-        trans_mat = glm::translate(glm::identity<glm::mat3>(), glm::vec2(input_system.cursor_pos.x, core.window.viewport_size.y - input_system.cursor_pos.y));
-
-        ui_shader->use();
-        ui_texture->bind(0);
+        shader->use();
+        texture->bind(0);
         vertices.bind();
 
-        glUniformMatrix3fv(0, 1, false, &view_mat[0][0]);
-        glUniformMatrix3fv(1, 1, false, &trans_mat[0][0]);
+        glUniformMatrix4fv(0, 1, false, &view[0][0]);
+        glUniformMatrix4fv(1, 1, false, &proj[0][0]);
+        glUniformMatrix4fv(2, 1, false, &model[0][0]);
 
         vertices.draw_vertices(GL_TRIANGLES);
-    }*/
+    }
     
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);

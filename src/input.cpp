@@ -14,51 +14,6 @@ Input_system::Input_system() {
     collectors.push_back(Collector(s, false));
 }
 
-template<typename Type>
-struct Weight_value {
-    Type value;
-    float weight = 1.0f;
-};
-
-template<typename Type>
-struct Weight_sampler {
-    std::vector<Weight_value<Type>> v;
-    float total_weight = 0.0f;
-
-    void insert_value(Type value, float weight) {
-        Weight_value<Type> w;
-        w.value = value;
-        w.weight = weight;
-        v.push_back(w);
-
-        total_weight += weight;
-    }
-
-    Type sample(float rand_v) {
-        rand_v = abs(rand_v) * total_weight;
-        rand_v = min(rand_v, total_weight);
-
-        float total_weight = 0.0f;
-        for(Weight_value<Type>& value : v) {
-            total_weight += value.weight;
-
-            if(rand_v <= total_weight) {
-                return value.value;
-            }
-        }
-
-        return v[v.size() - 1].value;
-    }
-
-    Weight_sampler() = default;
-
-    Weight_sampler(std::vector<Weight_value<Type>> ws) {
-        for(Weight_value<Type>& w : ws) {
-            insert_value(w.value, w.weight);
-        }
-    }
-};
-
 void Input_system::call() {
     std::set<GLenum> pressed_buttons;
     std::set<GLenum> released_buttons;
@@ -133,6 +88,9 @@ void Input_system::call() {
             }
         }
     }
+
+    Transform& tf = ecs.get_component<Transform>(tethered_object);
+    tf.position = world_cursor_pos;
 
     bool set_material = false;
 

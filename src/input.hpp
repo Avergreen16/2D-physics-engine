@@ -11,6 +11,8 @@ struct Input_system : System {
 
     vec2 world_cursor_pos = vec2(0.0f);
 
+    uint32_t tethered_object;
+
     uint32_t pic = 0;
 
     uint32_t id = 0xFFFFFFFF;

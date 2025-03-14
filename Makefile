@@ -275,6 +275,30 @@ src/input.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Simulation_files.dir/build.make CMakeFiles/Simulation_files.dir/src/input.cpp.s
 .PHONY : src/input.cpp.s
 
+src/physics.obj: src/physics.cpp.obj
+.PHONY : src/physics.obj
+
+# target to build an object file
+src/physics.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Simulation_files.dir/build.make CMakeFiles/Simulation_files.dir/src/physics.cpp.obj
+.PHONY : src/physics.cpp.obj
+
+src/physics.i: src/physics.cpp.i
+.PHONY : src/physics.i
+
+# target to preprocess a source file
+src/physics.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Simulation_files.dir/build.make CMakeFiles/Simulation_files.dir/src/physics.cpp.i
+.PHONY : src/physics.cpp.i
+
+src/physics.s: src/physics.cpp.s
+.PHONY : src/physics.s
+
+# target to generate assembly for a file
+src/physics.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Simulation_files.dir/build.make CMakeFiles/Simulation_files.dir/src/physics.cpp.s
+.PHONY : src/physics.cpp.s
+
 src/random.obj: src/random.cpp.obj
 .PHONY : src/random.obj
 
@@ -373,6 +397,9 @@ help:
 	@echo "... src/input.obj"
 	@echo "... src/input.i"
 	@echo "... src/input.s"
+	@echo "... src/physics.obj"
+	@echo "... src/physics.i"
+	@echo "... src/physics.s"
 	@echo "... src/random.obj"
 	@echo "... src/random.i"
 	@echo "... src/random.s"

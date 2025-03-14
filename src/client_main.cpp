@@ -1,6 +1,7 @@
 #include "core.hpp"
 #include "render.hpp"
 #include "input.hpp"
+#include "physics.hpp"
 
 #include <chrono>
 #include <windows.h>
@@ -28,6 +29,7 @@ void Core::init() {
     stbi_set_flip_vertically_on_load(true);
 
     shaders.emplace("color_shader", std::make_shared<Shader>(Shader("src/shaders/color.vert", "src/shaders/color.frag")));
+    shaders.emplace("texture_shader", std::make_shared<Shader>(Shader("src/shaders/texture.vert", "src/shaders/texture.frag")));
     shaders.emplace("screen_shader", std::make_shared<Shader>(Shader("src/shaders/screen.vert", "src/shaders/screen.frag")));
     textures.emplace("cursor", std::make_shared<Texture>(Texture("res/cursor.png", {GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE}, 4)));
 }
@@ -80,39 +82,60 @@ int main() {
     ecs.register_component<Mesh>();
     ecs.register_component<Transform>();
     ecs.register_component<Camera>();
+    ecs.register_component<Collider>();
 
     ecs.register_system<Input_system>();
-    //ecs.register_system<Physics_system>();
+    ecs.register_system<Physics_system>();
     ecs.register_system<Render_system>();
 
     uint32_t entity = ecs.insert_entity();
+
+    Input_system& input_system = ecs.get_system<Input_system>();
 
     Mesh m;
     Transform t;
     t.position = vec2(0.0f);
     t.orientation = identity<mat2>();
-    create_mesh(m, {vec2{0.0f, -0.2f}, vec2(0.2f, 0.2f), vec2(-0.2f, 0.2f)}, 0.0f);
+    create_mesh(m, {vec2{-0.2f, -0.2f}, vec2(0.2f, -0.2f), vec2(0.2f, 0.2f), vec2(-0.2f, 0.2f)}, 0.0f);
+    Collider c;
+    c.vertices = {vec2{-0.2f, -0.2f}, vec2(0.2f, -0.2f), vec2(0.2f, 0.2f), vec2(-0.2f, 0.2f)};
 
     ecs.insert_component(entity, m);
     ecs.insert_component(entity, t);
+    ecs.insert_component(entity, c);
 
     entity = ecs.insert_entity();
 
-    Camera c;
-    c.scale = 1.0f;
+    t.position = vec2(0.0f, 5.0f);
+    Mesh m2;
+    create_mesh(m2, {vec2{0.0f, -0.2f}, vec2(0.2f, 0.2f), vec2(-0.2f, 0.2f)}, 0.0f);
+    Collider c2;
+    c2.vertices = {vec2{0.0f, -0.2f}, vec2(0.2f, 0.2f), vec2(-0.2f, 0.2f)};
+    
+    ecs.insert_component(entity, m2);
+    ecs.insert_component(entity, t);
+    ecs.insert_component(entity, c2);
+    input_system.tethered_object = entity;
+
+    entity = ecs.insert_entity();
+
+    Camera cc;
+    cc.scale = 1.0f;
+    
+    t.position = vec2(0.0f);
 
     ecs.insert_component(entity, t);
-    ecs.insert_component(entity, c);
+    ecs.insert_component(entity, cc);
 
-    //glfwSetInputMode(core.window.window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+    glfwSetInputMode(core.window.window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
     Time time;
 
     while(core.game_running) {
         float t = time.get_elapsed_time(true);
         if(t < 0.016) {
-            //std::this_thread::yield();
-            //std::this_thread::sleep_for(std::chrono::milliseconds(int(1000 * (0.05f - t))));
+            std::this_thread::yield();
+            std::this_thread::sleep_for(std::chrono::milliseconds(int(1000 * (0.016f - t))));
         }
 
         core.random();
