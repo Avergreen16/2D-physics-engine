@@ -88,34 +88,29 @@ int main() {
     ecs.register_system<Physics_system>();
     ecs.register_system<Render_system>();
 
-    uint32_t entity = ecs.insert_entity();
-
     Input_system& input_system = ecs.get_system<Input_system>();
 
-    Mesh m;
+
+
+    uint32_t entity = ecs.insert_entity();
+
     Transform t;
     t.position = vec2(0.0f);
     t.orientation = identity<mat2>();
-    create_mesh(m, {vec2{-0.2f, -0.2f}, vec2(0.2f, -0.2f), vec2(0.2f, 0.2f), vec2(-0.2f, 0.2f)}, 0.0f);
+
     Collider c;
-    c.vertices = {vec2{-0.2f, -0.2f}, vec2(0.2f, -0.2f), vec2(0.2f, 0.2f), vec2(-0.2f, 0.2f)};
+    c.radius = 0.0f;
+    c.vertices = {vec2{-10.0f, -0.5f}, vec2(10.0f, -0.5f), vec2(10.0f, 0.5f), vec2(-10.0f, 0.5f)};
+    c.is_static = true;
+    
+    Mesh m;
+    create_mesh(m, {c.vertices}, c.radius);
 
     ecs.insert_component(entity, m);
     ecs.insert_component(entity, t);
     ecs.insert_component(entity, c);
 
-    entity = ecs.insert_entity();
 
-    t.position = vec2(0.0f, 5.0f);
-    Mesh m2;
-    create_mesh(m2, {vec2{0.0f, -0.2f}, vec2(0.2f, 0.2f), vec2(-0.2f, 0.2f)}, 0.0f);
-    Collider c2;
-    c2.vertices = {vec2{0.0f, -0.2f}, vec2(0.2f, 0.2f), vec2(-0.2f, 0.2f)};
-    
-    ecs.insert_component(entity, m2);
-    ecs.insert_component(entity, t);
-    ecs.insert_component(entity, c2);
-    input_system.tethered_object = entity;
 
     entity = ecs.insert_entity();
 

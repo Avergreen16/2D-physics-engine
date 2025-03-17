@@ -1,5 +1,7 @@
 #include "input.hpp"
 #include "core.hpp"
+#include "render.hpp"
+#include "physics.hpp"
 
 #include "stb_image.h"
 #include "stb_image_write.h"
@@ -90,15 +92,7 @@ void Input_system::call() {
     }
 
     Transform& tf = ecs.get_component<Transform>(tethered_object);
-    tf.position = world_cursor_pos;
-
-    bool set_material = false;
-
-    bool place_material = false;
-
-    bool snap_position = false;
-
-    bool space_pressed = false;
+    //tf.position = world_cursor_pos;
 
     for(GLenum key : pressed_buttons) {
         if(key == GLFW_KEY_F11) {
@@ -117,6 +111,37 @@ void Input_system::call() {
                 // restore last window size and position
                 glfwSetWindowMonitor(core.window.window, nullptr,  core.window.prev_pos.x, core.window.prev_pos.y, core.window.prev_pos.z, core.window.prev_pos.w, 0 );
             }
+        } else if(key == GLFW_MOUSE_BUTTON_RIGHT) {
+            uint32_t entity = ecs.insert_entity();
+            
+            Transform t;
+            t.position = world_cursor_pos;
+            t.orientation = mat2(rotate(float(M_PI) * core.random(), vec3(0.0f, 0.0f, 1.0f)));
+            Collider c;
+
+            int num_sides = core.random.next() % 7 + 3;
+            float radius = core.random() * 0.5f + 0.5f;
+            radius = radius * 0.6f + 0.2f;
+            float jitter = (2.0f * M_PI) / num_sides * 0.4f;
+
+            c.radius = (core.random() * 0.5f + 0.5f) * radius * 0.4f;
+            
+            for(int i = 0; i < num_sides; ++i) {
+                float angle = float(i) / num_sides * (2 * M_PI) + jitter * core.random();
+                vec2 vertex = vec2(cos(angle), sin(angle)) * radius;
+                c.vertices.push_back(vertex);
+            }
+            c.mass = radius * radius;
+            vec2 shift = Physics_system::calculate_inertia(c);
+            t.position += shift;
+
+            Mesh m;
+            create_mesh(m, c.vertices, c.radius);
+
+            
+            ecs.insert_component(entity, m);
+            ecs.insert_component(entity, t);
+            ecs.insert_component(entity, c);
         }
     }
 }

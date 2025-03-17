@@ -577,5 +577,7 @@ CMakeFiles/Simulation_files.dir/src/input.cpp.obj: \
  C:/mingw64/lib/gcc/x86_64-w64-mingw32/13.1.0/include/c++/experimental/bits/simd_x86.h \
  C:/mingw64/lib/gcc/x86_64-w64-mingw32/13.1.0/include/c++/experimental/bits/simd_x86_conversions.h \
  C:/mingw64/lib/gcc/x86_64-w64-mingw32/13.1.0/include/c++/experimental/bits/simd_math.h \
+ C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/render.hpp \
+ C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/physics.hpp \
  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/stb_image.h \
  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/stb_image_write.h

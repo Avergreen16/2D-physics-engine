@@ -11,29 +11,130 @@ struct Object_vertex {
     vec3 v;
 };
 
+
+float sphere_segments = 64;
+
 void create_mesh(Mesh& m, std::vector<vec2> v, float radius) {
     m.vertices = std::shared_ptr<Vertices>(new Vertices);
     m.vertices->init();
 
-    std::vector<vec2> a;
+    std::vector<vec2> vv;
     if(radius == 0.0f) {
         for(int i = 0; i < v.size(); ++i) {
-            uint32_t i2 = (i + 1) % v.size();
-            a.push_back(v[i]);
-            a.push_back(v[i2]);
+            vv.push_back(v[i]);
         }
     } else {
-        
+        vec2 sum = vec2(0.0f);
+        for(int i = 0; i < v.size(); ++i) {
+            sum += v[i];
+        }
+        sum /= v.size();
+
+        std::unordered_set<uint32_t> cc;
+        vec2 first_normal = vec2(0.0f);
+        vec2 prev_normal = vec2(0.0f);
+        for(int i = 0; i < v.size(); ++i) {
+            uint16_t a = i;
+            uint16_t b = (i + 1) % v.size();
+            if(a == b) {
+                vec2 v0 = v[a];
+
+                float angle_a = 0.0f;
+                float angle_b = 2 * M_PI;
+
+                float angle_per_segment = 2 * M_PI / sphere_segments;
+
+                for(float j = angle_a + angle_per_segment; j < angle_b; j += angle_per_segment) {
+                    vec2 vc = {cos(j), sin(j)};
+                    vc *= radius;
+                    vc = v0 + vc;
+
+                    vv.push_back(vc);
+                }
+            } else {
+                vec2 v0 = v[a];
+                vec2 v1 = v[b];
+                
+                if(a > b) {
+                    uint16_t temp = a;
+                    a = b;
+                    b = temp;
+                }
+
+                vec2 direction = normalize(v[b] - v[a]);
+                vec2 normal = vec2(direction.y, -direction.x);
+                if(dot(normal, sum - v[a]) > 0.0f) {
+                    normal = -normal;
+                }
+
+                uint32_t c = (uint32_t)a | ((uint32_t)b << 16);
+                if(cc.contains(c)) {
+                    normal = -normal;
+                } else {
+                    cc.insert(c);
+                }
+
+                // create previous sphere
+                if(prev_normal.x != 0.0f || prev_normal.y != 0.0f) {
+                    vec2 va = prev_normal * radius;
+                    vec2 vb = normal * radius;
+                    float angle_a = atan2(va.y, va.x);
+                    float angle_b = atan2(vb.y, vb.x);
+
+                    if(angle_b < angle_a) angle_a -= 2 * M_PI;
+
+                    float angle_per_segment = 2 * M_PI / sphere_segments;
+
+                    for(float j = angle_a + angle_per_segment; j < angle_b; j += angle_per_segment) {
+                        vec2 vc = {cos(j), sin(j)};
+                        vc *= radius;
+                        vc = v0 + vc;
+
+                        vv.push_back(vc);
+                    }
+                }
+
+                vv.push_back(v0 + normal * radius);
+                vv.push_back(v1 + normal * radius);
+
+                // create first sphere
+                if(i == v.size() - 1) {
+                    vec2 va = normal * radius;
+                    vec2 vb = first_normal * radius;
+                    float angle_a = atan2(va.y, va.x);
+                    float angle_b = atan2(vb.y, vb.x);
+
+                    if(angle_b < angle_a) angle_a -= 2 * M_PI;
+
+                    float angle_per_segment = 2 * M_PI / sphere_segments;
+
+                    for(float j = angle_a + angle_per_segment; j < angle_b; j += angle_per_segment) {
+                        vec2 vc = {cos(j), sin(j)};
+                        vc *= radius;
+                        vc = v1 + vc;
+
+                        vv.push_back(vc);
+                    }
+                }
+
+
+                prev_normal = normal;
+                if(first_normal.x == 0.0f && first_normal.y == 0.0f) first_normal = normal;
+            }
+        }
     }
 
-    std::vector<Object_vertex> vv;
-    for(vec2 aa : a) {
+    std::vector<Object_vertex> vvv;
+    for(int i = 0 ; i < vv.size(); ++i) {
         Object_vertex ov;
-        ov.v = vec3(aa, 0.5f);
-        vv.push_back(ov);
+        ov.v = vec3(vv[i], 0.5);
+        vvv.push_back(ov);
+
+        ov.v = vec3(vv[(i + 1) % vv.size()], 0.5);
+        vvv.push_back(ov);
     }
 
-    m.vertices->vertex_buffer_data(vv.data(), vv.size(), sizeof(Object_vertex), GL_STATIC_DRAW);
+    m.vertices->vertex_buffer_data(vvv.data(), vvv.size(), sizeof(Object_vertex), GL_STATIC_DRAW);
     m.vertices->add_vertex_attribute(0, 3, GL_FLOAT, false, sizeof(float) * 3, 0);
 }
 
@@ -84,7 +185,7 @@ void Render_system::render_object(uint32_t object, uint32_t camera) {
     Input_system& is = ecs.get_system<Input_system>();
 
     mat4 view = scale(vec3(cc.scale, cc.scale, 1.0f)) * translate(vec3(-ct.position, 0.0f));
-    mat4 model = translate(vec3(ot.position, 0.0f));
+    mat4 model = translate(vec3(ot.position, 0.0f)) * mat4(ot.orientation);
 
     float aspect_ratio = float(core.window.screen_size.y) / core.window.screen_size.x;
     mat4 proj = scale(vec3(1.0f, 1.0f / aspect_ratio, 1.0f));
@@ -231,6 +332,29 @@ void Render_system::call() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     bind_framebuffer(0);
+    
+    Physics_system& ps = ecs.get_system<Physics_system>();
+
+    marker_points.clear();
+
+    for(auto& [k, d] : ps.collision_table) {
+        for(Collision_data& c : d) {
+            Transform& ta = ecs.get_component<Transform>(c.a);
+            vec2 point_a = ta.orientation * c.pa + ta.position;
+            vec2 point_b;
+
+            if(c.b == 0xFFFFFFFF) {
+                point_b = c.pb;
+            } else {
+                Transform& tb = ecs.get_component<Transform>(c.b);
+
+                point_b = tb.orientation * c.pb + tb.position;
+            }
+
+            marker_points.push_back(point_a);
+            marker_points.push_back(point_b);
+        }
+    }
 
     for(uint32_t camera : collectors[0].entities) {
         Camera& camera_camera = ecs.get_component<Camera>(camera);

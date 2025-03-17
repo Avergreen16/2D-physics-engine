@@ -1617,6 +1617,8 @@ CMakeFiles/Simulation_files.dir/src/input.cpp.obj: src/input.cpp \
   C:/mingw64/lib/gcc/x86_64-w64-mingw32/13.1.0/include/c++/experimental/bits/simd_x86.h \
   C:/mingw64/lib/gcc/x86_64-w64-mingw32/13.1.0/include/c++/experimental/bits/simd_x86_conversions.h \
   C:/mingw64/lib/gcc/x86_64-w64-mingw32/13.1.0/include/c++/experimental/bits/simd_math.h \
+  src/render.hpp \
+  src/physics.hpp \
   include/stb_image.h \
   include/stb_image_write.h
 
@@ -2197,7 +2199,9 @@ CMakeFiles/Simulation_files.dir/src/physics.cpp.obj: src/physics.cpp \
   C:/mingw64/lib/gcc/x86_64-w64-mingw32/13.1.0/include/c++/experimental/bits/simd_converter.h \
   C:/mingw64/lib/gcc/x86_64-w64-mingw32/13.1.0/include/c++/experimental/bits/simd_x86.h \
   C:/mingw64/lib/gcc/x86_64-w64-mingw32/13.1.0/include/c++/experimental/bits/simd_x86_conversions.h \
-  C:/mingw64/lib/gcc/x86_64-w64-mingw32/13.1.0/include/c++/experimental/bits/simd_math.h
+  C:/mingw64/lib/gcc/x86_64-w64-mingw32/13.1.0/include/c++/experimental/bits/simd_math.h \
+  src/input.hpp \
+  src/core.hpp
 
 CMakeFiles/Simulation_files.dir/src/random.cpp.obj: src/random.cpp \
   src/random.hpp \

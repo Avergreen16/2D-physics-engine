@@ -8,6 +8,16 @@ struct Collider {
     float radius = 0.0f;
 
     bool colliding = false;
+
+    float mass;
+    float inertia;
+
+    bool allow_gravity = true;
+    bool allow_rotation = true;
+    bool is_static = false;
+
+    vec2 velocity = vec2(0.0f);
+    float angular_velocity = 0.0f;
 };
 
 struct Collision_data {
@@ -16,16 +26,58 @@ struct Collision_data {
 
     vec2 pa;
     vec2 pb;
+
+    vec2 normal;
+};
+
+struct Collision_constraint {
+    Collision_data d;
+
+    vec2 pa;
+    vec2 pb;
+
+    float lambda = 0.0f;
+
+    std::vector<float> get_velocities();
+
+    void get_points();
+
+    float get_value();
 };
 
 struct Physics_system : System {
+    float physics_step = 0.02f;
+    float physics_time = 0.0f;
+
+    std::unordered_map<uint64_t, std::vector<Collision_data>> collision_table;
+
+    vec2 gravity = vec2(0.0f, -10.0f);
+
     Physics_system();
 
-    std::optional<Collision_data> collision(Collider& ca, Transform& ta, Collider& cb, Transform& tb);
+    static std::optional<Collision_data> collision(Collider& ca, Transform& ta, Collider& cb, Transform& tb);
+    
+    static bool collision_point(Collider& ca, vec2 point);
 
-    void transform_vertices(Transform& t, Collider& c, std::vector<vec2>& vertices, vec2 origin);
+    static void transform_vertices(Transform& t, Collider& c, std::vector<vec2>& vertices, vec2 origin);
 
-    vec2 support_func(std::vector<vec2>& vertices, float radius, vec2 direction);
+    static vec2 support_func(std::vector<vec2>& vertices, float radius, vec2 direction);
+
+    void insert_collision(uint64_t a, Collision_data c);
+
+    void solve_constraints(std::vector<Collision_constraint>& constraints);
+
+    static vec2 calculate_inertia(Collider& c);
+
+    static vec4 calculate_bounding_box(Collider& c, Transform& t);
+    
+    static vec2 calculate_point_velocity(Collider& c, vec2 point);
+
+    static std::vector<float> calculate_inverse_mass(Collider& c, Transform& t, vec2 impulse_dir, vec2 point);
+
+    static void apply_impulse(Collider& c, vec2 impulse, vec2 point);
+
+    void physics_loop();
 
     void call();
 };
