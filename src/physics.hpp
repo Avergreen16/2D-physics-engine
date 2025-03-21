@@ -28,17 +28,40 @@ struct Collision_data {
     vec2 pb;
 
     vec2 normal;
+
+    float prev_lambdaN = 0.0f;
+    float prev_lambdaT = 0.0f;
 };
 
 struct Collision_constraint {
-    Collision_data d;
+    Collision_data* d;
 
     vec2 pa;
     vec2 pb;
 
-    float lambda = 0.0f;
+    float lambdaN = 0.0f;
+    float lambdaT = 0.0f;
 
     std::vector<float> get_velocities();
+
+    void get_points();
+
+    float get_value();
+};
+
+struct Position_constraint {
+    uint32_t a = 0xFFFFFFFF;
+    uint32_t b = 0xFFFFFFFF;
+
+    vec2 pa;
+    vec2 pb;
+
+    vec2 ppa;
+    vec2 ppb;
+
+    vec2 dir;
+
+    float lambda = 0.0f;
 
     void get_points();
 
@@ -48,8 +71,11 @@ struct Collision_constraint {
 struct Physics_system : System {
     float physics_step = 0.02f;
     float physics_time = 0.0f;
+    uint32_t max_frames = 8;
 
     std::unordered_map<uint64_t, std::vector<Collision_data>> collision_table;
+
+    std::vector<Position_constraint> position_constraints;
 
     vec2 gravity = vec2(0.0f, -10.0f);
 
@@ -73,7 +99,7 @@ struct Physics_system : System {
     
     static vec2 calculate_point_velocity(Collider& c, vec2 point);
 
-    static std::vector<float> calculate_inverse_mass(Collider& c, Transform& t, vec2 impulse_dir, vec2 point);
+    static float calculate_inverse_mass(Collider& c, Transform& t, vec2 impulse_dir, vec2 point);
 
     static void apply_impulse(Collider& c, vec2 impulse, vec2 point);
 

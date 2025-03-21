@@ -190,14 +190,14 @@ void Render_system::render_object(uint32_t object, uint32_t camera) {
     float aspect_ratio = float(core.window.screen_size.y) / core.window.screen_size.x;
     mat4 proj = scale(vec3(1.0f, 1.0f / aspect_ratio, 1.0f));
 
-    vec4 color = vec4(0.3f, 0.3f, 1.0f, 1.0f);
+    vec4 color = vec4(om.color, 1.0f);
 
-    if(ecs.has_component<Collider>(object)) {
+    /*if(ecs.has_component<Collider>(object)) {
         Collider& oc = ecs.get_component<Collider>(object);
 
         if(oc.colliding) color = vec4(1.0f, 0.3f, 0.3f, 1.0f);
         else color = vec4(0.3f, 1.0f, 0.3f, 1.0f);
-    }
+    }*/
 
     core.shaders["color_shader"]->use();
 
@@ -363,7 +363,7 @@ void Render_system::call() {
             render_object(entity, camera);
         }
 
-        for(vec2 v : marker_points) render_marker(v, camera);
+        //for(vec2 v : marker_points) render_marker(v, camera);
     }
 
 

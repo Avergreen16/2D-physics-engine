@@ -7,6 +7,8 @@ struct Mesh {
     std::vector<vec2> v;
     std::vector<uint32_t> i;
 
+    vec3 color = vec3(1.0f, 0.3f, 0.3f);
+
     std::shared_ptr<Vertices> vertices;
 };
 
