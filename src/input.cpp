@@ -135,10 +135,10 @@ void Input_system::call() {
             }
         } else if(key == GLFW_MOUSE_BUTTON_RIGHT) {
             if(key_map[GLFW_KEY_LEFT_SHIFT]) {
-                uint32_t num_links = 6;
-                float len = 2.0f;
+                uint32_t num_links = 10;
+                float len = 1.0f;
                 float sep = 0.05f;
-                float radius = 0.25f;
+                float radius = 0.125f;
 
                 std::vector<vec2> vertices = {vec2(0, -(len * 0.5f - radius)), vec2(0, len * 0.5f - radius)};
 
@@ -150,7 +150,7 @@ void Input_system::call() {
                     uint32_t entity = ecs.insert_entity();
                     
                     Transform t;
-                    t.position = world_cursor_pos - vec2(0, len * 0.5 + len * i);
+                    t.position = world_cursor_pos - vec2(0, len * 0.5 + (len + sep) * i);
                     
                     Collider c;
                     c.vertices = vertices;
@@ -174,10 +174,10 @@ void Input_system::call() {
                         constraint.pb = world_cursor_pos;
 
                         constraint.dir = vec2(1, 0);
-                        //ps.position_constraints.push_back(constraint);
+                        ps.position_constraints.push_back(constraint);
                         
                         constraint.dir = vec2(0, 1);
-                        //ps.position_constraints.push_back(constraint);
+                        ps.position_constraints.push_back(constraint);
                     } else {
                         Position_constraint constraint;
                         constraint.a = prev_shape;

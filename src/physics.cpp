@@ -603,8 +603,10 @@ void Physics_system::apply_impulse(Collider& c, vec2 impulse, vec2 point) {
 }
 
 void Physics_system::solve_constraints(std::vector<Collision_constraint>& constraints) {
-    int iterations = 5;
-    float spring = 0.5f;
+    int iterations = 4;
+    float spring = 0.25f;
+    float softness = 0.2;
+
     for(Collision_constraint& data : constraints) {
         data.get_points();
         data.lambdaN = data.d->prev_lambdaN;
@@ -649,15 +651,13 @@ void Physics_system::solve_constraints(std::vector<Collision_constraint>& constr
     for(Position_constraint& data : position_constraints) {
         data.get_points();
 
-        //data.lambda = 0.0f;
-
         vec2 impulse = data.dir * data.lambda;
 
         Collider& ca = ecs.get_component<Collider>(data.a);
         Transform& ta = ecs.get_component<Transform>(data.a);
         apply_impulse(ca, impulse, data.ppa - ta.position);
 
-        if(data.b == 0xFFFFFFFF) {
+        if(data.b != 0xFFFFFFFF) {
             Collider& cb = ecs.get_component<Collider>(data.b);
             Transform& tb = ecs.get_component<Transform>(data.b);
             apply_impulse(cb, -impulse, data.ppb - tb.position);
@@ -675,7 +675,7 @@ void Physics_system::solve_constraints(std::vector<Collision_constraint>& constr
             vec2 velocity = calculate_point_velocity(ca, data.pa - ta.position);
 
             float diff = data.get_value();
-            diff = diff * spring / physics_step;
+            diff = diff * spring / physics_step - softness * data.lambdaN;
 
             if(data.d->b == 0xFFFFFFFF) {
                 float v = dot(velocity, data.d->normal);
@@ -777,7 +777,7 @@ void Physics_system::solve_constraints(std::vector<Collision_constraint>& constr
             Collider& ca = ecs.get_component<Collider>(data.a);
             Transform& ta = ecs.get_component<Transform>(data.a);
 
-            float bg = -data.get_value() * spring / physics_step;
+            float bg = -data.get_value() * spring / physics_step - softness * data.lambda;
 
             float inverse_mass = calculate_inverse_mass(ca, ta, data.dir, data.ppa - ta.position);
 
