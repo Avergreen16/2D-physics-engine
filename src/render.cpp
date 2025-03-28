@@ -11,12 +11,11 @@ struct Object_vertex {
     vec3 v;
 };
 
-
-float sphere_segments = 64;
-
 void create_mesh(Mesh& m, std::vector<vec2> v, float radius) {
     m.vertices = std::shared_ptr<Vertices>(new Vertices);
     m.vertices->init();
+    
+    float sphere_segments = max(64, int32_t(8 * radius));
 
     std::vector<vec2> vv;
     if(radius == 0.0f) {

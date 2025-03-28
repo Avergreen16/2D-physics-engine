@@ -137,7 +137,7 @@ void Input_system::call() {
             if(key_map[GLFW_KEY_LEFT_SHIFT]) {
                 uint32_t num_links = 10;
                 float len = 1.0f;
-                float sep = 0.05f;
+                float sep = 0.01f;
                 float radius = 0.125f;
 
                 std::vector<vec2> vertices = {vec2(0, -(len * 0.5f - radius)), vec2(0, len * 0.5f - radius)};
@@ -194,6 +194,18 @@ void Input_system::call() {
 
                     prev_shape = entity;
                 }
+
+                
+                Position_constraint constraint;
+                constraint.a = prev_shape;
+                constraint.pa = vec2(0, -len * 0.5f);
+                constraint.pb = world_cursor_pos + vec2(5.0f, 0.0f);
+
+                constraint.dir = vec2(1, 0);
+                ps.position_constraints.push_back(constraint);
+                
+                constraint.dir = vec2(0, 1);
+                ps.position_constraints.push_back(constraint);
             } else {
                 uint32_t entity = ecs.insert_entity();
                 

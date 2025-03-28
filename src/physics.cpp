@@ -562,7 +562,11 @@ void Physics_system::physics_loop() {
         Collider& ca = ecs.get_component<Collider>(a);
         Transform& ta = ecs.get_component<Transform>(a);
 
-        if(ca.allow_gravity && !ca.is_static) ca.velocity += gravity * physics_step;
+        if(ca.allow_gravity && !ca.is_static) {
+            vec2 g = -normalize(ta.position) * 10.0f;
+
+            ca.velocity += g * physics_step;
+        }
     }
 
     solve_constraints(collision_constraints);
@@ -605,7 +609,7 @@ void Physics_system::apply_impulse(Collider& c, vec2 impulse, vec2 point) {
 void Physics_system::solve_constraints(std::vector<Collision_constraint>& constraints) {
     int iterations = 4;
     float spring = 0.25f;
-    float softness = 0.2;
+    float softness = 0.25f;
 
     for(Collision_constraint& data : constraints) {
         data.get_points();
@@ -675,13 +679,14 @@ void Physics_system::solve_constraints(std::vector<Collision_constraint>& constr
             vec2 velocity = calculate_point_velocity(ca, data.pa - ta.position);
 
             float diff = data.get_value();
-            diff = diff * spring / physics_step - softness * data.lambdaN;
+            diff = diff * spring / physics_step;
 
             if(data.d->b == 0xFFFFFFFF) {
                 float v = dot(velocity, data.d->normal);
 
                 float L = -v - diff;
                 L /= total_inertia;
+                L -= softness * data.lambdaN;
                 
                 vec2 limits = vec2(0.0f, __FLT_MAX__);
 
@@ -732,6 +737,7 @@ void Physics_system::solve_constraints(std::vector<Collision_constraint>& constr
 
                 float L = -v - diff;
                 L /= total_inertia;
+                L -= softness * data.lambdaN;
                 
                 vec2 limits = vec2(0.0f, __FLT_MAX__);
 
@@ -777,7 +783,7 @@ void Physics_system::solve_constraints(std::vector<Collision_constraint>& constr
             Collider& ca = ecs.get_component<Collider>(data.a);
             Transform& ta = ecs.get_component<Transform>(data.a);
 
-            float bg = -data.get_value() * spring / physics_step - softness * data.lambda;
+            float bg = -data.get_value() * spring / physics_step ;
 
             float inverse_mass = calculate_inverse_mass(ca, ta, data.dir, data.ppa - ta.position);
 
@@ -786,6 +792,7 @@ void Physics_system::solve_constraints(std::vector<Collision_constraint>& constr
             if(data.b == 0xFFFFFFFF) {
                 float L = -dot(velocity, data.dir) + bg;
                 L /= inverse_mass;
+                L -= softness * data.lambda;
                 float new_lambda = data.lambda + L;
                 data.lambda = new_lambda;
 
