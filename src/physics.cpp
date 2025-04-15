@@ -608,8 +608,8 @@ void Physics_system::apply_impulse(Collider& c, vec2 impulse, vec2 point) {
 
 void Physics_system::solve_constraints(std::vector<Collision_constraint>& constraints) {
     int iterations = 4;
-    float spring = 0.25f;
-    float softness = 0.25f;
+    float spring = 0.5f;
+    float softness = 0.05f;
 
     for(Collision_constraint& data : constraints) {
         data.get_points();
@@ -783,7 +783,7 @@ void Physics_system::solve_constraints(std::vector<Collision_constraint>& constr
             Collider& ca = ecs.get_component<Collider>(data.a);
             Transform& ta = ecs.get_component<Transform>(data.a);
 
-            float bg = -data.get_value() * spring / physics_step ;
+            float bg = data.get_value() * spring / physics_step;
 
             float inverse_mass = calculate_inverse_mass(ca, ta, data.dir, data.ppa - ta.position);
 
@@ -809,6 +809,7 @@ void Physics_system::solve_constraints(std::vector<Collision_constraint>& constr
 
                 float L = -dot(velocity, data.dir) + bg;
                 L /= inverse_mass;
+                L -= softness * data.lambda;
                 float new_lambda = data.lambda + L;
                 data.lambda = new_lambda;
 
@@ -1000,7 +1001,7 @@ void Position_constraint::get_points() {
 }
 
 float Position_constraint::get_value() {
-    vec2 diff = ppa - ppb;
+    vec2 diff = ppb - ppa;
     float dd = dot(diff, dir);
     return dd;
 }

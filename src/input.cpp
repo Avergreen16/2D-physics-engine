@@ -135,10 +135,10 @@ void Input_system::call() {
             }
         } else if(key == GLFW_MOUSE_BUTTON_RIGHT) {
             if(key_map[GLFW_KEY_LEFT_SHIFT]) {
-                uint32_t num_links = 10;
-                float len = 1.0f;
+                uint32_t num_links = 8;
+                float len = 2.0f;
                 float sep = 0.01f;
-                float radius = 0.125f;
+                float radius = 0.25f;
 
                 std::vector<vec2> vertices = {vec2(0, -(len * 0.5f - radius)), vec2(0, len * 0.5f - radius)};
 
@@ -155,7 +155,7 @@ void Input_system::call() {
                     Collider c;
                     c.vertices = vertices;
                     c.radius = radius;
-                    c.mass = 0.2f;
+                    c.mass = 1.0f;
                     vec2 shift = Physics_system::calculate_inertia(c);
                     t.position += shift;
 
@@ -199,7 +199,7 @@ void Input_system::call() {
                 Position_constraint constraint;
                 constraint.a = prev_shape;
                 constraint.pa = vec2(0, -len * 0.5f);
-                constraint.pb = world_cursor_pos + vec2(5.0f, 0.0f);
+                constraint.pb = world_cursor_pos + vec2(10.0f, 0.0f);
 
                 constraint.dir = vec2(1, 0);
                 ps.position_constraints.push_back(constraint);
@@ -216,7 +216,7 @@ void Input_system::call() {
 
                 int num_sides = core.random.next() % 5 + 3;
                 float radius = core.random() * 0.5f + 0.5f;
-                radius = radius * 0.4f + 0.2f;
+                radius = radius * 1.2f + 0.3f;
                 float jitter = (2.0f * M_PI) / num_sides * 0.4f;
 
                 c.radius = 0.0f;//(core.random() * 0.5f + 0.5f) * radius * 0.4f;
