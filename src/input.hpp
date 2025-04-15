@@ -17,6 +17,9 @@ struct Input_system : System {
 
     uint32_t id = 0xFFFFFFFF;
 
+    uint32_t held_object = 0xFFFFFFFF;
+    uint32_t held_constraint;
+
     Input_system();
 
     void call();

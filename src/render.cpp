@@ -178,12 +178,14 @@ void Render_system::render_object(uint32_t object, uint32_t camera) {
     Transform& ot = ecs.get_component<Transform>(object);
     Mesh& om = ecs.get_component<Mesh>(object);
 
-    Transform ct = ecs.get_component<Transform>(camera);
+    Transform& ct = ecs.get_component<Transform>(camera);
     Camera& cc = ecs.get_component<Camera>(camera);
 
     Input_system& is = ecs.get_system<Input_system>();
 
-    mat4 view = scale(vec3(cc.scale, cc.scale, 1.0f)) * translate(vec3(-ct.position, 0.0f));
+    mat4 inv_rot = mat4(transpose(ct.orientation));
+
+    mat4 view = inv_rot * scale(vec3(cc.scale, cc.scale, 1.0f)) * translate(vec3(-ct.position, 0.0f));
     mat4 model = translate(vec3(ot.position, 0.0f)) * mat4(ot.orientation);
 
     float aspect_ratio = float(core.window.screen_size.y) / core.window.screen_size.x;
