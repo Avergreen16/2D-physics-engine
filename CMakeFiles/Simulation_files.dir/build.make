@@ -174,6 +174,21 @@ CMakeFiles/Simulation_files.dir/src/physics.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/Simulation_files.dir/src/physics.cpp.s"
 	C:/mingw64/bin/c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/physics.cpp -o CMakeFiles/Simulation_files.dir/src/physics.cpp.s
 
+CMakeFiles/Simulation_files.dir/src/gui.cpp.obj: CMakeFiles/Simulation_files.dir/flags.make
+CMakeFiles/Simulation_files.dir/src/gui.cpp.obj: CMakeFiles/Simulation_files.dir/includes_CXX.rsp
+CMakeFiles/Simulation_files.dir/src/gui.cpp.obj: src/gui.cpp
+CMakeFiles/Simulation_files.dir/src/gui.cpp.obj: CMakeFiles/Simulation_files.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/Simulation_files.dir/src/gui.cpp.obj"
+	C:/mingw64/bin/c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Simulation_files.dir/src/gui.cpp.obj -MF CMakeFiles/Simulation_files.dir/src/gui.cpp.obj.d -o CMakeFiles/Simulation_files.dir/src/gui.cpp.obj -c C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/gui.cpp
+
+CMakeFiles/Simulation_files.dir/src/gui.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/Simulation_files.dir/src/gui.cpp.i"
+	C:/mingw64/bin/c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/gui.cpp > CMakeFiles/Simulation_files.dir/src/gui.cpp.i
+
+CMakeFiles/Simulation_files.dir/src/gui.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/Simulation_files.dir/src/gui.cpp.s"
+	C:/mingw64/bin/c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/gui.cpp -o CMakeFiles/Simulation_files.dir/src/gui.cpp.s
+
 # Object files for target Simulation_files
 Simulation_files_OBJECTS = \
 "CMakeFiles/Simulation_files.dir/src/wrapper.cpp.obj" \
@@ -182,7 +197,8 @@ Simulation_files_OBJECTS = \
 "CMakeFiles/Simulation_files.dir/src/ecs.cpp.obj" \
 "CMakeFiles/Simulation_files.dir/src/render.cpp.obj" \
 "CMakeFiles/Simulation_files.dir/src/input.cpp.obj" \
-"CMakeFiles/Simulation_files.dir/src/physics.cpp.obj"
+"CMakeFiles/Simulation_files.dir/src/physics.cpp.obj" \
+"CMakeFiles/Simulation_files.dir/src/gui.cpp.obj"
 
 # External object files for target Simulation_files
 Simulation_files_EXTERNAL_OBJECTS =
@@ -194,9 +210,10 @@ lib/libSimulation_files.a: CMakeFiles/Simulation_files.dir/src/ecs.cpp.obj
 lib/libSimulation_files.a: CMakeFiles/Simulation_files.dir/src/render.cpp.obj
 lib/libSimulation_files.a: CMakeFiles/Simulation_files.dir/src/input.cpp.obj
 lib/libSimulation_files.a: CMakeFiles/Simulation_files.dir/src/physics.cpp.obj
+lib/libSimulation_files.a: CMakeFiles/Simulation_files.dir/src/gui.cpp.obj
 lib/libSimulation_files.a: CMakeFiles/Simulation_files.dir/build.make
 lib/libSimulation_files.a: CMakeFiles/Simulation_files.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Linking CXX static library lib/libSimulation_files.a"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Linking CXX static library lib/libSimulation_files.a"
 	$(CMAKE_COMMAND) -P CMakeFiles/Simulation_files.dir/cmake_clean_target.cmake
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/Simulation_files.dir/link.txt --verbose=$(VERBOSE)
 

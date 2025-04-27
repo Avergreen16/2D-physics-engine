@@ -15,7 +15,7 @@ add_executable(Simulation src/client_main.cpp)
 
 add_library(Glad src/glad.c)
 
-add_library(Simulation_files src/wrapper.cpp src/core.cpp src/random.cpp src/ecs.cpp src/render.cpp src/input.cpp src/physics.cpp)
+add_library(Simulation_files src/wrapper.cpp src/core.cpp src/random.cpp src/ecs.cpp src/render.cpp src/input.cpp src/physics.cpp src/gui.cpp)
 
 target_link_libraries(Simulation Glad)
 

@@ -1,6 +1,7 @@
 #pragma once
 #include "ecs.hpp"
 #include "random.hpp"
+#include "gui.hpp"
 //#include "physics.hpp"
 
 struct Mesh {
@@ -26,6 +27,8 @@ struct Render_system : System {
     
     std::vector<vec2> marker_points;
 
+    std::shared_ptr<Vertices> vv = std::shared_ptr<Vertices>(new Vertices);
+
     Render_system();
 
     void resize_framebuffers();
@@ -37,6 +40,8 @@ struct Render_system : System {
     void render_object(uint32_t object, uint32_t camera);
     
     void render_marker(vec2 pos, uint32_t camera);
+
+    void render_cursor();
 
     void call();
 };

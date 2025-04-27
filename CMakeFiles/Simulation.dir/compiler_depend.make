@@ -579,6 +579,7 @@ CMakeFiles/Simulation.dir/src/client_main.cpp.obj: src/client_main.cpp \
   C:/mingw64/lib/gcc/x86_64-w64-mingw32/13.1.0/include/c++/experimental/bits/simd_math.h \
   src/render.hpp \
   src/ecs.hpp \
+  src/gui.hpp \
   src/input.hpp \
   src/physics.hpp \
   C:/mingw64/x86_64-w64-mingw32/include/windows.h \
@@ -746,6 +747,8 @@ C:/mingw64/x86_64-w64-mingw32/include/stdint.h:
 src/wrapper.hpp:
 
 C:/mingw64/lib/gcc/x86_64-w64-mingw32/13.1.0/include/stdint.h:
+
+src/gui.hpp:
 
 src/core.hpp:
 

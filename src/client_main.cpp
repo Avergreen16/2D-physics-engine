@@ -2,6 +2,7 @@
 #include "render.hpp"
 #include "input.hpp"
 #include "physics.hpp"
+#include "gui.hpp"
 
 #include <chrono>
 #include <windows.h>
@@ -31,7 +32,9 @@ void Core::init() {
     shaders.emplace("color_shader", std::make_shared<Shader>(Shader("src/shaders/color.vert", "src/shaders/color.frag")));
     shaders.emplace("texture_shader", std::make_shared<Shader>(Shader("src/shaders/texture.vert", "src/shaders/texture.frag")));
     shaders.emplace("screen_shader", std::make_shared<Shader>(Shader("src/shaders/screen.vert", "src/shaders/screen.frag")));
-    textures.emplace("cursor", std::make_shared<Texture>(Texture("res/cursor.png", {GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE}, 4)));
+    shaders.emplace("gui_shader", std::make_shared<Shader>(Shader("src/shaders/ui.vert", "src/shaders/ui.frag")));
+    textures.emplace("gui_texture", std::make_shared<Texture>(Texture("res/textures/gui.png", {GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE}, 4)));
+    textures.emplace("text_texture", std::make_shared<Texture>(Texture("res/textures/text.png", {GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE}, 4)));
 }
 
 struct Time {
@@ -83,8 +86,15 @@ int main() {
     ecs.register_component<Transform>();
     ecs.register_component<Camera>();
     ecs.register_component<Collider>();
+    ecs.register_component<Widget>();
+    ecs.register_component<Window_widget>();
+    ecs.register_component<Text>();
+    ecs.register_component<Button>();
+    ecs.register_component<Tab>();
+    ecs.register_component<Panel>();
 
     ecs.register_system<Input_system>();
+    ecs.register_system<GUI_system>();
     ecs.register_system<Physics_system>();
     ecs.register_system<Render_system>();
 
@@ -121,6 +131,26 @@ int main() {
 
     ecs.insert_component(entity, t);
     ecs.insert_component(entity, cc);
+
+    // widgets
+
+    GUI_system& gui_system = ecs.get_system<GUI_system>();
+
+    gui_system.add_window(ivec2(200, 200), ivec2(600, 400), "Test Window");
+    gui_system.add_tab(ivec2(60, 15), "TAB");
+    gui_system.add_text("Hello TAB!");
+    gui_system.widget_return(-1);
+    gui_system.add_tab(ivec2(60, 15), "TAB2");
+    gui_system.add_text("Hello TAB2!");
+    gui_system.widget_return(-1);
+    gui_system.add_tab(ivec2(60, 15), "TAB3");
+    gui_system.add_panel(1, 2, 2);
+    gui_system.add_text("Hello TAB3!");
+    gui_system.add_text(message_callback);
+    gui_system.add_button(ivec2(100, 30), button_callback, "BUTTON");
+    gui_system.widget_return(-1);
+
+
 
     glfwSetInputMode(core.window.window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 

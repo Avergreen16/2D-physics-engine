@@ -10,6 +10,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/core.cpp" "CMakeFiles/Simulation_files.dir/src/core.cpp.obj" "gcc" "CMakeFiles/Simulation_files.dir/src/core.cpp.obj.d"
   "C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/ecs.cpp" "CMakeFiles/Simulation_files.dir/src/ecs.cpp.obj" "gcc" "CMakeFiles/Simulation_files.dir/src/ecs.cpp.obj.d"
+  "C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/gui.cpp" "CMakeFiles/Simulation_files.dir/src/gui.cpp.obj" "gcc" "CMakeFiles/Simulation_files.dir/src/gui.cpp.obj.d"
   "C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/input.cpp" "CMakeFiles/Simulation_files.dir/src/input.cpp.obj" "gcc" "CMakeFiles/Simulation_files.dir/src/input.cpp.obj.d"
   "C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/physics.cpp" "CMakeFiles/Simulation_files.dir/src/physics.cpp.obj" "gcc" "CMakeFiles/Simulation_files.dir/src/physics.cpp.obj.d"
   "C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/random.cpp" "CMakeFiles/Simulation_files.dir/src/random.cpp.obj" "gcc" "CMakeFiles/Simulation_files.dir/src/random.cpp.obj.d"

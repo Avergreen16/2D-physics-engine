@@ -251,6 +251,30 @@ src/glad.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Glad.dir/build.make CMakeFiles/Glad.dir/src/glad.c.s
 .PHONY : src/glad.c.s
 
+src/gui.obj: src/gui.cpp.obj
+.PHONY : src/gui.obj
+
+# target to build an object file
+src/gui.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Simulation_files.dir/build.make CMakeFiles/Simulation_files.dir/src/gui.cpp.obj
+.PHONY : src/gui.cpp.obj
+
+src/gui.i: src/gui.cpp.i
+.PHONY : src/gui.i
+
+# target to preprocess a source file
+src/gui.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Simulation_files.dir/build.make CMakeFiles/Simulation_files.dir/src/gui.cpp.i
+.PHONY : src/gui.cpp.i
+
+src/gui.s: src/gui.cpp.s
+.PHONY : src/gui.s
+
+# target to generate assembly for a file
+src/gui.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Simulation_files.dir/build.make CMakeFiles/Simulation_files.dir/src/gui.cpp.s
+.PHONY : src/gui.cpp.s
+
 src/input.obj: src/input.cpp.obj
 .PHONY : src/input.obj
 
@@ -394,6 +418,9 @@ help:
 	@echo "... src/glad.obj"
 	@echo "... src/glad.i"
 	@echo "... src/glad.s"
+	@echo "... src/gui.obj"
+	@echo "... src/gui.i"
+	@echo "... src/gui.s"
 	@echo "... src/input.obj"
 	@echo "... src/input.i"
 	@echo "... src/input.s"

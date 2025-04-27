@@ -563,7 +563,7 @@ void Physics_system::physics_loop() {
         Transform& ta = ecs.get_component<Transform>(a);
 
         if(ca.allow_gravity && !ca.is_static) {
-            vec2 g = -normalize(ta.position) * 10.0f;
+            vec2 g = -normalize(ta.position) * 20.0f;
 
             ca.velocity += g * physics_step;
         }
@@ -607,9 +607,25 @@ void Physics_system::apply_impulse(Collider& c, vec2 impulse, vec2 point) {
 }
 
 void Physics_system::solve_constraints(std::vector<Collision_constraint>& constraints) {
-    int iterations = 4;
+    int iterations = 6;
     float spring = 0.5f;
     float softness = 0.05f;
+
+    for(Position_constraint& data : position_constraints) {
+        data.get_points();
+
+        vec2 impulse = data.dir * data.lambda;
+
+        Collider& ca = ecs.get_component<Collider>(data.a);
+        Transform& ta = ecs.get_component<Transform>(data.a);
+        apply_impulse(ca, impulse, data.ppa - ta.position);
+
+        if(data.b != 0xFFFFFFFF) {
+            Collider& cb = ecs.get_component<Collider>(data.b);
+            Transform& tb = ecs.get_component<Transform>(data.b);
+            apply_impulse(cb, -impulse, data.ppb - tb.position);
+        }
+    }
 
     for(Collision_constraint& data : constraints) {
         data.get_points();
@@ -652,23 +668,49 @@ void Physics_system::solve_constraints(std::vector<Collision_constraint>& constr
         }
     }
 
-    for(Position_constraint& data : position_constraints) {
-        data.get_points();
-
-        vec2 impulse = data.dir * data.lambda;
-
-        Collider& ca = ecs.get_component<Collider>(data.a);
-        Transform& ta = ecs.get_component<Transform>(data.a);
-        apply_impulse(ca, impulse, data.ppa - ta.position);
-
-        if(data.b != 0xFFFFFFFF) {
-            Collider& cb = ecs.get_component<Collider>(data.b);
-            Transform& tb = ecs.get_component<Transform>(data.b);
-            apply_impulse(cb, -impulse, data.ppb - tb.position);
-        }
-    }
-
     for(int i = 0; i < iterations; ++i) {
+        for(int i = position_constraints.size() - 1; i >= 0; --i) {
+            Position_constraint& data = position_constraints[i];
+            Collider& ca = ecs.get_component<Collider>(data.a);
+            Transform& ta = ecs.get_component<Transform>(data.a);
+
+            float bg = data.get_value() * spring / physics_step;
+
+            float inverse_mass = calculate_inverse_mass(ca, ta, data.dir, data.ppa - ta.position);
+
+            vec2 velocity = calculate_point_velocity(ca, data.ppa - ta.position);
+
+            if(data.b == 0xFFFFFFFF) {
+                float L = -dot(velocity, data.dir) + bg;
+                L /= inverse_mass;
+                L -= softness * data.lambda;
+                float new_lambda = data.lambda + L;
+                data.lambda = new_lambda;
+
+                vec2 impulse = data.dir * L;
+
+                apply_impulse(ca, impulse, data.ppa - ta.position);
+            } else {
+                Collider& cb = ecs.get_component<Collider>(data.b);
+                Transform& tb = ecs.get_component<Transform>(data.b);
+
+                inverse_mass += calculate_inverse_mass(cb, tb, data.dir, data.ppb - tb.position);
+                
+                velocity -= calculate_point_velocity(cb, data.ppb - tb.position);
+
+                float L = -dot(velocity, data.dir) + bg;
+                L /= inverse_mass;
+                L -= softness * data.lambda;
+                float new_lambda = data.lambda + L;
+                data.lambda = new_lambda;
+
+                vec2 impulse = data.dir * L;
+
+                apply_impulse(ca, impulse, data.ppa - ta.position);
+                apply_impulse(cb, -impulse, data.ppb - tb.position);
+            }
+        }
+        
         for(Collision_constraint& data : constraints) {
             Collider& ca = ecs.get_component<Collider>(data.d->a);
             Transform& ta = ecs.get_component<Transform>(data.d->a);
@@ -778,62 +820,6 @@ void Physics_system::solve_constraints(std::vector<Collision_constraint>& constr
                 apply_impulse(cb, -friction_impulse, data.pb - tb.position);
             }
         }
-
-        for(Position_constraint& data : position_constraints) {
-            Collider& ca = ecs.get_component<Collider>(data.a);
-            Transform& ta = ecs.get_component<Transform>(data.a);
-
-            float bg = data.get_value() * spring / physics_step;
-
-            float inverse_mass = calculate_inverse_mass(ca, ta, data.dir, data.ppa - ta.position);
-
-            vec2 velocity = calculate_point_velocity(ca, data.ppa - ta.position);
-
-            if(data.b == 0xFFFFFFFF) {
-                float L = -dot(velocity, data.dir) + bg;
-                L /= inverse_mass;
-                L -= softness * data.lambda;
-                float new_lambda = data.lambda + L;
-                data.lambda = new_lambda;
-
-                vec2 impulse = data.dir * L;
-
-                apply_impulse(ca, impulse, data.ppa - ta.position);
-            } else {
-                Collider& cb = ecs.get_component<Collider>(data.b);
-                Transform& tb = ecs.get_component<Transform>(data.b);
-
-                inverse_mass += calculate_inverse_mass(cb, tb, data.dir, data.ppb - tb.position);
-                
-                velocity -= calculate_point_velocity(cb, data.ppb - tb.position);
-
-                float L = -dot(velocity, data.dir) + bg;
-                L /= inverse_mass;
-                L -= softness * data.lambda;
-                float new_lambda = data.lambda + L;
-                data.lambda = new_lambda;
-
-                vec2 impulse = data.dir * L;
-
-                apply_impulse(ca, impulse, data.ppa - ta.position);
-                apply_impulse(cb, -impulse, data.ppb - tb.position);
-            }
-        }
-        /*for(Position_constraint& data : position_constraints) {
-            data.get_points();
-    
-            vec2 impulse = data.dir * data.lambda;
-    
-            Collider& ca = ecs.get_component<Collider>(data.a);
-            Transform& ta = ecs.get_component<Transform>(data.a);
-            apply_impulse(ca, impulse, data.ppa - ta.position);
-    
-            if(data.b == 0xFFFFFFFF) {
-                Collider& cb = ecs.get_component<Collider>(data.b);
-                Transform& tb = ecs.get_component<Transform>(data.b);
-                apply_impulse(cb, -impulse, data.ppb - tb.position);
-            }
-        }*/
     }
     
     for(Collision_constraint& c : constraints) {

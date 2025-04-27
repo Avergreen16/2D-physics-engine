@@ -3,6 +3,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/Simulation_files.dir/src/core.cpp.obj.d"
   "CMakeFiles/Simulation_files.dir/src/ecs.cpp.obj"
   "CMakeFiles/Simulation_files.dir/src/ecs.cpp.obj.d"
+  "CMakeFiles/Simulation_files.dir/src/gui.cpp.obj"
+  "CMakeFiles/Simulation_files.dir/src/gui.cpp.obj.d"
   "CMakeFiles/Simulation_files.dir/src/input.cpp.obj"
   "CMakeFiles/Simulation_files.dir/src/input.cpp.obj.d"
   "CMakeFiles/Simulation_files.dir/src/physics.cpp.obj"
