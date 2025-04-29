@@ -15,6 +15,19 @@ std::string null_callback() {
 void button_callback() {
     std::cout << "button pressed" << "\n";
 }
+uint32_t frames = 0;
+double time_fps = 0;
+double fps = 0;
+std::string fps_callback() {
+    ++frames;
+    time_fps += core.delta_time;
+    if(time_fps > 1) {
+        fps = double(frames) / time_fps;
+        time_fps = 0;
+        frames = 0;
+    }
+    return std::to_string(fps);
+}
 
 void insert_char(std::vector<UI_vertex>& vertices, Font& font, char character, vec2 pos, int text_size, bool italic, bool bold, vec4 color) {
     std::array<glm::vec2, 4> offsets = {glm::vec2{0, 0}, glm::vec2{0, 0}, glm::vec2{0, 0}, glm::vec2{0, 0}};
@@ -328,8 +341,6 @@ std::vector<UI_vertex> GUI_system::create_mesh(std::string string, uint32_t text
 
 
 void GUI_system::capture_cursor() {
-    cursor_captured = false;
-
     for(uint32_t entity : collectors[3].entities) {
         Window_widget& w = ecs.get_component<Window_widget>(entity);
 
@@ -422,35 +433,111 @@ ivec2 GUI_system::recursive_position(uint32_t entity, ivec4 window, ivec2 positi
 void GUI_system::recursive_toggle(uint32_t entity, bool toggle, bool first) {
     Widget& widget = ecs.get_component<Widget>(entity);
 
-    if(!first) widget.toggle = toggle;
-    if(first || !widget.toggle_parent) {
+    if(!toggle) {
+        if(!first) widget.toggle = toggle;
         for(uint32_t child : widget.children) {
             recursive_toggle(child, toggle, false);
+        }
+    } else {
+        if(!first) widget.toggle = toggle;
+        if(widget.toggle_parent) {
+            if(widget.open) {
+                for(uint32_t child : widget.children) {
+                    recursive_toggle(child, toggle, false);
+                }
+            }
+        } else {
+            for(uint32_t child : widget.children) {
+                recursive_toggle(child, toggle, false);
+            }
         }
     }
 }
 
+bool includes(ivec4 range, ivec2 point) {
+    return (point.x > range.x && point.x < range.x + range.z && point.y > range.y && point.y < range.y + range.w);
+}
+
 void GUI_system::call() {
     Input_system& input_system = ecs.get_system<Input_system>();
+    cursor_captured = false;
 
     if(!input_system.cursor_disabled) {
+        uint32_t hovered_widget = 0xFFFFFFFF;
+
+        if(selected_widget == 0xFFFFFFFF) {
+            cursor_mode = CURSOR_CLICK;
+
+            for(uint32_t entity : collectors[3].entities) {
+                Window_widget& window = ecs.get_component<Window_widget>(entity); 
+                Widget& widget = ecs.get_component<Widget>(entity); 
+
+
+                int thickness = 6;
+                int border = 3;
+            
+                if(widget.open) {
+                    ivec4 range_bottom = ivec4(window.position - border, window.size.x + border * 2, thickness);
+                    ivec4 range_top = ivec4(window.position.x - border, window.position.y + window.size.y - thickness + border, window.size.x + border * 2, thickness);
+                    ivec4 range_left = ivec4(window.position - border, thickness, window.size.y + border * 2);
+                    ivec4 range_right = ivec4(window.position.x + window.size.x - thickness + border, window.position.y - border, thickness, window.size.y + border * 2);
+
+                    bool bottom = includes(range_bottom, input_system.cursor_pos);
+                    bool top = includes(range_top, input_system.cursor_pos);
+                    bool left = includes(range_left, input_system.cursor_pos);
+                    bool right = includes(range_right, input_system.cursor_pos);
+
+                    if(bottom) {
+                        if(left) cursor_mode = CURSOR_RESIZE_BL;
+                        else if(right) cursor_mode = CURSOR_RESIZE_BR;
+                        else cursor_mode = CURSOR_RESIZE_B;
+                    } else if(top) {
+                        if(left) cursor_mode = CURSOR_RESIZE_TL;
+                        else if(right) cursor_mode = CURSOR_RESIZE_TR;
+                        else cursor_mode = CURSOR_RESIZE_T;
+                    } else if(left) cursor_mode = CURSOR_RESIZE_L;
+                    else if(right) cursor_mode = CURSOR_RESIZE_R;
+
+                    if(cursor_mode != CURSOR_CLICK) {
+                        hovered_widget = entity;
+                        cursor_captured = true;
+                    }
+                } else {
+                    ivec4 range_left = ivec4(window.position - border, thickness, window.size.y + border * 2);
+                    ivec4 range_right = ivec4(window.position.x + window.size.x - thickness + border, window.position.y - border, thickness, window.size.y + border * 2);
+
+                    bool left = includes(range_left, input_system.cursor_pos);
+                    bool right = includes(range_right, input_system.cursor_pos);
+
+                    if(left) cursor_mode = CURSOR_RESIZE_L;
+                    else if(right) cursor_mode = CURSOR_RESIZE_R;
+
+                    if(cursor_mode != CURSOR_CLICK) {
+                        hovered_widget = entity;
+                        cursor_captured = true;
+                    }
+                }
+            }
+        }
+
         if(selected_widget != 0xFFFFFFFF) {
             if(ecs.has_component<Window_widget>(selected_widget)) {
                 Window_widget& w = ecs.get_component<Window_widget>(selected_widget); 
                 Widget& widget = ecs.get_component<Widget>(selected_widget); 
 
                 if(resize) {
-                    int prev_y_pos = w.position.y + w.size.y;
-
-                    w.size += ivec2(input_system.cursor_delta.x, -input_system.cursor_delta.y);
-                    ivec2 min_size = ivec2(64, 64);
-                    w.size.x = max(min_size.x, w.size.x);
-                    w.size.y = max(min_size.y, w.size.y);
-
-                    int new_y_pos = w.position.y + w.size.y;
-                    int diff = new_y_pos - prev_y_pos;
-
-                    w.position.y -= diff;
+                    if(cursor_mode == CURSOR_RESIZE_T || cursor_mode == CURSOR_RESIZE_TL || cursor_mode == CURSOR_RESIZE_TR) { // top
+                        w.size.y += input_system.cursor_delta.y;
+                    } else if(cursor_mode == CURSOR_RESIZE_B || cursor_mode == CURSOR_RESIZE_BL || cursor_mode == CURSOR_RESIZE_BR) { // bottom
+                        w.size.y -= input_system.cursor_delta.y;
+                        w.position.y += input_system.cursor_delta.y;
+                    }
+                    if(cursor_mode == CURSOR_RESIZE_L || cursor_mode == CURSOR_RESIZE_BL || cursor_mode == CURSOR_RESIZE_TL) { // left
+                        w.size.x -= input_system.cursor_delta.x;
+                        w.position.x += input_system.cursor_delta.x;
+                    } else if(cursor_mode == CURSOR_RESIZE_R || cursor_mode == CURSOR_RESIZE_BR || cursor_mode == CURSOR_RESIZE_TR) { // right
+                        w.size.x += input_system.cursor_delta.x;
+                    }
                 } else {
                     w.position += ivec2(input_system.cursor_delta);
 
@@ -474,17 +561,39 @@ void GUI_system::call() {
 
             for(uint32_t entity : collectors[3].entities) {
                 Window_widget& w = ecs.get_component<Window_widget>(entity);
+                Widget& widget = ecs.get_component<Widget>(entity);
 
-                vec4 range = vec4(w.position.x, w.position.y + w.size.y - 20, w.size.x, 20);
-                vec4 range_2 = vec4(w.position.x + w.size.x - 16, w.position.y, 16, 16);
-                if(input_system.cursor_pos.x > range.x && input_system.cursor_pos.x < range.x + range.z && input_system.cursor_pos.y > range.y && input_system.cursor_pos.y < range.y + range.w) {
-                    selected_widget = entity;
-                    resize = false;
-                    selected = true;
-                } else if(input_system.cursor_pos.x > range_2.x && input_system.cursor_pos.x < range_2.x + range_2.z && input_system.cursor_pos.y > range_2.y && input_system.cursor_pos.y < range_2.y + range_2.w) {
-                    selected_widget = entity;
-                    resize = true;
-                    selected = true;
+                if(cursor_mode == CURSOR_CLICK) {
+                    bool drop = false;
+                    
+                    // toggle drop
+                    int32_t offset_x = w.bar_size / 2 - 10 / 2;
+                    int32_t offset_y = w.bar_size / 2 + 10 / 2;
+                    ivec2 pos = w.position + ivec2(offset_x, w.size.y - offset_y);
+                    ivec4 new_range = ivec4(pos, 10, 10);
+
+                    if(includes(new_range, input_system.cursor_pos)) {
+                        widget.open = !widget.open;
+                        recursive_toggle(entity, widget.open);
+
+                        drop = true;
+                        remesh = true;
+                    }
+
+                    if(!drop) {
+                        vec4 range = vec4(w.position.x, w.position.y + w.size.y - 20, w.size.x, 20);
+                        if(includes(range, input_system.cursor_pos)) { // top move
+                            selected_widget = entity;
+                            resize = false;
+                            selected = true;
+                        }
+                    }
+                } else {
+                    if(hovered_widget != 0xFFFFFFFF) {
+                        selected_widget = hovered_widget;
+                        selected = true;
+                        resize = true;
+                    }
                 }
             }
 
@@ -499,7 +608,7 @@ void GUI_system::call() {
                 Widget& w = ecs.get_component<Widget>(entity);
 
                 vec4 range = vec4(w.position.xy(), w.size.xy());
-                if(input_system.cursor_pos.x > range.x && input_system.cursor_pos.x < range.x + range.z && input_system.cursor_pos.y > range.y && input_system.cursor_pos.y < range.y + range.w) {
+                if(includes(range, input_system.cursor_pos)) {
                     switch_tab_parent = w.parent;
                     switch_tab = entity;
                     break;
@@ -513,13 +622,14 @@ void GUI_system::call() {
 
                 for(uint32_t child : w.children) {
                     if(ecs.has_component<Tab>(child)) {
+                        Widget& tab_widget = ecs.get_component<Widget>(child);
                         Tab& t = ecs.get_component<Tab>(child);
                         if(child == switch_tab) {
-                            t.selected = true;
+                            tab_widget.open = true;
                             remesh = true;
                             recursive_toggle(child, true);
                         } else {
-                            t.selected = false;
+                            tab_widget.open = false;
                             remesh = true;
                             recursive_toggle(child, false);
                         }
@@ -611,7 +721,7 @@ void GUI_system::create_mesh() {
     std::vector<UI_vertex> v;
     ivec4 full_window = ivec4(0, 0, 0x7FFFFFFF, 0x7FFFFFFF);
 
-    std::function<void(vec4, ivec4, ivec4)> func = [&v](vec4 color, ivec4 range, ivec4 window) {
+    std::function<void(vec4, ivec4, ivec4)> insert_flat = [&v](vec4 color, ivec4 range, ivec4 window) {
         UI_vertex v0;
         v0.color = color;
         v0.data = 0x2;
@@ -636,30 +746,74 @@ void GUI_system::create_mesh() {
         v.push_back(v2);
     };
 
-    for(uint32_t entity : collectors[2].entities) {
-        Window_widget& w = ecs.get_component<Window_widget>(entity);
+    std::function<void(vec4, ivec4, ivec4)> insert_tex = [&v](vec4 tex, ivec4 range, ivec4 window) {
+        UI_vertex v0;
+        v0.color = vec4(1.0f);
+        v0.data = 0x0;
+        v0.position = vec3(range.xy(), 0.5f);
+        v0.tex_coord = vec2(tex.xy());
+        v0.range = window;
 
-        vec4 color = vec4(0.25f, 0.25f, 1.0f, 0.1f);
-        ivec4 range = ivec4(w.position, w.size);
-        func(color, range, full_window);
+        UI_vertex v1 = v0;
+        v1.position = vec3(range.x + range.z, range.y, 0.5f);
+        v1.tex_coord = vec2(tex.x + tex.z, tex.y);
+
+        UI_vertex v2 = v0;
+        v2.position = vec3(range.x, range.y + range.w, 0.5f);
+        v2.tex_coord = vec2(tex.x, tex.y + tex.w);
+        
+        UI_vertex v3 = v0;
+        v3.position = vec3(range.xy() + range.zw(), 0.5f);
+        v3.tex_coord = vec2(tex.x + tex.z, tex.y + tex.w);
+
+        v.push_back(v0);
+        v.push_back(v1);
+        v.push_back(v3);
+        v.push_back(v0);
+        v.push_back(v3);
+        v.push_back(v2);
+    };
+
+    for(uint32_t entity : collectors[3].entities) {
+        Window_widget& w = ecs.get_component<Window_widget>(entity);
+        Widget& widget = ecs.get_component<Widget>(entity);
+
+        vec4 color;
+        ivec4 range;
+        if(widget.open) {
+            // panel
+            color = vec4(0.25f, 0.25f, 0.25f, 0.1f);
+            range = ivec4(w.position, w.size);
+            insert_flat(color, range, full_window);
+        }
 
         // top
 
-        color = vec4(color.xyz(), 1.0f);
+        color = vec4(1.0f, 0.25f, 0.25f, 1.0f);
         range = vec4(w.position.x, w.position.y + w.size.y - w.bar_size, w.size.x, w.bar_size);
-        func(color, range, full_window);
+        insert_flat(color, range, full_window);
 
-        // size change icon
-        
-        range = vec4(w.position.x + w.size.x - 16, w.position.y, 16, 16);
-        func(color, range, full_window);
 
+        // expand icon
+        uint32_t offset_x = w.bar_size / 2 - 10 / 2;
+        uint32_t offset_y = w.bar_size / 2 + 10 / 2;
+        vec4 texture_range;
+        if(widget.open) texture_range = vec4(15, 0, 5, 5);
+        else texture_range = vec4(10, 0, 5, 5);
+
+        ivec2 pos = w.position + ivec2(offset_x, w.size.y - offset_y);
+        range = ivec4(pos, 10, 10);
+
+        insert_tex(texture_range, range, full_window);
+
+
+        // text
         if(ecs.has_component<Text>(entity)) {
             Text& t = ecs.get_component<Text>(entity);
 
             std::vector<UI_vertex> vvv = t.vertices;
 
-            ivec2 pos = w.position + ivec2(2, w.size.y - w.bar_size / 2 - t.size.y / 2);
+            ivec2 pos = w.position + ivec2(offset_x * 2 + 10, w.size.y - w.bar_size / 2 - t.size.y / 2);
 
             for(UI_vertex& vv : vvv) {
                 vv.position += vec3(pos, 0);
@@ -681,7 +835,7 @@ void GUI_system::create_mesh() {
         ivec4 range = ivec4(w.position, w.size);
         vec4 color_a = vec4(color, 1.0f);
 
-        func(color_a, range, w.window);
+        insert_flat(color_a, range, w.window);
 
         if(ecs.has_component<Text>(entity)) {
             Text& t = ecs.get_component<Text>(entity);
@@ -705,7 +859,7 @@ void GUI_system::create_mesh() {
 
         vec3 color = vec3(0.25f, 0.25f, 1.0f);
 
-        if(t.selected == 0) color = vec3(0.25f, 0.25f, 0.25f);
+        if(!w.open) color = vec3(0.25f, 0.25f, 0.25f);
 
         //if(b.click) color = color * 0.5f + 0.5f;
         //else if(b.hovered) color = color * 0.75f + 0.25f;
@@ -756,23 +910,23 @@ void GUI_system::create_mesh() {
         Widget& w = ecs.get_component<Widget>(entity);
         Panel& p = ecs.get_component<Panel>(entity);
 
-        vec4 color = vec4(0.0f, 1.0f, 1.0f, 1.0f);
+        vec4 color = vec4(1.0f, 0.25f, 1.0f, 1.0f);
 
         // left
         ivec4 range = ivec4(w.position.x - p.inner_border - p.line_width, w.position.y - p.inner_border - p.line_width, p.line_width, w.size.y + (p.inner_border + p.line_width) * 2);
-        func(color, range, w.window);
+        insert_flat(color, range, w.window);
         
         // bottom
         range = ivec4(w.position.x - p.inner_border - p.line_width, w.position.y - p.inner_border - p.line_width, w.size.x + (p.inner_border + p.line_width) * 2, p.line_width);
-        func(color, range, w.window);
+        insert_flat(color, range, w.window);
         
         // right
         range = ivec4(w.position.x + w.size.x + p.inner_border, w.position.y - p.inner_border - p.line_width, p.line_width, w.size.y + (p.inner_border + p.line_width) * 2);
-        func(color, range, w.window);
+        insert_flat(color, range, w.window);
         
         // top
         range = ivec4(w.position.x - p.inner_border - p.line_width, w.position.y + w.size.y + p.inner_border, w.size.x + (p.inner_border + p.line_width) * 2, p.line_width);
-        func(color, range, w.window);
+        insert_flat(color, range, w.window);
     }
     
     for(uint32_t entity : collectors[collectors.size() - 1].entities) {
@@ -781,7 +935,7 @@ void GUI_system::create_mesh() {
         
         vec4 color = vec4(1.0f, 0.0f, 1.0f, 0.25f);
         ivec4 range = ivec4(w.position, w.size);
-        func(color, range, w.window);
+        insert_flat(color, range, w.window);
 
         std::vector<UI_vertex> vvv = t.vertices;
 
@@ -850,6 +1004,8 @@ void GUI_system::add_window(ivec2 position, ivec2 size, std::string label) {
     widget.position = position;
     widget.window = ivec4(position, size.x + position.x, size.y + position.y);
     widget.child_offset = ivec2(0, size.y);
+    widget.toggle_parent = true;
+    widget.open = true;
 
     ecs.insert_component(entity, widget);
     ecs.insert_component(entity, window);
@@ -936,7 +1092,7 @@ void GUI_system::parent(uint32_t parent, uint32_t child) {
     wp.children.push_back(child);
     wc.parent = parent;
 
-    if(!wp.toggle || wp.toggle_parent) wc.toggle = false;
+    if(!wp.toggle || (wp.toggle_parent && !wp.open)) wc.toggle = false;
 }
 
 void GUI_system::add_button(ivec2 size, std::function<void()> callback, std::string label) {
@@ -975,6 +1131,10 @@ void GUI_system::add_tab(ivec2 size, std::string label) {
     widget.child_offset = ivec2(0, -size.y);
     widget.toggle_parent = true;
     widget.border = ivec4(2);
+
+    if(num_children<Tab>(current_entity) == 0) {
+        widget.open = true;
+    }
 
     if(label.size()) {
         Text text;

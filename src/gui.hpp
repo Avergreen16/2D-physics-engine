@@ -12,6 +12,7 @@ enum widget_constraint{WC_BOTTOM, WC_CENTER, WC_TOP, WC_NONE};
 std::string message_callback();
 std::string null_callback();
 void button_callback();
+std::string fps_callback();
 
 struct UI_vertex {
     vec3 position;
@@ -111,6 +112,7 @@ struct Widget {
 
     bool toggle = true;
     bool toggle_parent = false;
+    bool open = false;
 };
 
 struct Text {
@@ -144,7 +146,6 @@ struct Window_widget {
 
 struct Tab {
     ivec2 size;
-    bool selected = false;
 };
 
 struct Panel {
@@ -153,13 +154,17 @@ struct Panel {
     uint32_t outer_border;
 };
 
+enum cursor_mode{CURSOR_CLICK, CURSOR_RESIZE_T, CURSOR_RESIZE_TR, CURSOR_RESIZE_R, CURSOR_RESIZE_BR, CURSOR_RESIZE_B, CURSOR_RESIZE_BL, CURSOR_RESIZE_L, CURSOR_RESIZE_TL};
+
 struct GUI_system : System {
     Font font; 
     
     bool remesh = true;
     uint32_t selected_widget = 0xFFFFFFFF;
+    bool selected = false;
     bool resize = false;
     bool cursor_captured = false;
+    cursor_mode cursor_mode = CURSOR_CLICK;
 
     std::shared_ptr<Vertices> vertices = std::shared_ptr<Vertices>(new Vertices);
 
@@ -216,6 +221,21 @@ struct GUI_system : System {
     void add_button(ivec2 size, std::function<void()> callback, std::string label);
     void add_tab(ivec2 size, std::string label);
     void add_panel(uint32_t line_width, uint32_t inner_border, uint32_t outer_border);
+
+    template<typename Type>
+    uint32_t num_children(uint32_t parent) {
+        uint32_t num = 0;
+
+        Widget& parent_widget = ecs.get_component<Widget>(parent);
+
+        for(uint32_t child : parent_widget.children) {
+            if(ecs.has_component<Type>(child)) {
+                ++num;
+            }
+        }
+
+        return num;
+    }
 
     void parent(uint32_t parent, uint32_t child);
     void widget_return(int32_t v = 1);

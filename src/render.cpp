@@ -298,7 +298,7 @@ void Render_system::call() {
 
     marker_points.clear();
 
-    for(auto& [k, d] : ps.collision_table) {
+    /*for(auto& [k, d] : ps.collision_table) {
         for(Collision_data& c : d) {
             Transform& ta = ecs.get_component<Transform>(c.a);
             vec2 point_a = ta.orientation * c.pa + ta.position;
@@ -315,7 +315,7 @@ void Render_system::call() {
             marker_points.push_back(point_a);
             marker_points.push_back(point_b);
         }
-    }
+    }*/
 
     for(uint32_t camera : collectors[0].entities) {
         Camera& camera_camera = ecs.get_component<Camera>(camera);
@@ -366,20 +366,71 @@ void Render_system::call() {
 
 void Render_system::render_cursor() {
     Input_system& input_system = ecs.get_system<Input_system>();
+    GUI_system& gui_system = ecs.get_system<GUI_system>();
 
-    vec2 size = {10, 16};
-    vec4 tex_range = {0, 0, 5, 8};
+    ivec2 size;
+    ivec4 tex_range;
+    ivec2 rel_pos;
+
+    switch(gui_system.cursor_mode) {
+        case CURSOR_CLICK: 
+            size = {10, 16};
+            tex_range = {0, 0, 5, 8};
+            rel_pos = {0, 0};
+            break;
+        case CURSOR_RESIZE_T: 
+            size = {10, 18};
+            tex_range = {0, 8, 5, 9};
+            rel_pos = {-5, 9};
+            break;
+        case CURSOR_RESIZE_TR: 
+            size = {14, 14};
+            tex_range = {0, 22, 7, 7};
+            rel_pos = {-7, 7};
+            break;
+        case CURSOR_RESIZE_R: 
+            size = {18, 10};
+            tex_range = {0, 17, 9, 5};
+            rel_pos = {-9, 5};
+            break;
+        case CURSOR_RESIZE_BR: 
+            size = {14, 14};
+            tex_range = {0, 29, 7, 7};
+            rel_pos = {-7, 7}; 
+            break;
+        case CURSOR_RESIZE_B: 
+            size = {10, 18};
+            tex_range = {0, 8, 5, 9};
+            rel_pos = {-5, 9};
+            break;
+        case CURSOR_RESIZE_BL: 
+            size = {14, 14};
+            tex_range = {0, 22, 7, 7};
+            rel_pos = {-7, 7};
+            break;
+        case CURSOR_RESIZE_L: 
+            size = {18, 10};
+            tex_range = {0, 17, 9, 5};
+            rel_pos = {-9, 5};
+            break;
+        case CURSOR_RESIZE_TL:
+            size = {14, 14};
+            tex_range = {0, 29, 7, 7};
+            rel_pos = {-7, 7}; 
+            break;
+    }
+    
     vec2 pos = input_system.cursor_pos;
 
     std::vector<UI_vertex> v = {
         UI_vertex({0, -size.y, 0.5}, tex_range.xy()),
-        UI_vertex({size.x, -size.y, 0.5}, tex_range.xy() + vec2(tex_range.z, 0)),
-        UI_vertex({0, 0, 0.5}, tex_range.xy() + vec2(0, tex_range.w)),
-        UI_vertex({size.x, 0, 0.5}, tex_range.xy() + vec2(tex_range.z, tex_range.w)),
+        UI_vertex({size.x, -size.y, 0.5}, tex_range.xy() + ivec2(tex_range.z, 0)),
+        UI_vertex({0, 0, 0.5}, tex_range.xy() + ivec2(0, tex_range.w)),
+        UI_vertex({size.x, 0, 0.5}, tex_range.xy() + ivec2(tex_range.z, tex_range.w)),
     };
 
     for(UI_vertex& vv : v) {
-        vv.position += vec3(pos, 0.0f);
+        vv.position += vec3(pos + vec2(rel_pos), 0.0f);
     }
 
     v = {v[0], v[1], v[3], v[0], v[3], v[2]};

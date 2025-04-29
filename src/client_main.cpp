@@ -148,7 +148,8 @@ int main() {
     gui_system.add_text("Hello TAB3!");
     gui_system.add_text(message_callback);
     gui_system.add_button(ivec2(100, 30), button_callback, "BUTTON");
-    gui_system.widget_return(-1);
+    gui_system.widget_return();
+    gui_system.add_text(fps_callback);
 
 
 
