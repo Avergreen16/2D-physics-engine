@@ -418,6 +418,11 @@ void Render_system::render_cursor() {
             tex_range = {0, 29, 7, 7};
             rel_pos = {-7, 7}; 
             break;
+        case CURSOR_TEXT:
+            size = {6, 14};
+            tex_range = {0, 36, 3, 7};
+            rel_pos = {-3, 7}; 
+            break;
     }
     
     vec2 pos = input_system.cursor_pos;

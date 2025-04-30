@@ -43,9 +43,13 @@ void Input_system::call() {
 
     std::set<GLenum> pressed_buttons;
     std::set<GLenum> released_buttons;
+    std::set<GLenum> repeat_buttons;
     cursor_delta = glm::vec2(0.0f);
     scroll_delta = 0.0f;
     click = false;
+    char_delta = "";
+    backspace = false;
+    arrow_delta = 0;
 
     uint32_t camera = *collectors[0].entities.begin();
     Camera& cc = ecs.get_component<Camera>(camera);
@@ -69,6 +73,9 @@ void Input_system::call() {
                     released_buttons.emplace(k.key);
                     key_map[k.key] = false;
                 }
+                if(k.action == GLFW_REPEAT) {
+                    repeat_buttons.emplace(k.key);
+                }
 
                 break;
             }
@@ -82,6 +89,9 @@ void Input_system::call() {
                 if(m.action == GLFW_RELEASE) {
                     released_buttons.emplace(m.button);
                     key_map[m.button] = false;
+                }
+                if(m.action == GLFW_REPEAT) {
+                    repeat_buttons.emplace(m.button);
                 }
 
                 break;
@@ -97,6 +107,13 @@ void Input_system::call() {
                 glm::vec2 new_cursor_pos = {c.xpos, core.window.screen_size.y - c.ypos - 1};
                 cursor_delta += new_cursor_pos - cursor_pos;
                 cursor_pos = new_cursor_pos;
+
+                break;
+            } case 4: {
+                Text_event& t = std::get<Text_event>(e);
+
+                char c = t.codepoint;
+                char_delta += c;
 
                 break;
             }
@@ -287,6 +304,22 @@ void Input_system::call() {
                     translate = true;
                 }
             }
+        } else if(key == GLFW_KEY_BACKSPACE) {
+            backspace = true;
+        } else if(key == GLFW_KEY_LEFT) {
+            --arrow_delta;
+        } else if(key == GLFW_KEY_RIGHT) {
+            ++arrow_delta;
+        }
+    }
+    
+    for(GLenum key : repeat_buttons) {
+        if(key == GLFW_KEY_BACKSPACE) {
+            backspace = true;
+        } else if(key == GLFW_KEY_LEFT) {
+            --arrow_delta;
+        } else if(key == GLFW_KEY_RIGHT) {
+            ++arrow_delta;
         }
     }
 

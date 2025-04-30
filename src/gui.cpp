@@ -224,16 +224,19 @@ int from_base(std::string num, int base) {
     return ret;
 }
 
-std::vector<UI_vertex> GUI_system::create_mesh(std::string string, uint32_t text_size, ivec2& size, bool size_mode) {
+std::vector<UI_vertex> GUI_system::create_mesh(std::string string, uint32_t text_size, ivec2& size, vec3 start_color, bool size_mode) {
     std::vector<UI_vertex> vertices;
 
-    glm::vec2 p = {-1 * int(text_size), -11 * int(text_size)};
+    glm::vec2 p;
+    if(size_mode) p = {-1 * int(text_size), -11 * int(text_size)};
+    else p = {-1 * int(text_size), 2 * int(text_size)};
 
     bool flag_italic = false;
     bool flag_bold = false;
-    glm::vec3 color = {1.0, 1.0, 1.0};
+    glm::vec3 color = start_color;
 
     int skip = 0;
+    uint32_t num_lines = 1;
     
     for(int i = 0; i < string.size(); ++i) {
         if(skip > 0) {
@@ -278,6 +281,7 @@ std::vector<UI_vertex> GUI_system::create_mesh(std::string string, uint32_t text
                 } else if(c1 == 'n') {
                     p.x = 0;
                     p.y -= 13 * text_size;
+                    ++num_lines;
                     skip = 1;
                     continue;
                 }
@@ -285,6 +289,7 @@ std::vector<UI_vertex> GUI_system::create_mesh(std::string string, uint32_t text
         } else if(c == '\n') {
             p.x = 0;
             p.y -= 13 * text_size;
+            ++num_lines;
             continue;
         }
 
@@ -321,19 +326,18 @@ std::vector<UI_vertex> GUI_system::create_mesh(std::string string, uint32_t text
     } else {
         ivec2 max_v = ivec2(0);
 
+        int delta_y = num_lines * 13 * text_size;
+        int delta_y2 = (num_lines - 1) * 13 * text_size;
+
         for(UI_vertex& v : vertices) {
             ivec2 pos = v.position.xy();
 
             max_v.x = glm::max(max_v.x, pos.x);
-            max_v.y = glm::min(max_v.y, pos.y);
-        }
-
-        for(UI_vertex& v : vertices) {
+            v.position.y += delta_y2;
             v.position.z = 0.5f;
-            v.position.y -= max_v.y;
         }
 
-        size = abs(max_v);
+        size = ivec2(max_v.x, delta_y);
     }
 
     return vertices;
@@ -388,7 +392,7 @@ ivec2 GUI_system::recursive_position(uint32_t entity, ivec4 window, ivec2 positi
     } else {
         if(widget.parent != 0xFFFFFFFF) {
             Widget& parent_widget = ecs.get_component<Widget>(widget.parent);
-            pos = ivec2(parent_widget.position.x, position.y + widget.child_offset.y - widget.border.y - widget.border.w);
+            pos = parent_widget.position + parent_widget.child_offset + widget.child_offset;
         }
     }
     
@@ -458,6 +462,12 @@ bool includes(ivec4 range, ivec2 point) {
     return (point.x > range.x && point.x < range.x + range.z && point.y > range.y && point.y < range.y + range.w);
 }
 
+ivec4 clip(ivec4 range_a, ivec4 range_b) {
+    ivec4 range_c = ivec4(glm::max(range_a.x, range_b.x), glm::max(range_a.y, range_b.y), glm::min(range_a.z, range_b.z), glm::min(range_a.w, range_b.w));
+
+    return range_c;
+}
+
 void GUI_system::call() {
     Input_system& input_system = ecs.get_system<Input_system>();
     cursor_captured = false;
@@ -516,6 +526,19 @@ void GUI_system::call() {
                         hovered_widget = entity;
                         cursor_captured = true;
                     }
+                }
+            }
+            
+            for(uint32_t entity : collectors[7].entities) {
+                Widget& w = ecs.get_component<Widget>(entity);
+                Text& t = ecs.get_component<Text>(entity);
+                Text_input& ti = ecs.get_component<Text_input>(entity);
+
+                ivec4 range = ivec4(w.position, ti.width, 13);
+                
+                if(includes(range, input_system.cursor_pos)) {
+                    hovered_widget = entity;
+                    cursor_mode = CURSOR_TEXT;
                 }
             }
         }
@@ -640,6 +663,49 @@ void GUI_system::call() {
             selected_widget = 0xFFFFFFFF;
         }
     } else selected_widget = 0xFFFFFFFF;
+
+    for(uint32_t entity : collectors[7].entities) {
+        if(entity == selected_widget) {
+            if(input_system.key_map[GLFW_MOUSE_BUTTON_LEFT]) {
+                Widget& w = ecs.get_component<Widget>(entity);
+                Text& t = ecs.get_component<Text>(entity);
+                Text_input& ti = ecs.get_component<Text_input>(entity);
+                
+                int cursor_x = input_system.cursor_pos.x;
+                int text_pos = w.position.x;
+                int text_rel_pos = cursor_x - text_pos;
+                text_rel_pos = clamp(text_rel_pos, 0, int(ti.width) - 1);
+
+                uint32_t num = 0;
+                int32_t pix = 0;
+                while(true) {
+                    char character = t.string[num];
+                    uint32_t character_width = font.glyph_map[character].stride;
+                    if(pix == 0) character_width = font.glyph_map[character].size[0];
+
+                    int32_t prev_pix = pix;
+                    pix += character_width;
+                    if(pix >= text_rel_pos && prev_pix < text_rel_pos) {
+                        text_input_widget = entity;
+
+                        if(abs(pix - text_rel_pos) > abs(prev_pix - text_rel_pos)) ti.cursor_pos = num - 1;
+                        else ti.cursor_pos = num;
+
+                        remesh = true;
+                        break;
+                    }
+                    
+                    ++num;
+                    if(num >= t.string.size()) {
+                        text_input_widget = entity;
+                        ti.cursor_pos = num - 1;
+                        remesh = true;
+                        break;
+                    }
+                }
+            }
+        }
+    }
     
     for(uint32_t entity : collectors[4].entities) {
         Widget& w = ecs.get_component<Widget>(entity);
@@ -676,6 +742,37 @@ void GUI_system::call() {
         }
     }
 
+    if(text_input_widget != 0xFFFFFFFF) {
+        uint32_t entity = text_input_widget;
+
+        Widget& w = ecs.get_component<Widget>(entity);
+        Text& t = ecs.get_component<Text>(entity);
+        Text_input& ti = ecs.get_component<Text_input>(entity);
+
+        if(input_system.char_delta.size()) {
+            t.string.insert(t.string.begin() + (ti.cursor_pos + 1), input_system.char_delta.begin(), input_system.char_delta.end());
+            std::cout << "INSERTING DELTA: " << input_system.char_delta << "\n";
+            ti.cursor_pos += input_system.char_delta.size();
+            remesh = true;
+            t.remesh = true;
+        }
+
+        if(input_system.backspace) {
+            if(ti.cursor_pos != -1) {
+                t.string.erase(t.string.begin() + ti.cursor_pos);
+                --ti.cursor_pos;
+                remesh = true;
+                t.remesh = true;
+            }
+        }
+
+        if(input_system.arrow_delta != 0) {
+            ti.cursor_pos += input_system.arrow_delta;
+            ti.cursor_pos = clamp(ti.cursor_pos, -1, int(t.string.size()) - 1);
+            remesh = true;
+        }
+    }
+
     for(uint32_t entity : collectors[2].entities) {
         Text& t = ecs.get_component<Text>(entity);
         Widget& w = ecs.get_component<Widget>(entity);
@@ -684,17 +781,20 @@ void GUI_system::call() {
 
         if(s == "") s = t.string;
 
-        if(s != t.string || t.vertices.size() == 0) {
+        if(s != t.string || t.vertices.size() == 0 || t.remesh) {
             t.string = s;
             ivec2 size;
-            t.vertices = create_mesh(t.string, t.text_size, size, t.size_mode);
+            t.vertices = create_mesh(t.string, t.text_size, size, t.start_color, t.size_mode);
             t.size = size;
             
             remesh = true;
 
             if(t.is_main) w.size = size;
+            t.remesh = false;
         }
     }
+
+
 
     std::vector<uint32_t> roots;
 
@@ -866,6 +966,7 @@ void GUI_system::create_mesh() {
         
         ivec4 range = ivec4(w.position, w.size);
         uint32_t pinch = 6;
+        if(w.sibling_mode == SM_DOWN) pinch = 0;
 
         UI_vertex v0;
         v0.color = vec4(color, 1.0f);
@@ -927,6 +1028,45 @@ void GUI_system::create_mesh() {
         // top
         range = ivec4(w.position.x - p.inner_border - p.line_width, w.position.y + w.size.y + p.inner_border, w.size.x + (p.inner_border + p.line_width) * 2, p.line_width);
         insert_flat(color, range, w.window);
+    }
+    
+    for(uint32_t entity : collectors[7].entities) {
+        Widget& w = ecs.get_component<Widget>(entity);
+        Text& t = ecs.get_component<Text>(entity);
+        Text_input& ti = ecs.get_component<Text_input>(entity);
+
+        vec4 color = vec4(1.0f);
+        ivec4 range = ivec4(w.position, ti.width, 13);
+        insert_flat(color, range, w.window);
+
+        ivec4 new_window = ivec4(range.xy(), range.xy() + range.zw());
+
+        new_window = clip(w.window, new_window);
+        
+        std::vector<UI_vertex> vvv = t.vertices;
+        ivec2 pos = w.position;
+        for(UI_vertex& vv : vvv) {
+            vv.position += vec3(pos, 0);
+            vv.range = new_window;
+        }
+        v.insert(v.end(), vvv.begin(), vvv.end());
+
+        if(entity == text_input_widget) {
+            uint32_t num = -1;
+            int pix = w.position.x;
+            while(true) {
+                if(num == ti.cursor_pos) {
+                    ivec4 cursor_range = ivec4(pix, w.position.y + 1, 1, 9);
+                    insert_flat(vec4(0.0f, 0.0f, 0.0f, 1.0f), cursor_range, new_window);
+                    break;
+                }
+                ++num;
+                char character = t.string[num];
+                uint32_t character_width = font.glyph_map[character].stride;
+                if(num == 0) character_width = font.glyph_map[character].size[0];
+                pix += character_width;
+            }
+        }
     }
     
     for(uint32_t entity : collectors[collectors.size() - 1].entities) {
@@ -1118,19 +1258,29 @@ void GUI_system::add_button(ivec2 size, std::function<void()> callback, std::str
     parent(current_entity, entity);
 }
 
-void GUI_system::add_tab(ivec2 size, std::string label) {
+void GUI_system::add_tab(ivec2 size, std::string label, bool side_tab) {
     uint32_t entity = ecs.insert_entity();
 
     Tab tab;
     Widget widget;
 
-    tab.size = size;
-    widget.size = size;
-    widget.sibling_mode = SM_LEFT;
-    widget.child_mode = CM_RETURN;
-    widget.child_offset = ivec2(0, -size.y);
-    widget.toggle_parent = true;
-    widget.border = ivec4(2);
+    if(side_tab) {
+        tab.size = size;
+        widget.size = size;
+        widget.sibling_mode = SM_DOWN;
+        widget.child_mode = CM_RETURN;
+        widget.toggle_parent = true;
+        widget.border = ivec4(2);
+        widget.child_offset = ivec2(size.x + widget.border.x + widget.border.z, 0);
+    } else {
+        tab.size = size;
+        widget.size = size;
+        widget.sibling_mode = SM_LEFT;
+        widget.child_mode = CM_RETURN;
+        widget.toggle_parent = true;
+        widget.border = ivec4(2);
+        widget.child_offset = ivec2(0, -size.y - widget.border.y - widget.border.w);
+    }
 
     if(num_children<Tab>(current_entity) == 0) {
         widget.open = true;
@@ -1169,4 +1319,24 @@ void GUI_system::add_panel(uint32_t line_width, uint32_t inner_border, uint32_t 
 
     parent(current_entity, entity);
     current_entity = entity;
+}
+
+void GUI_system::add_input(uint32_t width, std::string start_text) {
+    uint32_t entity = ecs.insert_entity();
+
+    Widget widget;
+    Text t;
+    Text_input ti;
+    t.string = start_text;
+    t.callback = null_callback;
+    t.start_color = vec3(0.0f);
+    widget.border = ivec4(2);
+    widget.size = ivec2(width, 13);
+    ti.width = width;
+
+    ecs.insert_component(entity, widget);
+    ecs.insert_component(entity, t);
+    ecs.insert_component(entity, ti);
+
+    parent(current_entity, entity);
 }

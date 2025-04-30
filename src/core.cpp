@@ -64,7 +64,7 @@ void Window::init_callbacks() {
     glfwSetCursorPosCallback(window, cursor_pos_callback);
     glfwSetScrollCallback(window, scroll_callback);
     glfwSetMouseButtonCallback(window, mouse_button_callback);
-    //glfwSetCharCallback(window, character_callback);
+    glfwSetCharCallback(window, character_callback);
 }
 
 double Core::get_delta_time() {

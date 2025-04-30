@@ -92,6 +92,7 @@ int main() {
     ecs.register_component<Button>();
     ecs.register_component<Tab>();
     ecs.register_component<Panel>();
+    ecs.register_component<Text_input>();
 
     ecs.register_system<Input_system>();
     ecs.register_system<GUI_system>();
@@ -137,21 +138,20 @@ int main() {
     GUI_system& gui_system = ecs.get_system<GUI_system>();
 
     gui_system.add_window(ivec2(200, 200), ivec2(600, 400), "Test Window");
-    gui_system.add_tab(ivec2(60, 15), "TAB");
+    gui_system.add_tab(ivec2(60, 15), "TAB", true);
     gui_system.add_text("Hello TAB!");
     gui_system.widget_return(-1);
-    gui_system.add_tab(ivec2(60, 15), "TAB2");
+    gui_system.add_tab(ivec2(60, 15), "TAB2", true);
     gui_system.add_text("Hello TAB2!");
     gui_system.widget_return(-1);
-    gui_system.add_tab(ivec2(60, 15), "TAB3");
+    gui_system.add_tab(ivec2(60, 15), "TAB3", true);
     gui_system.add_panel(1, 2, 2);
     gui_system.add_text("Hello TAB3!");
     gui_system.add_text(message_callback);
     gui_system.add_button(ivec2(100, 30), button_callback, "BUTTON");
     gui_system.widget_return();
     gui_system.add_text(fps_callback);
-
-
+    gui_system.add_input(300, "TEXT :3 :3 :3 :3 :3 :3 :3 :3 :3 :3 :3 :3 :3 :3 :3 :3 :3 :3 :3 :3 :3 :3 :3 :3");
 
     glfwSetInputMode(core.window.window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
@@ -159,10 +159,10 @@ int main() {
 
     while(core.game_running) {
         float t = time.get_elapsed_time(true);
-        if(t < 0.016) {
+        /*if(t < 0.016) {
             std::this_thread::yield();
             std::this_thread::sleep_for(std::chrono::milliseconds(int(1000 * (0.016f - t))));
-        }
+        }*/
 
         core.random();
         

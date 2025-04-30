@@ -7,8 +7,6 @@
 
 extern std::string integers;
 
-enum widget_constraint{WC_BOTTOM, WC_CENTER, WC_TOP, WC_NONE};
-
 std::string message_callback();
 std::string null_callback();
 void button_callback();
@@ -122,6 +120,9 @@ struct Text {
 
     ivec2 size = ivec2(0.0f);
     bool size_mode = false;
+    vec3 start_color = vec3(1.0f);
+
+    bool remesh = false;
 
     std::vector<UI_vertex> vertices;
 
@@ -154,16 +155,25 @@ struct Panel {
     uint32_t outer_border;
 };
 
-enum cursor_mode{CURSOR_CLICK, CURSOR_RESIZE_T, CURSOR_RESIZE_TR, CURSOR_RESIZE_R, CURSOR_RESIZE_BR, CURSOR_RESIZE_B, CURSOR_RESIZE_BL, CURSOR_RESIZE_L, CURSOR_RESIZE_TL};
+struct Text_input {
+    bool selected = false;
+    uint32_t width = 0;
+    int cursor_pos = -1;
+    int offset = 0;
+};
+
+enum cursor_mode{CURSOR_CLICK, CURSOR_RESIZE_T, CURSOR_RESIZE_TR, CURSOR_RESIZE_R, CURSOR_RESIZE_BR, CURSOR_RESIZE_B, CURSOR_RESIZE_BL, CURSOR_RESIZE_L, CURSOR_RESIZE_TL, CURSOR_TEXT};
 
 struct GUI_system : System {
     Font font; 
     
     bool remesh = true;
     uint32_t selected_widget = 0xFFFFFFFF;
+    uint32_t text_input_widget = 0xFFFFFFFF;
     bool selected = false;
     bool resize = false;
     bool cursor_captured = false;
+    bool keys_captured = false;
     cursor_mode cursor_mode = CURSOR_CLICK;
 
     std::shared_ptr<Vertices> vertices = std::shared_ptr<Vertices>(new Vertices);
@@ -196,11 +206,14 @@ struct GUI_system : System {
         s = ecs.update_signature<Panel>();
         collectors.push_back(Collector(s));
         
+        s = ecs.update_signature<Text_input>();
+        collectors.push_back(Collector(s));
+        
         s = ecs.update_signature<Text>();
         collectors.push_back(Collector(s));
     }
 
-    std::vector<UI_vertex> create_mesh(std::string s, uint32_t text_size, ivec2& size, bool size_mode = false);
+    std::vector<UI_vertex> create_mesh(std::string s, uint32_t text_size, ivec2& size, vec3 start_color, bool size_mode = false);
     
     void create_mesh();
 
@@ -219,8 +232,9 @@ struct GUI_system : System {
     void add_text(std::function<std::string()> callback);
     void add_text(std::string text);
     void add_button(ivec2 size, std::function<void()> callback, std::string label);
-    void add_tab(ivec2 size, std::string label);
+    void add_tab(ivec2 size, std::string label, bool side_tab = false);
     void add_panel(uint32_t line_width, uint32_t inner_border, uint32_t outer_border);
+    void add_input(uint32_t width, std::string start_text);
 
     template<typename Type>
     uint32_t num_children(uint32_t parent) {
