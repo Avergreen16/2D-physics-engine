@@ -473,6 +473,8 @@ void Render_system::render_cursor() {
 }
 
 void Render_system::render_visualizer(uint32_t camera) {
+    glDisable(GL_CULL_FACE);
+    glDisable(GL_DEPTH_TEST);
     Input_system& is = ecs.get_system<Input_system>();
 
     Transform& ct = ecs.get_component<Transform>(camera);
@@ -489,14 +491,47 @@ void Render_system::render_visualizer(uint32_t camera) {
     float axis_size = 256.0f;
     vec2 white_coord = vec2(7, 2) / vec2(texture->size.xy());
     
+    Collider& ca = ecs.get_component<Collider>(visualizer.a);
+    Collider& cb = ecs.get_component<Collider>(visualizer.b);
+    std::vector<Texture_vertex> circle;
+    float radius = ca.radius.x + cb.radius.x;
+    int num_vertices = 16;
+    for(int i = 0; i < num_vertices; ++i) {
+        float angle = float(i) / num_vertices * M_PI * 2.0f;
+        Texture_vertex va;
+        va.color = vec4(1.0f);
+        va.pos = vec3(vec2(cos(angle), sin(angle)) * radius, 0.5f);
+        va.tex = white_coord;
+
+        circle.push_back(va);
+    }
+    std::vector<Texture_vertex> new_circle;
+    for(int i = 0; i < num_vertices; ++i) {
+        new_circle.push_back(circle[i]);
+        new_circle.push_back(circle[(i + 1) % num_vertices]);
+    }
+    circle = new_circle;
+    
     std::vector<Texture_vertex> vertices_tri;
     std::vector<Texture_vertex> vertices_line = {
-        Texture_vertex(vec3(axis_size, 0, 0.5), white_coord, vec3(1.0f, 0.25f, 0.25f)),
-        Texture_vertex(vec3(-axis_size, 0, 0.5), white_coord, vec3(1.0f, 0.25f, 0.25f)),
-        Texture_vertex(vec3(0, axis_size, 0.5), white_coord, vec3(0.25f, 1.0f, 0.25f)),
-        Texture_vertex(vec3(0, -axis_size, 0.5), white_coord, vec3(0.25f, 1.0f, 0.25f)),
+        Texture_vertex(vec3(axis_size, 0, 0.5), white_coord, vec4(1.0f, 0.25f, 0.25f, 1.0f)),
+        Texture_vertex(vec3(-axis_size, 0, 0.5), white_coord, vec4(1.0f, 0.25f, 0.25f, 1.0f)),
+        Texture_vertex(vec3(0, axis_size, 0.5), white_coord, vec4(0.25f, 1.0f, 0.25f, 1.0f)),
+        Texture_vertex(vec3(0, -axis_size, 0.5), white_coord, vec4(0.25f, 1.0f, 0.25f, 1.0f)),
     };
-    
+
+    for(auto p : visualizer.lines) {
+        for(auto v : p) {
+            vertices_line.push_back(Texture_vertex(vec3(v.pos, 0.5), white_coord, v.color));
+        }
+    }
+
+    for(auto p : visualizer.triangles) {
+        for(auto v : p) {
+            vertices_tri.push_back(Texture_vertex(vec3(v.pos, 0.5), white_coord, v.color));
+        }
+    }
+
     vec2 size_p = {10, 10};
     vec4 tex_range = {5, 0, 5, 5};
 
@@ -523,6 +558,15 @@ void Render_system::render_visualizer(uint32_t camera) {
         for(Texture_vertex& t : v) {
             vertices_tri.push_back(t);
         }
+
+        if(p.color != vec4(0.25f, 1.0f, 0.25f, 1.0f) && p.color != vec4(0.25f, 0.25f, 1.0f, 1.0f)) {
+            for(Texture_vertex v : circle) {
+                v.color = p.color;
+                v.pos += vec3(p.pos, 0.0f);
+
+                vertices_line.push_back(v);
+            }
+        }
     }
 
     // lines
@@ -532,7 +576,7 @@ void Render_system::render_visualizer(uint32_t camera) {
 
     vv->add_vertex_attribute(0, 3, GL_FLOAT, false, sizeof(Texture_vertex), 0);
     vv->add_vertex_attribute(1, 2, GL_FLOAT, false, sizeof(Texture_vertex), 3 * sizeof(float));
-    vv->add_vertex_attribute(2, 3, GL_FLOAT, false, sizeof(Texture_vertex), 5 * sizeof(float));
+    vv->add_vertex_attribute(2, 4, GL_FLOAT, false, sizeof(Texture_vertex), 5 * sizeof(float));
 
     core.shaders["texture_shader"]->use();
     texture->bind(0);
@@ -550,7 +594,7 @@ void Render_system::render_visualizer(uint32_t camera) {
 
     vv->add_vertex_attribute(0, 3, GL_FLOAT, false, sizeof(Texture_vertex), 0);
     vv->add_vertex_attribute(1, 2, GL_FLOAT, false, sizeof(Texture_vertex), 3 * sizeof(float));
-    vv->add_vertex_attribute(2, 3, GL_FLOAT, false, sizeof(Texture_vertex), 5 * sizeof(float));
+    vv->add_vertex_attribute(2, 4, GL_FLOAT, false, sizeof(Texture_vertex), 5 * sizeof(float));
 
     core.shaders["texture_shader"]->use();
     texture->bind(0);
@@ -561,4 +605,7 @@ void Render_system::render_visualizer(uint32_t camera) {
     glUniformMatrix4fv(2, 1, false, &model[0][0]);
 
     vv->draw_vertices(GL_TRIANGLES);
+
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
 }

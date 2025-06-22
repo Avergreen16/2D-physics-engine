@@ -128,16 +128,16 @@ vec2 get_gravity(vec2 pos);
 
 struct Visualizer_v {
     vec2 pos;
-    vec3 color;
+    vec4 color;
 };
 
 struct Visualizer {
-    std::vector<Visualizer_v> points = {Visualizer_v(vec2(0, 0), vec3(1.0f)), Visualizer_v(vec2(1, 0), vec3(1.0f, 0.0f, 0.0f))};
+    std::vector<Visualizer_v> points;
     std::vector<std::vector<Visualizer_v>> lines;
     std::vector<std::vector<Visualizer_v>> triangles;
     uint32_t a = 0xFFFFFFFF;
     uint32_t b = 0xFFFFFFFF;
-    uint32_t steps = 0;
+    int steps = 0;
 
     void step_collisions();
 };

@@ -102,35 +102,12 @@ int main() {
 
     Input_system& input_system = ecs.get_system<Input_system>();
     Physics_system& physics_system = ecs.get_system<Physics_system>();
-
-    vec2 planet_radius = vec2(96.0f, 128.0f);
-    physics_system.gravity_aspect = planet_radius;
-
+    
+    Transform t;
+    Collider c;
+    Mesh m;
 
     uint32_t entity = ecs.insert_entity();
-
-    Transform t;
-    t.position = vec2(0.0f);
-    t.orientation = identity<mat2>();
-
-    Collider c;
-    c.radius = planet_radius;
-    c.vertices = {
-        vec2(0.0f)
-    };
-
-    c.is_static = true;
-    
-    Mesh m;
-    create_mesh(m, {c.vertices}, c.radius);
-
-    ecs.insert_component(entity, m);
-    ecs.insert_component(entity, t);
-    ecs.insert_component(entity, c);
-
-
-
-    entity = ecs.insert_entity();
 
     Camera cc;
     cc.scale = 1.0f;
@@ -140,13 +117,62 @@ int main() {
     ecs.insert_component(entity, t);
     ecs.insert_component(entity, cc);
 
+    // square
+                            
+    entity = ecs.insert_entity();
+    visualizer.a = entity;
+    
+    t.position = vec2(2.0f, 2.0f);
+    t.orientation = mat2(rotate(float(M_PI) * core.random(), vec3(0.0f, 0.0f, 1.0f)));
+
+    vec2 size = vec2(1.0f, 0.5f);
+    c.vertices = {
+        vec2(-1, -1),
+        vec2(1, -1),
+        vec2(1, 1),
+        vec2(-1, 1)
+    };
+    for(vec2& v : c.vertices) v *= size;
+
+    c.radius = vec2(0.25f);
+    c.mass = size.x * size.y * 25.0f;
+    vec2 shift = Physics_system::calculate_inertia(c);
+    t.position += shift;
+
+    m.color = vec3(1.0f, 0.25f, 0.25f);
+    create_mesh(m, c.vertices, c.radius);
+    
+    ecs.insert_component(entity, m);
+    ecs.insert_component(entity, t);
+    ecs.insert_component(entity, c);
+
+    // triangle
+
+    entity = ecs.insert_entity();
+    visualizer.b = entity;
+    
+    t.position = vec2(2.5f, 2.75f);
+    t.orientation = mat2(rotate(float(M_PI) * core.random(), vec3(0.0f, 0.0f, 1.0f)));
+    
+    c.vertices = {
+        vec2(0.25f, 0.25f),
+        vec2(0.5f, -0.25f),
+        vec2(-0.5f, -0.25f)
+    };
+
+    c.radius = vec2(0.0f);
+    c.mass = size.x * size.y * 25.0f;
+    shift = Physics_system::calculate_inertia(c);
+    t.position += shift;
+
+    m.color = vec3(1.0f, 0.25f, 0.25f);
+    create_mesh(m, c.vertices, c.radius);
+    
+    ecs.insert_component(entity, m);
+    ecs.insert_component(entity, t);
+    ecs.insert_component(entity, c);
+
     // widgets
-
-    GUI_system& gui_system = ecs.get_system<GUI_system>();
-
-    gui_system.add_window(ivec2(20, 20), ivec2(80, 60), "Test Window");
-    gui_system.add_text(fps_callback);
-    gui_system.add_text(physics_callback);
 
     /*gui_system.add_scrollbar(10, 20);
     for(int i = 0; i < 100; ++i) {

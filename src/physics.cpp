@@ -693,7 +693,7 @@ void Physics_system::call() {
     uint32_t frames = 0;
 
     while(physics_time >= physics_step) {
-        physics_loop();
+        //physics_loop();
         physics_time -= physics_step;
         ++frames;
 
@@ -1204,7 +1204,7 @@ void Visualizer::step_collisions() {
 
     ////std::cout << "collision started\n";
 
-    uint32_t step = 0;
+    uint32_t step = -1;
 
     Simplex simplex;
 
@@ -1223,19 +1223,40 @@ void Visualizer::step_collisions() {
     bool loop = true;
 
     while(loop) {
+        ++step;
         if(step >= steps) {
             for(int i = 0; i < a_vertices.size(); ++i) {
                 vec2 a_v = a_vertices[i];
-                for(int j = i + 1; j < b_vertices.size(); ++j) {
+                for(int j = 0; j < b_vertices.size(); ++j) {
                     vec2 b_v = b_vertices[j];
 
                     vec2 diff = a_v - b_v;
-                    points.push_back(Visualizer_v(diff, vec3(1.0f)));
+
+                    vec4 color = vec4(1.0f);
+
+                    points.push_back(Visualizer_v(diff, color));
                 }   
+            }
+
+            for(Simplex_vertex v : simplex.vertices) {
+                vec4 color = vec4(0.25f, 0.25f, 1.0f, 1.0f);
+
+                points.push_back(Visualizer_v(v.m, color));
+            }
+
+            if(simplex.vertices.size() == 1) {
+                lines.push_back({Visualizer_v(simplex.vertices[0].m, vec4(1.0f, 1.0f, 0.25f, 1.0f)), Visualizer_v(simplex.vertices[0].m + direction * 0.125f, vec4(1.0f, 1.0f, 0.25f, 1.0f))});
+            } else if(simplex.vertices.size() == 2) {
+                lines.push_back({Visualizer_v(simplex.vertices[0].m, vec4(0.25f, 1.0f, 1.0f, 1.0f)), Visualizer_v(simplex.vertices[1].m, vec4(0.25f, 1.0f, 1.0f, 1.0f))});
+                vec2 avg = simplex.vertices[0].m + simplex.vertices[1].m;
+                avg /= 2.0f;
+
+                lines.push_back({Visualizer_v(avg, vec4(1.0f, 1.0f, 0.25f, 1.0f)), Visualizer_v(avg + direction * 0.125f, vec4(1.0f, 1.0f, 0.25f, 1.0f))});
+            } else if(simplex.vertices.size() == 3) {
+                triangles.push_back({Visualizer_v(simplex.vertices[0].m, vec4(0.25f, 1.0f, 1.0f, 0.5f)), Visualizer_v(simplex.vertices[1].m, vec4(0.25f, 1.0f, 1.0f, 0.5f)), Visualizer_v(simplex.vertices[2].m, vec4(0.25f, 1.0f, 1.0f, 0.5f))});
             }
             goto exit_flag;
         }
-        ++step;
 
         ++iterations;
         //if(iterations > 100) return {};
@@ -1250,10 +1271,10 @@ void Visualizer::step_collisions() {
             for(Simplex_vertex& v : simplex.vertices) {
                 vec2 difference = point_m - v.m;
 
-                //if(glm::length(difference) < limit) return {};
+                if(glm::length(difference) < limit) goto exit_return_false;
             }
 
-            //if(glm::dot(point_m, direction) < limit * 2) return {};
+            if(glm::dot(point_m, direction) < limit) goto exit_return_false;
 
             simplex.vertices.push_back(Simplex_vertex{point_m, point_a, point_b});
 
@@ -1274,11 +1295,46 @@ void Visualizer::step_collisions() {
                 iterations = 0;
 
                 while(true) {
+                    ++step;
+                    if(step >= steps) {
+                        for(int i = 0; i < a_vertices.size(); ++i) {
+                            vec2 a_v = a_vertices[i];
+                            for(int j = 0; j < b_vertices.size(); ++j) {
+                                vec2 b_v = b_vertices[j];
+
+                                vec2 diff = a_v - b_v;
+
+                                vec4 color = vec4(1.0f);
+
+                                points.push_back(Visualizer_v(diff, color));
+                            }   
+                        }
+
+                        vec2 avg = vec2(0.0f);
+
+                        for(Simplex_vertex& v : p.vertices) {
+                            avg += v.m;
+                            
+                            vec4 color = vec4(0.25f, 0.25f, 1.0f, 1.0f);
+
+                            points.push_back(Visualizer_v(v.m, color));
+                        }
+                        avg /= p.vertices.size();
+
+                        for(auto l : p.edges) {
+                            vec2 va = p.vertices[l.vertices[0]].m;
+                            vec2 vb = p.vertices[l.vertices[1]].m;
+                            
+                            triangles.push_back({Visualizer_v(va, vec4(1.0f, 1.0f, 0.25f, 0.5f)), Visualizer_v(vb, vec4(1.0f, 1.0f, 0.25f, 0.5f)), Visualizer_v(avg, vec4(1.0f, 1.0f, 0.25f, 0.5f))});
+                        }
+
+                        goto exit_flag;
+                    }
+                    
                     ++iterations;
-                    //if(iterations > 100) return {};
                     Polygon_return r = p.find_closest_face();
 
-                    //if(r.vertices.size() == 0) return {};
+                    if(r.vertices.size() == 0) goto exit_return_false;
 
                     direction = r.normal;
                     
@@ -1286,6 +1342,45 @@ void Visualizer::step_collisions() {
                     vec2 point_b = ps.support_func(b_vertices, cb.radius, -direction, tb.orientation);
 
                     vec2 point_m = point_a - point_b;
+
+                    
+                    ++step;
+                    if(step >= steps) {
+                        for(int i = 0; i < a_vertices.size(); ++i) {
+                            vec2 a_v = a_vertices[i];
+                            for(int j = 0; j < b_vertices.size(); ++j) {
+                                vec2 b_v = b_vertices[j];
+
+                                vec2 diff = a_v - b_v;
+
+                                vec4 color = vec4(1.0f);
+
+                                points.push_back(Visualizer_v(diff, color));
+                            }   
+                        }
+
+                        vec2 avg = vec2(0.0f);
+
+                        for(Simplex_vertex& v : p.vertices) {
+                            avg += v.m;
+                            
+                            vec4 color = vec4(0.25f, 0.25f, 1.0f, 1.0f);
+
+                            points.push_back(Visualizer_v(v.m, color));
+                        }
+                        avg /= p.vertices.size();
+
+                        for(auto l : p.edges) {
+                            vec2 va = p.vertices[l.vertices[0]].m;
+                            vec2 vb = p.vertices[l.vertices[1]].m;
+                            
+                            triangles.push_back({Visualizer_v(va, vec4(1.0f, 1.0f, 0.25f, 0.5f)), Visualizer_v(vb, vec4(1.0f, 1.0f, 0.25f, 0.5f)), Visualizer_v(avg, vec4(1.0f, 1.0f, 0.25f, 0.5f))});
+                        }
+                            
+                        lines.push_back({Visualizer_v(r.vertices[0].m, vec4(0.25f, 1.0f, 1.0f, 1.0f)), Visualizer_v(r.vertices[1].m, vec4(0.25f, 1.0f, 1.0f, 1.0f))});
+
+                        goto exit_flag;
+                    }
 
                     float dist = dot(point_m, r.normal);
 
@@ -1299,7 +1394,43 @@ void Visualizer::step_collisions() {
 
                         std::vector<Collision_data> v;
 
-                        //return Collision_data(0, 0, cp_a, cp_b, collision_normal);
+                        // return
+                        for(int i = 0; i < a_vertices.size(); ++i) {
+                            vec2 a_v = a_vertices[i];
+                            for(int j = 0; j < b_vertices.size(); ++j) {
+                                vec2 b_v = b_vertices[j];
+
+                                vec2 diff = a_v - b_v;
+
+                                vec4 color = vec4(1.0f);
+
+                                points.push_back(Visualizer_v(diff, color));
+                            }   
+                        }
+
+                        points.push_back(Visualizer_v(cp_a - cp_b, vec4(0.25f, 1.0f, 0.25f, 1.0f)));
+                        points.push_back(Visualizer_v(cp_a + ta.position, vec4(0.25f, 1.0f, 0.25f, 1.0f)));
+                        points.push_back(Visualizer_v(cp_b + ta.position, vec4(0.25f, 1.0f, 0.25f, 1.0f)));
+
+                        vec2 avg = vec2(0.0f);
+
+                        for(Simplex_vertex& v : p.vertices) {
+                            avg += v.m;
+                            
+                            vec4 color = vec4(0.25f, 0.25f, 1.0f, 1.0f);
+
+                            points.push_back(Visualizer_v(v.m, color));
+                        }
+                        avg /= p.vertices.size();
+
+                        for(auto l : p.edges) {
+                            vec2 va = p.vertices[l.vertices[0]].m;
+                            vec2 vb = p.vertices[l.vertices[1]].m;
+                            
+                            triangles.push_back({Visualizer_v(va, vec4(0.25f, 1.0f, 0.25f, 0.5f)), Visualizer_v(vb, vec4(0.25f, 1.0f, 0.25f, 0.5f)), Visualizer_v(avg, vec4(0.25f, 1.0f, 0.25f, 0.5f))});
+                        }
+
+                        goto exit_flag;
                     } else {
                         p.expand({point_m, point_a, point_b});
                     }
@@ -1316,6 +1447,19 @@ void Visualizer::step_collisions() {
                 direction = glm::normalize(-closest_point);
             }
         }
+    }
+
+    exit_return_false:
+    
+    for(int i = 0; i < a_vertices.size(); ++i) {
+        vec2 a_v = a_vertices[i];
+        for(int j = 0; j < b_vertices.size(); ++j) {
+            vec2 b_v = b_vertices[j];
+
+            vec2 diff = a_v - b_v;
+
+            points.push_back(Visualizer_v(diff, vec4(1.0f, 0.25f, 0.25f, 1.0f)));
+        }   
     }
 
     exit_flag:

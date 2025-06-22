@@ -2,14 +2,14 @@
 
 layout(location = 0) in vec3 position;
 layout(location = 1) in vec2 tex_coords;
-layout(location = 2) in vec3 color;
+layout(location = 2) in vec4 color;
 
 layout(location = 0) uniform mat4 view;
 layout(location = 1) uniform mat4 proj;
 layout(location = 2) uniform mat4 model;
 
 layout(location = 0) out vec2 t;
-layout(location = 1) out vec3 c;
+layout(location = 1) out vec4 c;
 
 void main() {
     gl_Position = view * model * vec4(position, 1.0);

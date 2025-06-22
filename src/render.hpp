@@ -16,7 +16,7 @@ struct Mesh {
 struct Texture_vertex {
     vec3 pos;
     vec2 tex;
-    vec3 color = vec3(1.0f);
+    vec4 color = vec4(1.0f);
 };
 
 void create_mesh(Mesh& m, std::vector<vec2> v, vec2 radius);
