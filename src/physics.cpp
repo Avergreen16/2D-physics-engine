@@ -1181,3 +1181,145 @@ vec2 get_gravity(vec2 pos) {
     return normalize(vec2(rel_pos.x / (ps.gravity_aspect.x * ps.gravity_aspect.x), rel_pos.y / (ps.gravity_aspect.y * ps.gravity_aspect.y)));
 }
 
+void Visualizer::step_collisions() {
+    Physics_system& ps = ecs.get_system<Physics_system>();
+
+    points.clear();
+    lines.clear();
+    triangles.clear();
+
+    Collider& ca = ecs.get_component<Collider>(a);
+    Transform& ta = ecs.get_component<Transform>(a);
+    Collider& cb = ecs.get_component<Collider>(b);
+    Transform& tb = ecs.get_component<Transform>(b);
+
+
+    std::vector<vec2> a_vertices;
+    std::vector<vec2> b_vertices;
+
+    float limit = 0.00001;
+
+    ps.transform_vertices(ta, ca, a_vertices, ta.position);
+    ps.transform_vertices(tb, cb, b_vertices, ta.position);
+
+    ////std::cout << "collision started\n";
+
+    uint32_t step = 0;
+
+    Simplex simplex;
+
+    vec2 direction = glm::normalize(b_vertices[0] - a_vertices[0]);
+    
+    vec2 offset = vec2(direction.y, -direction.x);
+
+    if(glm::dot(offset, direction) > 0.99) {
+        offset = vec2(direction.x, -direction.y);
+    }
+
+    direction = glm::normalize(direction + offset * 0.1f);
+
+    int iterations = 0;
+
+    bool loop = true;
+
+    while(loop) {
+        if(step >= steps) {
+            for(int i = 0; i < a_vertices.size(); ++i) {
+                vec2 a_v = a_vertices[i];
+                for(int j = i + 1; j < b_vertices.size(); ++j) {
+                    vec2 b_v = b_vertices[j];
+
+                    vec2 diff = a_v - b_v;
+                    points.push_back(Visualizer_v(diff, vec3(1.0f)));
+                }   
+            }
+            goto exit_flag;
+        }
+        ++step;
+
+        ++iterations;
+        //if(iterations > 100) return {};
+        
+        int size = simplex.vertices.size();
+        if(size < 3) {
+            vec2 point_a = ps.support_func(a_vertices, ca.radius, direction, ta.orientation);
+            vec2 point_b = ps.support_func(b_vertices, cb.radius, -direction, tb.orientation);
+
+            vec2 point_m = point_a - point_b;
+
+            for(Simplex_vertex& v : simplex.vertices) {
+                vec2 difference = point_m - v.m;
+
+                //if(glm::length(difference) < limit) return {};
+            }
+
+            //if(glm::dot(point_m, direction) < limit * 2) return {};
+
+            simplex.vertices.push_back(Simplex_vertex{point_m, point_a, point_b});
+
+            if(size == 0) {
+                direction = -glm::normalize(point_m);
+            } else if(size == 1) {
+                vec2 line_direction = glm::normalize(simplex.vertices[0].m - simplex.vertices[1].m);
+                vec2 rel_origin_pos = -simplex.vertices[1].m;
+
+                vec2 closest_point = line_direction * glm::dot(rel_origin_pos, line_direction) + simplex.vertices[1].m;
+                direction = glm::normalize(-closest_point);
+            }
+        } else {
+            int n = simplex_contains(vec2(0, 0), simplex.vertices);
+            if(n == -1) {
+                Polygon p = from_simplex(simplex);
+
+                iterations = 0;
+
+                while(true) {
+                    ++iterations;
+                    //if(iterations > 100) return {};
+                    Polygon_return r = p.find_closest_face();
+
+                    //if(r.vertices.size() == 0) return {};
+
+                    direction = r.normal;
+                    
+                    vec2 point_a = ps.support_func(a_vertices, ca.radius, direction, ta.orientation);
+                    vec2 point_b = ps.support_func(b_vertices, cb.radius, -direction, tb.orientation);
+
+                    vec2 point_m = point_a - point_b;
+
+                    float dist = dot(point_m, r.normal);
+
+                    if(abs(dist - dot(r.vertices[0].m, r.normal)) < limit) {
+                        vec2 cp_a = r.vertices[0].a * r.weights.x + r.vertices[1].a * r.weights.y;
+                        vec2 cp_b = r.vertices[0].b * r.weights.x + r.vertices[1].b * r.weights.y;
+                        
+                        vec2 separation_vector = cp_b - cp_a;
+
+                        vec2 collision_normal = normalize(separation_vector);
+
+                        std::vector<Collision_data> v;
+
+                        //return Collision_data(0, 0, cp_a, cp_b, collision_normal);
+                    } else {
+                        p.expand({point_m, point_a, point_b});
+                    }
+                }
+
+                //return Collision_data();
+            } else {
+                simplex.vertices.erase(simplex.vertices.begin() + n);
+                
+                vec2 line_direction = glm::normalize(simplex.vertices[0].m - simplex.vertices[1].m);
+                vec2 rel_origin_pos = -simplex.vertices[1].m;
+
+                vec2 closest_point = line_direction * glm::dot(rel_origin_pos, line_direction) + simplex.vertices[1].m;
+                direction = glm::normalize(-closest_point);
+            }
+        }
+    }
+
+    exit_flag:
+}
+
+Visualizer visualizer;
+

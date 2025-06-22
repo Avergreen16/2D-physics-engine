@@ -135,7 +135,7 @@ int main() {
     Camera cc;
     cc.scale = 1.0f;
     
-    t.position = vec2(0.0f, 128.0f);
+    t.position = vec2(0.0f, 0.0f);
 
     ecs.insert_component(entity, t);
     ecs.insert_component(entity, cc);

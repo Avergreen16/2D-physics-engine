@@ -323,6 +323,8 @@ void Render_system::call() {
         for(uint32_t entity : collectors[1].entities) {
             render_object(entity, camera);
         }
+        
+        render_visualizer(camera);
 
         for(vec2 v : marker_points) render_marker(v, camera);
     }
@@ -466,6 +468,97 @@ void Render_system::render_cursor() {
 
     glUniformMatrix3fv(0, 1, false, &view_mat[0][0]);
     glUniformMatrix3fv(1, 1, false, &trans_mat[0][0]);
+
+    vv->draw_vertices(GL_TRIANGLES);
+}
+
+void Render_system::render_visualizer(uint32_t camera) {
+    Input_system& is = ecs.get_system<Input_system>();
+
+    Transform& ct = ecs.get_component<Transform>(camera);
+    Camera& cc = ecs.get_component<Camera>(camera);
+
+    std::shared_ptr<Texture> texture = core.textures["gui_texture"];
+
+    mat4 inv_rot = mat4(transpose(ct.orientation));
+    mat4 view = inv_rot * scale(vec3(cc.scale, cc.scale, 1.0f)) * translate(vec3(-ct.position, 0.0f));
+    mat4 model = identity<mat3>();
+    float aspect_ratio = float(core.window.screen_size.y) / core.window.screen_size.x;
+    mat4 proj = scale(vec3(1.0f, 1.0f / aspect_ratio, 1.0f));
+
+    float axis_size = 256.0f;
+    vec2 white_coord = vec2(7, 2) / vec2(texture->size.xy());
+    
+    std::vector<Texture_vertex> vertices_tri;
+    std::vector<Texture_vertex> vertices_line = {
+        Texture_vertex(vec3(axis_size, 0, 0.5), white_coord, vec3(1.0f, 0.25f, 0.25f)),
+        Texture_vertex(vec3(-axis_size, 0, 0.5), white_coord, vec3(1.0f, 0.25f, 0.25f)),
+        Texture_vertex(vec3(0, axis_size, 0.5), white_coord, vec3(0.25f, 1.0f, 0.25f)),
+        Texture_vertex(vec3(0, -axis_size, 0.5), white_coord, vec3(0.25f, 1.0f, 0.25f)),
+    };
+    
+    vec2 size_p = {10, 10};
+    vec4 tex_range = {5, 0, 5, 5};
+
+    for(auto p : visualizer.points) {
+        vec2 size = size_p;
+        size /= float(core.window.viewport_size.x) * 0.5f;
+        size /= cc.scale;
+
+        std::vector<Texture_vertex> v = {
+            Texture_vertex({-size.x * 0.5f, -size.y * 0.5f, 0.5}, tex_range.xy()),
+            Texture_vertex({size.x * 0.5f, -size.y * 0.5f, 0.5}, tex_range.xy() + vec2(tex_range.z, 0)),
+            Texture_vertex({-size.x * 0.5f, size.y * 0.5f, 0.5}, tex_range.xy() + vec2(0, tex_range.w)),
+            Texture_vertex({size.x * 0.5f, size.y * 0.5f, 0.5}, tex_range.xy() + vec2(tex_range.z, tex_range.w)),
+        };
+        
+        for(Texture_vertex& vvv : v) {
+            vvv.tex /= vec2(texture->size.xy());
+            vvv.pos = vec3(ct.orientation * vvv.pos + p.pos, 0.0f);
+            vvv.color = p.color;
+        }
+
+        v = {v[0], v[1], v[3], v[0], v[3], v[2]};
+
+        for(Texture_vertex& t : v) {
+            vertices_tri.push_back(t);
+        }
+    }
+
+    // lines
+
+    if(!vv->initialized) vv->init();
+    vv->vertex_buffer_data(vertices_line.data(), vertices_line.size(), sizeof(Texture_vertex), GL_STREAM_DRAW);
+
+    vv->add_vertex_attribute(0, 3, GL_FLOAT, false, sizeof(Texture_vertex), 0);
+    vv->add_vertex_attribute(1, 2, GL_FLOAT, false, sizeof(Texture_vertex), 3 * sizeof(float));
+    vv->add_vertex_attribute(2, 3, GL_FLOAT, false, sizeof(Texture_vertex), 5 * sizeof(float));
+
+    core.shaders["texture_shader"]->use();
+    texture->bind(0);
+    vv->bind();
+
+    glUniformMatrix4fv(0, 1, false, &view[0][0]);
+    glUniformMatrix4fv(1, 1, false, &proj[0][0]);
+    glUniformMatrix4fv(2, 1, false, &model[0][0]);
+
+    vv->draw_vertices(GL_LINES);
+
+    // triangles
+
+    vv->vertex_buffer_data(vertices_tri.data(), vertices_tri.size(), sizeof(Texture_vertex), GL_STREAM_DRAW);
+
+    vv->add_vertex_attribute(0, 3, GL_FLOAT, false, sizeof(Texture_vertex), 0);
+    vv->add_vertex_attribute(1, 2, GL_FLOAT, false, sizeof(Texture_vertex), 3 * sizeof(float));
+    vv->add_vertex_attribute(2, 3, GL_FLOAT, false, sizeof(Texture_vertex), 5 * sizeof(float));
+
+    core.shaders["texture_shader"]->use();
+    texture->bind(0);
+    vv->bind();
+
+    glUniformMatrix4fv(0, 1, false, &view[0][0]);
+    glUniformMatrix4fv(1, 1, false, &proj[0][0]);
+    glUniformMatrix4fv(2, 1, false, &model[0][0]);
 
     vv->draw_vertices(GL_TRIANGLES);
 }

@@ -16,6 +16,7 @@ struct Mesh {
 struct Texture_vertex {
     vec3 pos;
     vec2 tex;
+    vec3 color = vec3(1.0f);
 };
 
 void create_mesh(Mesh& m, std::vector<vec2> v, vec2 radius);
@@ -42,6 +43,8 @@ struct Render_system : System {
     void render_marker(vec2 pos, uint32_t camera);
 
     void render_cursor();
+
+    void render_visualizer(uint32_t camera);
 
     void call();
 };
