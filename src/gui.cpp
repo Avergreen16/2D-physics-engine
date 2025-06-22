@@ -1,5 +1,6 @@
 #include "gui.hpp"
 #include "input.hpp"
+#include "physics.hpp"
 
 int italic_factor = 2;
 
@@ -9,6 +10,14 @@ std::string message_callback() {
     double elapsed_time = core.prev_time - core.start_time;
     return to_base(elapsed_time, 16, 4);
 }
+
+std::string physics_callback() {
+    Physics_system& sp = ecs.get_system<Physics_system>();
+    uint32_t num_objects = sp.collectors[0].entities.size();
+
+    return to_base(int32_t(num_objects), 16);
+}
+
 std::string null_callback() {
     return "";
 }
@@ -356,82 +365,89 @@ void GUI_system::capture_cursor() {
     }
 }
 
-ivec2 GUI_system::recursive_position(uint32_t entity, ivec4 window, ivec2 position, bool off) {
+
+void default_func_a(Widget& self) {
+    Widget& parent = self.get_parent();
+    bool has_sib;
+    Widget sib = self.get_prev_sibling(has_sib);
+
+    self.position.x = parent.position.x + parent.child_offset.x + self.border.x;
+
+
+    if(has_sib) {
+        self.position.y = sib.position.y - sib.border.w - self.size.y - self.border.y;
+    } else {
+        self.position.y = parent.position.y + parent.child_offset.y - self.size.y - self.border.y;
+    }
+}
+
+void empty_func(Widget& self) {
+
+}
+
+void surround_func_b(Widget& self) {
+    ivec2 min = ivec2(0x7FFFFFFF);
+    ivec2 max = ivec2(-0x7FFFFFFF);
+    for(uint32_t child : self.children) {
+        Widget& c_widget = ecs.get_component<Widget>(child);
+
+        min = glm::min(min, c_widget.position - ivec2(c_widget.border.x, c_widget.border.y));
+        max = glm::max(max, c_widget.position + c_widget.size + ivec2(c_widget.border.z, c_widget.border.w));
+    }
+
+    self.size = max - min;
+    self.child_offset.y = self.size.y;
+    self.child_offset.x = 0;
+}
+
+void expand_func_a(Widget& self) {
+    default_func_a(self);
+
+    Widget& parent = self.get_parent();
+
+    self.size.y = parent.child_offset.y;
+}
+
+int get_scroll_func(Widget& self) {
+    int min_y = 0x7FFFFFFF;
+    int max_y = -0x7FFFFFFF;
+
+    for(uint32_t child : self.children) {
+        Widget& child_widget = ecs.get_component<Widget>(child);
+
+        min_y = glm::min(min_y, child_widget.position.y - child_widget.border.y);
+        max_y = glm::max(max_y, child_widget.position.y + child_widget.size.y + child_widget.border.w);
+    }
+
+    int range = max_y - min_y;
+    range -= self.size.y;
+
+    return range;
+}
+
+void GUI_system::recursive_position(uint32_t entity, ivec4 window) {
     Widget& widget = ecs.get_component<Widget>(entity);
 
+    ivec2 size = widget.size;
+    ivec2 pos = widget.position;
+    
     if(widget.parent != 0xFFFFFFFF) {
-        ivec2 new_pos = position + ivec2(widget.border.x, -widget.border.y) + ivec2(0, -widget.size.y);
-
-        if(widget.position != new_pos) remesh = true;
-        widget.position = new_pos;
-
-        if(!widget.toggle || off) {
-            off = true;
-            widget.position = ivec2(-0x7FFFFFFF);
-        }
-
+        widget.func_a(widget);
         widget.window = window;
     }
 
     ivec4 new_window = window;
     new_window = ivec4(max(new_window.x, widget.window.x), max(new_window.y, widget.window.y), min(new_window.z, widget.window.z), min(new_window.w, widget.window.w));
 
-    /*if(widget.window.z != -1) {
-        ivec2 min_window = window.xy();
-        ivec2 max_window = window.xy() + window.zw();
-
-        min_window = max(min_window, widget.window.xy());
-        max_window = min(max_window, widget.window.xy() + widget.window.xy() + widget.window.zw());
-
-        new_window = ivec4(min_window, max_window - min_window);
-    }*/
-    ivec2 pos;
-
-    if(widget.child_mode == CM_CONTINUE || widget.child_mode == CM_SURROUND) {
-        pos = position + widget.child_offset;
-    } else {
-        if(widget.parent != 0xFFFFFFFF) {
-            Widget& parent_widget = ecs.get_component<Widget>(widget.parent);
-            pos = parent_widget.position + parent_widget.child_offset + widget.child_offset;
-        }
+    for(uint32_t child : widget.children) {
+        recursive_position(child, new_window);
     }
     
-    if(widget.child_mode == CM_SURROUND) {
-        ivec2 min_v = ivec2(0x7FFFFFFF);
-        ivec2 max_v = ivec2(-0x7FFFFFFF);
-        for(uint32_t child : widget.children) {
-            ivec2 add_pos = recursive_position(child, new_window, pos);
-            pos = add_pos;
-            
-            Widget& child_widget = ecs.get_component<Widget>(child);
-
-            ivec2 min_pos = child_widget.position - ivec2(child_widget.border.x, child_widget.border.w);
-            ivec2 max_pos = child_widget.position + child_widget.size + ivec2(child_widget.border.z, child_widget.border.y);
-
-            min_v = min(min_pos, min_v);
-            max_v = max(max_pos, max_v);
-        }
-
-        ivec2 new_size = max_v - min_v;
-        widget.size = new_size;
-    } else {
-        for(uint32_t child : widget.children) {
-            ivec2 add_pos = recursive_position(child, new_window, pos);
-            pos = add_pos;
-        }
+    if(widget.parent != 0xFFFFFFFF) {
+        widget.func_b(widget);
     }
 
-    ivec2 new_position;
-
-    if(widget.sibling_mode == SM_LEFT) {
-        new_position = position + ivec2(widget.size.x + widget.border.z, 0);
-    } else if(widget.sibling_mode == SM_DOWN) {
-        new_position = position + ivec2(0, -widget.size.y - widget.border.w - widget.border.y);
-    } else if(widget.sibling_mode == SM_INCLUDE_CHILDREN) {
-        new_position = pos;
-    }
-
-    return new_position;
+    if(widget.size.x != size.x || widget.size.y != size.y || widget.position.x != pos.x || widget.position.y != pos.y) remesh = true;
 };
 
 void GUI_system::recursive_toggle(uint32_t entity, bool toggle, bool first) {
@@ -621,6 +637,22 @@ void GUI_system::call() {
             }
 
             if(!selected) {
+                for(uint32_t entity : collectors[8].entities) {
+                    Widget& w = ecs.get_component<Widget>(entity);
+                    Scrollbar& scrollbar = ecs.get_component<Scrollbar>(entity);
+                    
+                    int32_t pixel_offset = scrollbar.bar_offset;
+
+                    ivec4 bar_range = ivec4(w.position.x, w.position.y + pixel_offset, scrollbar.width, scrollbar.bar_width);
+
+                    if(includes(bar_range, input_system.cursor_pos)) {
+                        selected_widget = entity;
+                        selected = true;
+                    }
+                }
+            }
+
+            if(!selected) {
                 selected_widget = 0xFFFFFFFF;
             }
 
@@ -674,22 +706,44 @@ void GUI_system::call() {
                 int cursor_x = input_system.cursor_pos.x;
                 int text_pos = w.position.x;
                 int text_rel_pos = cursor_x - text_pos;
-                text_rel_pos = clamp(text_rel_pos, 0, int(ti.width) - 1);
+                int clamped_pos = clamp(text_rel_pos, 0, int(ti.width) - 1);
 
-                uint32_t num = 0;
-                int32_t pix = 0;
+                int32_t num = 0;
+                int32_t pix = ti.offset;
+                int new_cursor_pos = -0x7FFFFFFF;
+                int edge_cursor_pos = -0x7FFFFFFF;
                 while(true) {
                     char character = t.string[num];
-                    uint32_t character_width = font.glyph_map[character].stride;
-                    if(pix == 0) character_width = font.glyph_map[character].size[0];
+                    int32_t character_width = font.glyph_map[character].stride;
+                    if(num == 0) character_width = font.glyph_map[character].size[0];
 
                     int32_t prev_pix = pix;
                     pix += character_width;
-                    if(pix >= text_rel_pos && prev_pix < text_rel_pos) {
+
+                    if(pix >= clamped_pos && (num == 0 || prev_pix < clamped_pos)) {
+                        if(abs(pix - clamped_pos) > abs(prev_pix - clamped_pos) || pix > int(ti.width) - 1) edge_cursor_pos = num - 1;
+                        else edge_cursor_pos = num;
+                    }
+
+                    if(pix >= text_rel_pos && (num == 0 || prev_pix < text_rel_pos)) {
+                        if(abs(pix - text_rel_pos) > abs(prev_pix - text_rel_pos)) new_cursor_pos = num - 1;
+                        else new_cursor_pos = num;
+                    }
+
+                    if(new_cursor_pos != -0x7FFFFFFF && edge_cursor_pos != -0x7FFFFFFF) {
                         text_input_widget = entity;
 
-                        if(abs(pix - text_rel_pos) > abs(prev_pix - text_rel_pos)) ti.cursor_pos = num - 1;
-                        else ti.cursor_pos = num;
+                        int delta = 0;
+                        if(new_cursor_pos > edge_cursor_pos) {
+                            delta = 1;
+                        } else if(new_cursor_pos < edge_cursor_pos) {
+                            delta = -1;  
+                        }
+
+                        ti.cursor_pos = edge_cursor_pos;
+                        if(core.time_step(0.05f)) {
+                            ti.cursor_pos += delta;
+                        }
 
                         remesh = true;
                         break;
@@ -703,9 +757,28 @@ void GUI_system::call() {
                         break;
                     }
                 }
+
+                ti.cursor_pos = clamp(ti.cursor_pos, -1, int(t.string.size()) - 1);
             }
         }
     }
+    
+    for(uint32_t entity : collectors[8].entities) {
+        Widget& w = ecs.get_component<Widget>(entity);
+        Scrollbar& scrollbar = ecs.get_component<Scrollbar>(entity);
+
+        if(entity == selected_widget) {
+            int32_t min_pos = 0;
+            int32_t max_pos = w.size.y - scrollbar.bar_width;
+
+            int32_t new_bar_offset = scrollbar.bar_offset + input_system.cursor_delta.y;
+            new_bar_offset = clamp(new_bar_offset, min_pos, max_pos);
+            
+            scrollbar.bar_offset = new_bar_offset;
+            scrollbar.scroll = float(new_bar_offset) / max_pos;
+            remesh = true;
+        }
+    }   
     
     for(uint32_t entity : collectors[4].entities) {
         Widget& w = ecs.get_component<Widget>(entity);
@@ -751,7 +824,6 @@ void GUI_system::call() {
 
         if(input_system.char_delta.size()) {
             t.string.insert(t.string.begin() + (ti.cursor_pos + 1), input_system.char_delta.begin(), input_system.char_delta.end());
-            std::cout << "INSERTING DELTA: " << input_system.char_delta << "\n";
             ti.cursor_pos += input_system.char_delta.size();
             remesh = true;
             t.remesh = true;
@@ -770,6 +842,27 @@ void GUI_system::call() {
             ti.cursor_pos += input_system.arrow_delta;
             ti.cursor_pos = clamp(ti.cursor_pos, -1, int(t.string.size()) - 1);
             remesh = true;
+        }
+
+        
+        int32_t num = -1;
+        int32_t pix = ti.offset;
+        while(true) {
+            ++num;
+            if(num > ti.cursor_pos) break;
+            char character = t.string[num];
+            uint32_t character_width = font.glyph_map[character].stride;
+            if(num == 0) character_width = font.glyph_map[character].size[0];
+
+            pix += character_width;
+        }
+
+        if(pix >= int(ti.width)) {
+            pix += 2;
+            ti.offset = ti.offset - (pix - int(ti.width));
+        } else if(pix <= 1) {
+            pix -= 1;
+            ti.offset = ti.offset - pix;
         }
     }
 
@@ -794,8 +887,6 @@ void GUI_system::call() {
         }
     }
 
-
-
     std::vector<uint32_t> roots;
 
     for(uint32_t entity : collectors[1].entities) {
@@ -809,7 +900,20 @@ void GUI_system::call() {
     for(uint32_t entity : roots) {
         Widget& widget = ecs.get_component<Widget>(entity);
         
-        recursive_position(entity, widget.window, widget.position);
+        recursive_position(entity, widget.window);
+    }
+
+    for(uint32_t entity : collectors[8].entities) {
+        Widget& w = ecs.get_component<Widget>(entity);
+        Scrollbar& scrollbar = ecs.get_component<Scrollbar>(entity);
+
+        int32_t pixel_range = scrollbar.scroll_func(w);
+
+        int range = w.size.y - scrollbar.bar_width;
+
+        scrollbar.bar_offset = scrollbar.scroll * range;
+
+        w.child_offset.y = (1.0f - scrollbar.scroll) * pixel_range + w.size.y;
     }
     
     capture_cursor();
@@ -965,8 +1069,8 @@ void GUI_system::create_mesh() {
         //else if(b.hovered) color = color * 0.75f + 0.25f;
         
         ivec4 range = ivec4(w.position, w.size);
-        uint32_t pinch = 6;
-        if(w.sibling_mode == SM_DOWN) pinch = 0;
+        uint32_t pinch = 0;
+        //if(w.sibling_mode == SM_DOWN) pinch = 0;
 
         UI_vertex v0;
         v0.color = vec4(color, 1.0f);
@@ -1044,7 +1148,7 @@ void GUI_system::create_mesh() {
         new_window = clip(w.window, new_window);
         
         std::vector<UI_vertex> vvv = t.vertices;
-        ivec2 pos = w.position;
+        ivec2 pos = w.position + ivec2(ti.offset, 0);
         for(UI_vertex& vv : vvv) {
             vv.position += vec3(pos, 0);
             vv.range = new_window;
@@ -1052,8 +1156,8 @@ void GUI_system::create_mesh() {
         v.insert(v.end(), vvv.begin(), vvv.end());
 
         if(entity == text_input_widget) {
-            uint32_t num = -1;
-            int pix = w.position.x;
+            int32_t num = -1;
+            int pix = w.position.x + ti.offset;
             while(true) {
                 if(num == ti.cursor_pos) {
                     ivec4 cursor_range = ivec4(pix, w.position.y + 1, 1, 9);
@@ -1067,6 +1171,22 @@ void GUI_system::create_mesh() {
                 pix += character_width;
             }
         }
+    }
+
+    
+    for(uint32_t entity : collectors[8].entities) {
+        Widget& w = ecs.get_component<Widget>(entity);
+        Scrollbar& scrollbar = ecs.get_component<Scrollbar>(entity);
+
+        int32_t pixel_offset = scrollbar.bar_offset;
+
+        ivec4 range = ivec4(w.position, w.size);
+        vec4 color = vec4(0.25f, 0.25f, 0.25f, 1.0f);
+        insert_flat(color, range, w.window);
+
+        range = ivec4(w.position.x, w.position.y + pixel_offset, w.size.x, scrollbar.bar_width);
+        color = vec4(0.5f, 0.5f, 0.5f, 1.0f);
+        insert_flat(color, range, w.window);
     }
     
     for(uint32_t entity : collectors[collectors.size() - 1].entities) {
@@ -1267,18 +1387,14 @@ void GUI_system::add_tab(ivec2 size, std::string label, bool side_tab) {
     if(side_tab) {
         tab.size = size;
         widget.size = size;
-        widget.sibling_mode = SM_DOWN;
-        widget.child_mode = CM_RETURN;
         widget.toggle_parent = true;
-        widget.border = ivec4(2);
+        widget.border = ivec4(0, 0, 0, 2);
         widget.child_offset = ivec2(size.x + widget.border.x + widget.border.z, 0);
     } else {
         tab.size = size;
         widget.size = size;
-        widget.sibling_mode = SM_LEFT;
-        widget.child_mode = CM_RETURN;
         widget.toggle_parent = true;
-        widget.border = ivec4(2);
+        widget.border = ivec4(2, 2, 0, 0);
         widget.child_offset = ivec2(0, -size.y - widget.border.y - widget.border.w);
     }
 
@@ -1311,8 +1427,8 @@ void GUI_system::add_panel(uint32_t line_width, uint32_t inner_border, uint32_t 
     panel.outer_border = outer_border;
     panel.line_width = line_width;
     widget.border = ivec4(inner_border + outer_border + line_width);
-    widget.child_mode = CM_SURROUND;
     widget.child_offset = ivec2(widget.border.x, -widget.border.y);
+    widget.func_b = surround_func_b;
     
     ecs.insert_component(entity, panel);
     ecs.insert_component(entity, widget);
@@ -1339,4 +1455,27 @@ void GUI_system::add_input(uint32_t width, std::string start_text) {
     ecs.insert_component(entity, ti);
 
     parent(current_entity, entity);
+}
+
+
+void GUI_system::add_scrollbar(uint32_t width, uint32_t bar_width) {
+    uint32_t entity = ecs.insert_entity();
+
+    Scrollbar bar;
+    Widget widget;
+
+    bar.width = width;
+    bar.bar_width = bar_width;
+    bar.scroll = 1.0f;
+    bar.bar_offset = 0;
+    widget.size = ivec2(width, 0);
+    widget.child_offset = ivec2(width, 0);
+    widget.func_a = expand_func_a;
+    
+    ecs.insert_component(entity, widget);
+    ecs.insert_component(entity, bar);
+
+    parent(current_entity, entity);
+
+    current_entity = entity;
 }

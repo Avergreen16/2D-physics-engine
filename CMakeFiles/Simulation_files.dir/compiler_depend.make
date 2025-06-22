@@ -1617,7 +1617,8 @@ CMakeFiles/Simulation_files.dir/src/gui.cpp.obj: src/gui.cpp \
   C:/mingw64/lib/gcc/x86_64-w64-mingw32/13.1.0/include/c++/experimental/bits/simd_x86.h \
   C:/mingw64/lib/gcc/x86_64-w64-mingw32/13.1.0/include/c++/experimental/bits/simd_x86_conversions.h \
   C:/mingw64/lib/gcc/x86_64-w64-mingw32/13.1.0/include/c++/experimental/bits/simd_math.h \
-  src/input.hpp
+  src/input.hpp \
+  src/physics.hpp
 
 CMakeFiles/Simulation_files.dir/src/input.cpp.obj: src/input.cpp \
   src/input.hpp \

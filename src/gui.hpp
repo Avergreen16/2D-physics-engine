@@ -11,6 +11,7 @@ std::string message_callback();
 std::string null_callback();
 void button_callback();
 std::string fps_callback();
+std::string physics_callback();
 
 struct UI_vertex {
     vec3 position;
@@ -89,18 +90,22 @@ struct Font {
     }
 };
 
-enum Sibling_mode{SM_DOWN, SM_LEFT, SM_INCLUDE_CHILDREN};
-enum Child_mode{CM_CONTINUE, CM_RETURN, CM_SURROUND};
+struct Widget;
+
+void default_func_a(Widget&);
+void empty_func(Widget&);
+int get_scroll_func(Widget&);
 
 struct Widget {
     uint32_t parent = 0xFFFFFFFF;
     std::vector<uint32_t> children;
-    Sibling_mode sibling_mode = SM_DOWN;
-    Child_mode child_mode = CM_CONTINUE;
+    std::function<void(Widget&)> func_a = default_func_a;
+    std::function<void(Widget&)> func_b = empty_func;
 
     ivec2 position;
     ivec2 size;
     
+    ivec2 parent_offset = ivec2(0);
     ivec2 child_offset = ivec2(0);
     ivec4 border = ivec4(0);
 
@@ -111,6 +116,31 @@ struct Widget {
     bool toggle = true;
     bool toggle_parent = false;
     bool open = false;
+
+    Widget& get_parent() {
+        return ecs.get_component<Widget>(parent);
+    }
+
+    Widget& get_prev_sibling(bool& has_prev_sibling) {
+        Widget& parent = get_parent();
+
+        uint32_t prev_sibling = 0xFFFFFFFF;
+        for(uint32_t sibling : parent.children) {
+            Widget& sibling_widget = ecs.get_component<Widget>(sibling);
+            if(&sibling_widget == this) {
+                break;
+            }
+            prev_sibling = sibling;
+        }
+
+        if(prev_sibling == 0xFFFFFFFF) {
+            has_prev_sibling = false;
+            return parent;
+        } else {
+            has_prev_sibling = true;
+            return ecs.get_component<Widget>(prev_sibling);
+        }
+    }
 };
 
 struct Text {
@@ -162,6 +192,16 @@ struct Text_input {
     int offset = 0;
 };
 
+struct Scrollbar {
+    uint32_t width;
+    uint32_t scroll_pixels;
+    uint32_t bar_width;
+    uint32_t bar_offset = 0.0;
+    float scroll = 0;
+    uint32_t scroll_child;
+    std::function<int(Widget&)> scroll_func = get_scroll_func;
+};
+
 enum cursor_mode{CURSOR_CLICK, CURSOR_RESIZE_T, CURSOR_RESIZE_TR, CURSOR_RESIZE_R, CURSOR_RESIZE_BR, CURSOR_RESIZE_B, CURSOR_RESIZE_BL, CURSOR_RESIZE_L, CURSOR_RESIZE_TL, CURSOR_TEXT};
 
 struct GUI_system : System {
@@ -209,6 +249,9 @@ struct GUI_system : System {
         s = ecs.update_signature<Text_input>();
         collectors.push_back(Collector(s));
         
+        s = ecs.update_signature<Scrollbar>();
+        collectors.push_back(Collector(s));
+        
         s = ecs.update_signature<Text>();
         collectors.push_back(Collector(s));
     }
@@ -225,7 +268,7 @@ struct GUI_system : System {
 
     // input functions
 
-    ivec2 recursive_position(uint32_t entity, ivec4 window, ivec2 position, bool off = false);
+    void recursive_position(uint32_t entity, ivec4 window);
     void recursive_toggle(uint32_t entity, bool toggle, bool first = true);
 
     void add_window(ivec2 position, ivec2 size, std::string label);
@@ -235,6 +278,7 @@ struct GUI_system : System {
     void add_tab(ivec2 size, std::string label, bool side_tab = false);
     void add_panel(uint32_t line_width, uint32_t inner_border, uint32_t outer_border);
     void add_input(uint32_t width, std::string start_text);
+    void add_scrollbar(uint32_t width, uint32_t bar_width);
 
     template<typename Type>
     uint32_t num_children(uint32_t parent) {

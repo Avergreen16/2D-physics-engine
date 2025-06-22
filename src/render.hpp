@@ -18,7 +18,7 @@ struct Texture_vertex {
     vec2 tex;
 };
 
-void create_mesh(Mesh& m, std::vector<vec2> v, float radius);
+void create_mesh(Mesh& m, std::vector<vec2> v, vec2 radius);
 
 struct Render_system : System {
     std::vector<Framebuffer> framebuffers;

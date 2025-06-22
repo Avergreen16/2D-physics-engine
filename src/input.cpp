@@ -160,10 +160,10 @@ void Input_system::call() {
         } else if(key == GLFW_MOUSE_BUTTON_RIGHT) {
             if(!gui_system.cursor_captured) {
                 if(key_map[GLFW_KEY_LEFT_SHIFT]) {
-                    uint32_t num_links = 8;
-                    float len = 2.0f;
-                    float sep = 0.01f;
-                    float radius = 0.25f;
+                    /*uint32_t num_links = 1;
+                    float len = 3.5f;
+                    float sep = 0.1f;
+                    float radius = 0.5f;
 
                     std::vector<vec2> vertices = {vec2(0, -(len * 0.5f - radius)), vec2(0, len * 0.5f - radius)};
 
@@ -198,16 +198,6 @@ void Input_system::call() {
                         ecs.insert_component(entity, c);
 
                         if(prev_shape == 0xFFFFFFFF) {
-                            /*Position_constraint constraint;
-                            constraint.a = entity;
-                            constraint.pa = vec2(0, -len * 0.5f);
-                            constraint.pb = world_cursor_pos;
-
-                            constraint.dir = vec2(1, 0);
-                            ps.position_constraints.push_back(constraint);
-                            
-                            constraint.dir = vec2(0, 1);
-                            ps.position_constraints.push_back(constraint);*/
                         } else {
                             Position_constraint constraint;
                             constraint.a = prev_shape;
@@ -223,52 +213,153 @@ void Input_system::call() {
                         }
 
                         prev_shape = entity;
-                    }
+                    }*/
 
-                    
-                    /*Position_constraint constraint;
-                    constraint.a = prev_shape;
-                    constraint.pa = vec2(0, len * 0.5f);
-                    constraint.pb = world_cursor_pos + dir_2 * float(len * num_links * 0.75f);
+                    uint32_t num_links = 6;
 
-                    constraint.dir = vec2(1, 0);
-                    ps.position_constraints.push_back(constraint);
-                    
-                    constraint.dir = vec2(0, 1);
-                    ps.position_constraints.push_back(constraint);*/
-                } else {
-                    uint32_t entity = ecs.insert_entity();
-                    
+                    float sep = 0.05f;
+
+                    Physics_system& ps = ecs.get_system<Physics_system>();
+
                     Transform t;
                     t.position = world_cursor_pos;
-                    t.orientation = mat2(rotate(float(M_PI) * core.random(), vec3(0.0f, 0.0f, 1.0f)));
-                    Collider c;
-
-                    int num_sides = core.random.next() % 5 + 3;
-                    float radius = core.random() * 0.5f + 0.5f;
-                    radius = radius * 1.2f + 0.3f;
-                    if(key_map[GLFW_KEY_LEFT_CONTROL]) radius *= 5.0f;
-                    float jitter = (2.0f * M_PI) / num_sides * 0.4f;
-
-                    c.radius = 0.0f;//(core.random() * 0.5f + 0.5f) * radius * 0.4f;
+                    //t.orientation = identity<mat2>();
+                    vec2 up = normalize(t.position);
+                    t.orientation = {up, vec2(up.y, -up.x)};
                     
-                    for(int i = 0; i < num_sides; ++i) {
-                        float angle = float(i) / num_sides * (2 * M_PI) + jitter * core.random();
-                        vec2 vertex = vec2(cos(angle), sin(angle)) * radius;
-                        c.vertices.push_back(vertex);
-                    }
-                    c.mass = radius * radius;
+                    Collider c;
+                    c.vertices = {vec2(0, -1.5f), vec2(0, 1.5f)};
+                    c.radius = vec2(0.5f);
+                    c.mass = 100;
                     vec2 shift = Physics_system::calculate_inertia(c);
-                    t.position += shift;
+                    t.position += t.orientation * shift;
+                    t.position += t.orientation * vec2(0, 2.0f);
 
                     Mesh m;
-                    m.color = get_color(abs(core.random())) * 0.7f + 0.3f;
+                    m.color = vec3(0.9f, 0.9f, 0.9f);
                     create_mesh(m, c.vertices, c.radius);
 
+                    uint32_t prev_entity = 0xFFFFFFFF;
+
+                    for(int i = 0; i < num_links; ++i) {    
+                        uint32_t capsule = ecs.insert_entity();
+
+                        ecs.insert_component(capsule, m);
+                        ecs.insert_component(capsule, t);
+                        ecs.insert_component(capsule, c);
+                        
+                        if(prev_entity != 0xFFFFFFFF) {
+                            Rotation_constraint constraint;
+                            constraint.a = capsule;
+                            constraint.b = prev_entity;
+                            constraint.da = vec2(0, 1);
+                            constraint.db = vec2(0, 1);
+
+                            //ps.rotation_constraints.push_back(constraint);
+
+                            Position_constraint pconstraint;
+                            pconstraint.a = capsule;
+                            pconstraint.b = prev_entity;
+                            pconstraint.pa = vec2(0, -2.0f - sep * 0.5f);
+                            pconstraint.pb = vec2(0, 2.0f + sep * 0.5f);
+
+                            pconstraint.dir = vec2(1, 0);
+                            ps.position_constraints.push_back(pconstraint);
+                            
+                            pconstraint.dir = vec2(0, 1);
+                            ps.position_constraints.push_back(pconstraint);
+                        }
+
+                        t.position += t.orientation * vec2(0, 4 + sep);
+
+                        prev_entity = capsule;
+                    }
+
+                    // base
+
+                    /*uint32_t base = ecs.insert_entity();
+
+                    t.position = world_cursor_pos;
+                    t.orientation = identity<mat2>();
                     
-                    ecs.insert_component(entity, m);
-                    ecs.insert_component(entity, t);
-                    ecs.insert_component(entity, c);
+                    Collider c2;
+                    c2.vertices = {vec2(-1.0f, -1.0f), vec2(1.0f, -1.0f), vec2(1.0f, 1.0f), vec2(-1.0f, 1.0f)};
+                    for(vec2& v : c2.vertices) v *= vec2(0.75f, 0.5f);
+
+                    c2.radius = 0.0f;
+                    c2.mass = 200;
+                    shift = Physics_system::calculate_inertia(c2);
+                    t.position += t.orientation * shift;
+                    t.position += t.orientation * vec2(0, -0.5f);
+
+                    Mesh m2;
+                    m2.color = vec3(0.9f, 0.9f, 0.9f);
+                    create_mesh(m2, c2.vertices, c2.radius);
+                    
+                    ecs.insert_component(base, m2);
+                    ecs.insert_component(base, t);
+                    ecs.insert_component(base, c2);*/
+                } else {
+                    ivec2 start_pos = world_cursor_pos;
+                    ivec2 shape_matrix = ivec2(8, 8);
+                    float separation = 4.0f;
+                    float max_dim = 4.0f;
+                    float min_dim = 0.5f;
+
+                    for(int x = 0; x < shape_matrix.x; ++x) {
+                        for(int y = 0; y < shape_matrix.y; ++y) {
+                            vec2 position = world_cursor_pos + (-(vec2(shape_matrix - 1) / 2.0f) + vec2(x, y)) * separation;
+                            
+                            uint32_t entity = ecs.insert_entity();
+                            
+                            Transform t;
+                            t.position = position;
+                            t.orientation = mat2(rotate(float(M_PI) * core.random(), vec3(0.0f, 0.0f, 1.0f)));
+                            Collider c;
+
+                            std::vector<vec2> square = {
+                                vec2(-1, -1),
+                                vec2(1, -1),
+                                vec2(1, 1),
+                                vec2(-1, 1)
+                            };
+
+                            vec2 size = vec2(core.random() * 0.5f + 0.5f, core.random() * 0.5f + 0.5f) * (max_dim - min_dim) + min_dim;
+                            c.vertices = square;
+                            for(vec2& v : c.vertices) v *= size * 0.5f;
+
+                            c.radius = vec2(0.0f);
+                            c.mass = size.x * size.y * 25.0f;
+                            vec2 shift = Physics_system::calculate_inertia(c);
+                            t.position += shift;
+
+                            /*int num_sides = core.random.next() % 5 + 3;
+                            float radius = abs(core.random());
+                            radius = radius * 0.3f + 0.2f;
+                            if(key_map[GLFW_KEY_LEFT_CONTROL]) radius *= 10.0f;
+                            float jitter = (2.0f * M_PI) / num_sides * 0.4f;
+
+                            c.radius = 0.0f;//(core.random() * 0.5f + 0.5f) * radius * 0.4f;
+                            
+                            for(int i = 0; i < num_sides; ++i) {
+                                float angle = float(i) / num_sides * (2 * M_PI) + jitter * core.random();
+                                vec2 vertex = vec2(cos(angle), sin(angle)) * radius;
+                                c.vertices.push_back(vertex);
+                            }
+                            c.mass = pow(radius * 2, 2);
+                            vec2 shift = Physics_system::calculate_inertia(c);
+                            t.position += shift;*/
+
+                            Mesh m;
+                            m.color = get_color(abs(core.random())) * 0.7f + 0.3f;
+                            create_mesh(m, c.vertices, c.radius);
+
+                            
+                            ecs.insert_component(entity, m);
+                            ecs.insert_component(entity, t);
+                            ecs.insert_component(entity, c);
+                        }
+                    }
                 }
             }
         } else if(key == GLFW_MOUSE_BUTTON_LEFT) {

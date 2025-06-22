@@ -68,11 +68,18 @@ void Window::init_callbacks() {
 }
 
 double Core::get_delta_time() {
-    double current_time = get_time();
-    double delta_time = current_time - prev_time;
     prev_time = current_time;
+    current_time = get_time();
+    double delta_time = current_time - prev_time;
 
     return delta_time;
+}
+
+bool Core::time_step(double step) {
+    double d_prev = prev_time / step;
+    double d_current = current_time / step;
+
+    return floor(d_prev) != floor(d_current);
 }
 
 std::ostream& operator<<(std::ostream& c, glm::vec3 v) {

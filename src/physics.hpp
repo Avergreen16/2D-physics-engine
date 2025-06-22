@@ -5,7 +5,7 @@
 
 struct Collider {
     std::vector<vec2> vertices;
-    float radius = 0.0f;
+    vec2 radius = vec2(0.0f);
 
     bool colliding = false;
 
@@ -68,16 +68,30 @@ struct Position_constraint {
     float get_value();
 };
 
+struct Rotation_constraint {
+    uint32_t a = 0xFFFFFFFF;
+    uint32_t b = 0xFFFFFFFF;
+
+    vec2 da;
+    vec2 db;
+
+    float lambda = 0.0f;
+
+    float get_value();
+};
+
 struct Physics_system : System {
     float physics_step = 0.02f;
     float physics_time = 0.0f;
     uint32_t max_frames = 8;
+    uint32_t temporal_iterations = 1;
 
     std::unordered_map<uint64_t, std::vector<Collision_data>> collision_table;
 
     std::vector<Position_constraint> position_constraints;
+    std::vector<Rotation_constraint> rotation_constraints;
 
-    vec2 gravity = vec2(0.0f, -10.0f);
+    vec2 gravity_aspect = vec2(1.0f, 1.0f);
 
     Physics_system();
 
@@ -87,7 +101,7 @@ struct Physics_system : System {
 
     static void transform_vertices(Transform& t, Collider& c, std::vector<vec2>& vertices, vec2 origin);
 
-    static vec2 support_func(std::vector<vec2>& vertices, float radius, vec2 direction);
+    static vec2 support_func(std::vector<vec2>& vertices, vec2 radius, vec2 direction, mat2 orientation = identity<mat2>());
 
     void insert_collision(uint64_t a, Collision_data c);
 
@@ -96,6 +110,8 @@ struct Physics_system : System {
     static vec2 calculate_inertia(Collider& c);
 
     static vec4 calculate_bounding_box(Collider& c, Transform& t);
+
+    static std::vector<uint64_t> sweep_and_prune(std::unordered_map<uint32_t, vec4>& input);
     
     static vec2 calculate_point_velocity(Collider& c, vec2 point);
 
@@ -107,3 +123,5 @@ struct Physics_system : System {
 
     void call();
 };
+
+vec2 get_gravity(vec2 pos);

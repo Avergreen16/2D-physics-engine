@@ -73,6 +73,7 @@ struct Core {
     
     double start_time;
     double prev_time;
+    double current_time;
 
     std::unordered_map<std::string, std::shared_ptr<Shader>> shaders;
     std::unordered_map<std::string, std::shared_ptr<Texture>> textures;
@@ -94,6 +95,8 @@ struct Core {
     void init();
 
     double get_delta_time();
+
+    bool time_step(double step);
 };
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
