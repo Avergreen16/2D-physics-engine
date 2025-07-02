@@ -131,8 +131,11 @@ struct Visualizer_v {
     vec4 color;
 };
 
+void get_normal(vec2 a, vec2 b, vec2 r, vec2& normal, vec2& center);
+
 struct Visualizer {
     std::vector<Visualizer_v> points;
+    std::vector<Visualizer_v> points_b;
     std::vector<std::vector<Visualizer_v>> lines;
     std::vector<std::vector<Visualizer_v>> triangles;
     uint32_t a = 0xFFFFFFFF;
@@ -143,3 +146,70 @@ struct Visualizer {
 };
 
 extern Visualizer visualizer;
+
+struct Profiler {
+    std::vector<double> times;
+    std::vector<std::string> names;
+    uint32_t current_pos = 0;
+    double prev_time;
+    uint32_t iterations = 0;
+
+    void restart() {
+        times.clear();
+        current_pos = 0;
+        prev_time = get_time();
+
+        iterations = 0;
+    }
+
+    void reset() {
+        current_pos = 0;
+        prev_time = get_time();
+
+        ++iterations;
+    }
+
+    void step(std::string name = "") {
+        double current_time = get_time();
+        double diff = current_time - prev_time;
+        prev_time = current_time;
+
+        std::string new_name = std::to_string(current_pos);
+        if(name.size()) {
+            new_name = name;
+        }
+
+        if(times.size() <= current_pos) {
+            times.push_back(diff);
+            names.push_back(name);
+        } else {
+            times[current_pos] += diff;
+            names[current_pos] = name;
+        }
+
+        //std::cout << name << "\n";
+
+        ++current_pos;
+    }   
+
+    void output() {
+        double total = 0;
+        for(double t : times) total += t;
+
+        double total_time = 0.0f;
+
+        uint32_t number = 0;
+        for(double t : times) {
+            total_time += t;
+
+            std::cout << names[number] << " : " << t / iterations << " = " << (t / total) * 100 << "%\n";
+            ++number;
+        }
+        
+        std::cout << total_time / iterations << "\n";
+
+        std::cout << "\n";
+    }
+};
+
+extern Profiler profiler;

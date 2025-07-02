@@ -11,6 +11,118 @@ struct Object_vertex {
     vec3 v;
 };
 
+std::vector<vec2> create_mesh(std::vector<vec2> v, vec2 radius) {
+    float sphere_segments = max(64, int32_t(8 * max(radius.x, radius.y)));
+
+    std::vector<vec2> vv;
+    if(radius.x == 0.0f && radius.y == 0.0f) {
+        for(int i = 0; i < v.size(); ++i) {
+            vv.push_back(v[i]);
+        }
+    } else {
+        vec2 sum = vec2(0.0f);
+        for(int i = 0; i < v.size(); ++i) {
+            sum += v[i];
+        }
+        sum /= v.size();
+
+        std::unordered_set<uint32_t> cc;
+        vec2 first_normal = vec2(0.0f);
+        vec2 prev_normal = vec2(0.0f);
+        for(int i = 0; i < v.size(); ++i) {
+            uint16_t a = i;
+            uint16_t b = (i + 1) % v.size();
+            if(a == b) {
+                vec2 v0 = v[a];
+
+                float angle_a = 0.0f;
+                float angle_b = 2 * M_PI;
+
+                float angle_per_segment = 2 * M_PI / sphere_segments;
+
+                for(float j = angle_a + angle_per_segment; j < angle_b; j += angle_per_segment) {
+                    vec2 vc = {cos(j), sin(j)};
+                    vc *= radius;
+                    vc = v0 + vc;
+
+                    vv.push_back(vc);
+                }
+            } else {
+                vec2 v0 = v[a];
+                vec2 v1 = v[b];
+                
+                if(a > b) {
+                    uint16_t temp = a;
+                    a = b;
+                    b = temp;
+                }
+
+                vec2 direction = normalize(v[b] - v[a]);
+                vec2 normal = vec2(direction.y, -direction.x);
+                if(dot(normal, sum - v[a]) > 0.0f) {
+                    normal = -normal;
+                }
+
+                uint32_t c = (uint32_t)a | ((uint32_t)b << 16);
+                if(cc.contains(c)) {
+                    normal = -normal;
+                } else {
+                    cc.insert(c);
+                }
+
+                // create previous sphere
+                if(prev_normal.x != 0.0f || prev_normal.y != 0.0f) {
+                    vec2 va = prev_normal * radius;
+                    vec2 vb = normal * radius;
+                    float angle_a = atan2(va.y, va.x);
+                    float angle_b = atan2(vb.y, vb.x);
+
+                    if(angle_b < angle_a) angle_a -= 2 * M_PI;
+
+                    float angle_per_segment = 2 * M_PI / sphere_segments;
+
+                    for(float j = angle_a + angle_per_segment; j < angle_b; j += angle_per_segment) {
+                        vec2 vc = {cos(j), sin(j)};
+                        vc *= radius;
+                        vc = v0 + vc;
+
+                        vv.push_back(vc);
+                    }
+                }
+
+                vv.push_back(v0 + normal * radius);
+                vv.push_back(v1 + normal * radius);
+
+                // create first sphere
+                if(i == v.size() - 1) {
+                    vec2 va = normal * radius;
+                    vec2 vb = first_normal * radius;
+                    float angle_a = atan2(va.y, va.x);
+                    float angle_b = atan2(vb.y, vb.x);
+
+                    if(angle_b < angle_a) angle_a -= 2 * M_PI;
+
+                    float angle_per_segment = 2 * M_PI / sphere_segments;
+
+                    for(float j = angle_a + angle_per_segment; j < angle_b; j += angle_per_segment) {
+                        vec2 vc = {cos(j), sin(j)};
+                        vc *= radius;
+                        vc = v1 + vc;
+
+                        vv.push_back(vc);
+                    }
+                }
+
+
+                prev_normal = normal;
+                if(first_normal.x == 0.0f && first_normal.y == 0.0f) first_normal = normal;
+            }
+        }
+    }
+
+    return vv;
+}
+
 void create_mesh(Mesh& m, std::vector<vec2> v, vec2 radius) {
     m.vertices = std::shared_ptr<Vertices>(new Vertices);
     m.vertices->init();
@@ -472,6 +584,98 @@ void Render_system::render_cursor() {
     vv->draw_vertices(GL_TRIANGLES);
 }
 
+
+struct Mesher {
+    std::vector<vec2> vertices;
+    std::vector<uint32_t> edges;
+    std::vector<vec2> normals;
+    vec2 c;
+
+    void insert_edge(uint32_t a, uint32_t b) {
+        vec2 pa = vertices[a];
+        vec2 pb = vertices[b];
+
+        vec2 normal;
+        vec2 center;
+        get_normal(pa, pb, c, normal, center);
+
+        edges.push_back(a | (b << 16));
+        normals.push_back(normal);
+    }
+
+    void expand(vec2 vertex) {
+        uint32_t v_n = vertices.size();
+        vertices.push_back(vertex);
+
+        std::vector<uint32_t> edges_seen;
+        std::vector<uint32_t> vertices_seen;
+        for(int i = 0; i < edges.size(); ++i) {
+            uint32_t e = edges[i];
+            uint32_t a = e & 0xFFFF;
+            uint32_t b = e >> 16;
+
+            vec2 diff = vertex - vertices[a];
+
+            if(dot(normals[i], diff) > 0.0f) {
+                edges_seen.push_back(i);
+                vertices_seen.push_back(a);
+                vertices_seen.push_back(b);
+            }
+        }
+        
+        std::sort(edges_seen.begin(), edges_seen.end());
+
+        int i = 0;
+        for(uint32_t edge : edges_seen) {
+            edges.erase(edges.begin() + edge - i);
+            normals.erase(normals.begin() + edge - i);
+            ++i;
+        }
+
+        for(uint32_t vertex : vertices_seen) {
+            if(std::count(vertices_seen.begin(), vertices_seen.end(), vertex) == 1) {
+                uint32_t a = vertex;
+                
+                insert_edge(a, v_n);
+            }
+        }
+    }
+
+    std::vector<vec2> get_mesh() {
+        std::set<uint32_t> vs;
+
+        for(uint32_t e : edges) {
+            uint32_t a = e & 0xFFFF;
+            uint32_t b = e >> 16;
+
+            vs.emplace(a);
+            vs.emplace(b);
+        }
+
+        std::vector<vec2> v;
+        vec2 avg = vec2(0.0f);
+        for(uint32_t vv : vs) {
+            v.push_back(vertices[vv]);
+            avg += vertices[vv];
+        }
+        avg /= float(vs.size());
+        
+        auto sort = [&](const vec2& a, const vec2& b) {
+            vec2 aa = normalize(a - avg);
+            vec2 bb = normalize(b - avg);
+
+            float a_tan = atan2(aa.y, aa.x);
+            float b_tan = atan2(bb.y, bb.x);
+
+            return a_tan < b_tan;
+        };
+
+        std::sort(v.begin(), v.end(), sort);
+
+        return v;
+    }
+};
+
 void Render_system::render_visualizer(uint32_t camera) {
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
@@ -493,24 +697,7 @@ void Render_system::render_visualizer(uint32_t camera) {
     
     Collider& ca = ecs.get_component<Collider>(visualizer.a);
     Collider& cb = ecs.get_component<Collider>(visualizer.b);
-    std::vector<Texture_vertex> circle;
     float radius = ca.radius.x + cb.radius.x;
-    int num_vertices = 16;
-    for(int i = 0; i < num_vertices; ++i) {
-        float angle = float(i) / num_vertices * M_PI * 2.0f;
-        Texture_vertex va;
-        va.color = vec4(1.0f);
-        va.pos = vec3(vec2(cos(angle), sin(angle)) * radius, 0.5f);
-        va.tex = white_coord;
-
-        circle.push_back(va);
-    }
-    std::vector<Texture_vertex> new_circle;
-    for(int i = 0; i < num_vertices; ++i) {
-        new_circle.push_back(circle[i]);
-        new_circle.push_back(circle[(i + 1) % num_vertices]);
-    }
-    circle = new_circle;
     
     std::vector<Texture_vertex> vertices_tri;
     std::vector<Texture_vertex> vertices_line = {
@@ -535,6 +722,8 @@ void Render_system::render_visualizer(uint32_t camera) {
     vec2 size_p = {10, 10};
     vec4 tex_range = {5, 0, 5, 5};
 
+    for(auto p : visualizer.points_b) visualizer.points.push_back(p);
+
     for(auto p : visualizer.points) {
         vec2 size = size_p;
         size /= float(core.window.viewport_size.x) * 0.5f;
@@ -558,18 +747,51 @@ void Render_system::render_visualizer(uint32_t camera) {
         for(Texture_vertex& t : v) {
             vertices_tri.push_back(t);
         }
+    }
 
-        if(p.color != vec4(0.25f, 1.0f, 0.25f, 1.0f) && p.color != vec4(0.25f, 0.25f, 1.0f, 1.0f)) {
-            for(Texture_vertex v : circle) {
-                v.color = p.color;
-                v.pos += vec3(p.pos, 0.0f);
+    std::vector<vec2> shape_vertices;
+    vec4 color = visualizer.points_b[0].color;
 
-                vertices_line.push_back(v);
-            }
+    if(visualizer.points_b.size() > 2) {
+        Mesher mesher;
+        vec2 a = visualizer.points_b[0].pos;
+        vec2 b = visualizer.points_b[1].pos;
+        vec2 c = visualizer.points_b[2].pos;
+
+        mesher.vertices = {a, b, c};
+        mesher.c = (a + b + c) / 3.0f;
+        
+        mesher.insert_edge(0, 1);
+        mesher.insert_edge(1, 2);
+        mesher.insert_edge(2, 0);
+
+        
+        for(uint i = 3; i < visualizer.points_b.size(); ++i) {
+            auto& p = visualizer.points_b[i];
+
+            mesher.expand(p.pos);
+        }
+        
+        shape_vertices = mesher.get_mesh();
+
+        shape_vertices = create_mesh(shape_vertices, vec2(radius));
+    } else {
+        for(auto& vv : visualizer.points_b) {
+            shape_vertices.push_back(vv.pos);
         }
     }
 
+    for(int i = 0; i < shape_vertices.size(); ++i) {
+        vec2 a = shape_vertices[i];
+        vec2 b = shape_vertices[(i + 1) % shape_vertices.size()];
+        
+        vertices_line.push_back(Texture_vertex(vec3(a, 0.5), white_coord, color));
+        vertices_line.push_back(Texture_vertex(vec3(b, 0.5), white_coord, color));
+    }
+
     // lines
+
+    glLineWidth(1);
 
     if(!vv->initialized) vv->init();
     vv->vertex_buffer_data(vertices_line.data(), vertices_line.size(), sizeof(Texture_vertex), GL_STREAM_DRAW);

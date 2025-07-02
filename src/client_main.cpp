@@ -125,16 +125,16 @@ int main() {
     t.position = vec2(2.0f, 2.0f);
     t.orientation = mat2(rotate(float(M_PI) * core.random(), vec3(0.0f, 0.0f, 1.0f)));
 
-    vec2 size = vec2(1.0f, 0.5f);
+    vec2 size = vec2(1.0f, 2.0f);
     c.vertices = {
         vec2(-1, -1),
         vec2(1, -1),
         vec2(1, 1),
-        vec2(-1, 1)
+        vec2(-1, 1),
     };
     for(vec2& v : c.vertices) v *= size;
 
-    c.radius = vec2(0.25f);
+    c.radius = vec2(0.0f);
     c.mass = size.x * size.y * 25.0f;
     vec2 shift = Physics_system::calculate_inertia(c);
     t.position += shift;
@@ -155,9 +155,9 @@ int main() {
     t.orientation = mat2(rotate(float(M_PI) * core.random(), vec3(0.0f, 0.0f, 1.0f)));
     
     c.vertices = {
-        vec2(0.25f, 0.25f),
-        vec2(0.5f, -0.25f),
-        vec2(-0.5f, -0.25f)
+        vec2(0.5f, 0.5f),
+        vec2(-1.0f, -0.5f),
+        vec2(1.0f, -0.5f),
     };
 
     c.radius = vec2(0.0f);
