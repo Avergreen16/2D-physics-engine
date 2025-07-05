@@ -18,6 +18,8 @@ struct Collider {
 
     vec2 velocity = vec2(0.0f);
     float angular_velocity = 0.0f;
+
+    vec4 bounding_box;
 };
 
 struct Collision_data {
@@ -36,48 +38,75 @@ struct Collision_data {
 struct Collision_constraint {
     Collision_data* d;
 
+    Collider* ca;
+    Transform* ta;
+    Collider* cb;
+    Transform* tb;
+
     vec2 pa;
     vec2 pb;
 
     float lambdaN = 0.0f;
     float lambdaT = 0.0f;
 
-    std::vector<float> get_velocities();
+    float inertiaN;
+    float inertiaT;
 
     void get_points();
-
     float get_value();
 };
 
-struct Position_constraint {
-    uint32_t a = 0xFFFFFFFF;
-    uint32_t b = 0xFFFFFFFF;
+struct pos_constraint {
+    vec2 a;
+    vec2 b;
 
     vec2 pa;
     vec2 pb;
 
-    vec2 ppa;
-    vec2 ppb;
+    vec2 pos_a;
+    vec2 pos_b;
 
-    vec2 dir;
+    std::vector<vec2> vs;
 
-    float lambda = 0.0f;
-
-    void get_points();
-
-    float get_value();
+    std::vector<float> baumgarte;
+    std::vector<float> inertia;
+    std::vector<float> lambda;
 };
 
-struct Rotation_constraint {
+struct rot_constraint {
+    // vectors to be aligned in the space of their object
+    vec2 a;
+    vec2 b;
+
+    // vectors in world space
+    vec2 va;
+    vec2 vb;
+
+    float baumgarte;
+    float inertia;
+    float lambda;
+};
+
+struct Constraint {
     uint32_t a = 0xFFFFFFFF;
     uint32_t b = 0xFFFFFFFF;
+    
+    Collider* ca;
+    Transform* ta;
+    Collider* cb;
+    Transform* tb;
 
-    vec2 da;
-    vec2 db;
+    std::vector<pos_constraint> pos;
+    std::vector<rot_constraint> rot;
 
-    float lambda = 0.0f;
+    void get_points();
+    void get_values();
+};
 
-    float get_value();
+struct Sap_point {
+    float start;
+    float end;
+    uint32_t id;
 };
 
 struct Physics_system : System {
@@ -88,10 +117,12 @@ struct Physics_system : System {
 
     std::unordered_map<uint64_t, std::vector<Collision_data>> collision_table;
 
-    std::vector<Position_constraint> position_constraints;
-    std::vector<Rotation_constraint> rotation_constraints;
+    std::vector<Constraint> constraints;
 
     vec2 gravity_aspect = vec2(1.0f, 1.0f);
+
+    std::unordered_set<uint32_t> inserted_sap;
+    std::vector<Sap_point> sap_points;
 
     Physics_system();
 
@@ -111,13 +142,13 @@ struct Physics_system : System {
 
     static vec4 calculate_bounding_box(Collider& c, Transform& t);
 
-    static std::vector<uint64_t> sweep_and_prune(std::unordered_map<uint32_t, vec4>& input);
+    std::vector<uint64_t> sweep_and_prune(std::vector<uint32_t>& input);
     
-    static vec2 calculate_point_velocity(Collider& c, vec2 point);
+    static vec2 calculate_point_velocity(Collider* c, vec2 point);
 
-    static float calculate_inverse_mass(Collider& c, Transform& t, vec2 impulse_dir, vec2 point);
+    static float calculate_inverse_mass(Collider* c, Transform* t, vec2 impulse_dir, vec2 point);
 
-    static void apply_impulse(Collider& c, vec2 impulse, vec2 point);
+    static void apply_impulse(Collider* c, vec2 impulse, vec2 point);
 
     void physics_loop();
 
@@ -125,3 +156,23 @@ struct Physics_system : System {
 };
 
 vec2 get_gravity(vec2 pos);
+
+void get_normal(vec2 a, vec2 b, vec2 r, vec2& normal, vec2& center);
+
+struct Profiler {
+    std::vector<double> times;
+    std::vector<std::string> names;
+    uint32_t current_pos = 0;
+    double prev_time;
+    uint32_t iterations = 0;
+
+    void restart();
+
+    void reset();
+
+    void step(std::string name = "");
+
+    void output();
+};
+
+extern Profiler profiler;

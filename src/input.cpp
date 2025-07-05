@@ -217,7 +217,7 @@ void Input_system::call() {
 
                     uint32_t num_links = 6;
 
-                    float sep = 0.05f;
+                    float sep = 0.125f;
 
                     Physics_system& ps = ecs.get_system<Physics_system>();
 
@@ -249,25 +249,27 @@ void Input_system::call() {
                         ecs.insert_component(capsule, c);
                         
                         if(prev_entity != 0xFFFFFFFF) {
-                            Rotation_constraint constraint;
+                            Transform& tf = ecs.get_component<Transform>(capsule);
+                            Collider& c = ecs.get_component<Collider>(capsule);
+
+                            Constraint constraint;
                             constraint.a = capsule;
                             constraint.b = prev_entity;
-                            constraint.da = vec2(0, 1);
-                            constraint.db = vec2(0, 1);
-
-                            //ps.rotation_constraints.push_back(constraint);
-
-                            Position_constraint pconstraint;
-                            pconstraint.a = capsule;
-                            pconstraint.b = prev_entity;
-                            pconstraint.pa = vec2(0, -2.0f - sep * 0.5f);
-                            pconstraint.pb = vec2(0, 2.0f + sep * 0.5f);
-
-                            pconstraint.dir = vec2(1, 0);
-                            ps.position_constraints.push_back(pconstraint);
                             
-                            pconstraint.dir = vec2(0, 1);
-                            ps.position_constraints.push_back(pconstraint);
+                            pos_constraint pc;
+                            pc.a = vec2(0, -2.0f - sep * 0.5f);
+                            pc.b = vec2(0, 2.0f + sep * 0.5f);
+                            pc.vs = {vec2(1, 0), vec2(0, 1)};
+
+                            constraint.pos.push_back(pc);
+
+                            rot_constraint rc;
+                            rc.a = vec2(0, 1);
+                            rc.b = vec2(0, 1);
+                            
+                            constraint.rot.push_back(rc);
+
+                            ps.constraints.push_back(constraint);
                         }
 
                         t.position += t.orientation * vec2(0, 4 + sep);
@@ -301,10 +303,10 @@ void Input_system::call() {
                     ecs.insert_component(base, c2);*/
                 } else {
                     ivec2 start_pos = world_cursor_pos;
-                    ivec2 shape_matrix = ivec2(8, 8);
-                    float separation = 4.0f;
-                    float max_dim = 4.0f;
-                    float min_dim = 0.5f;
+                    ivec2 shape_matrix = ivec2(16);
+                    float separation = 2.0f;
+                    float max_dim = 2.0f;
+                    float min_dim = 1.0f;
 
                     for(int x = 0; x < shape_matrix.x; ++x) {
                         for(int y = 0; y < shape_matrix.y; ++y) {
@@ -316,6 +318,7 @@ void Input_system::call() {
                             t.position = position;
                             t.orientation = mat2(rotate(float(M_PI) * core.random(), vec3(0.0f, 0.0f, 1.0f)));
                             Collider c;
+                            vec2 size = vec2(core.random() * 0.5f + 0.5f, core.random() * 0.5f + 0.5f) * (max_dim - min_dim) + min_dim;
 
                             std::vector<vec2> square = {
                                 vec2(-1, -1),
@@ -324,7 +327,6 @@ void Input_system::call() {
                                 vec2(-1, 1)
                             };
 
-                            vec2 size = vec2(core.random() * 0.5f + 0.5f, core.random() * 0.5f + 0.5f) * (max_dim - min_dim) + min_dim;
                             c.vertices = square;
                             for(vec2& v : c.vertices) v *= size * 0.5f;
 
@@ -377,18 +379,19 @@ void Input_system::call() {
 
                         if(ps.collision_point(c, rel_point)) {
                             held_object = entity;
-                            held_constraint = ps.position_constraints.size();
+                            held_constraint = ps.constraints.size();
 
-                            Position_constraint constraint;
+                            Constraint constraint;
                             constraint.a = entity;
-                            constraint.pa = rel_point;
-                            constraint.pb = world_cursor_pos;
                             
-                            constraint.dir = vec2(1, 0);
-                            ps.position_constraints.push_back(constraint);
-                            
-                            constraint.dir = vec2(0, 1);
-                            ps.position_constraints.push_back(constraint);
+                            pos_constraint pc;
+                            pc.a = rel_point;
+                            pc.b = world_cursor_pos;
+                            pc.vs = {vec2(1, 0), vec2(0, 1)};
+
+                            constraint.pos.push_back(pc);
+
+                            ps.constraints.push_back(constraint);
                         }
                     }
                 } else {
@@ -401,6 +404,9 @@ void Input_system::call() {
             --arrow_delta;
         } else if(key == GLFW_KEY_RIGHT) {
             ++arrow_delta;
+        } else if(key == GLFW_KEY_0) {
+            profiler.output();
+            profiler.restart();
         }
     }
     
@@ -419,15 +425,11 @@ void Input_system::call() {
     if(held_object != 0xFFFFFFFF) {
         if(!key_map[GLFW_MOUSE_BUTTON_LEFT]) {
             held_object = 0xFFFFFFFF;
-            
-            ps.position_constraints.erase(ps.position_constraints.begin() + held_constraint);
-            ps.position_constraints.erase(ps.position_constraints.begin() + held_constraint);
-        } else {
-            Position_constraint& pc1 = ps.position_constraints[held_constraint];
-            Position_constraint& pc2 = ps.position_constraints[held_constraint + 1];
 
-            pc1.pb = world_cursor_pos;
-            pc2.pb = world_cursor_pos;
+            ps.constraints.erase(ps.constraints.begin() + held_constraint);
+        } else {
+            Constraint& c = ps.constraints[held_constraint];
+            c.pos[0].b = world_cursor_pos;
         }
     }
 
