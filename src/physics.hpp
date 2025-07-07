@@ -35,16 +35,14 @@ struct Collision_data {
     float prev_lambdaT = 0.0f;
 };
 
-struct Collision_constraint {
+struct col_constraint {
     Collision_data* d;
-
-    Collider* ca;
-    Transform* ta;
-    Collider* cb;
-    Transform* tb;
 
     vec2 pa;
     vec2 pb;
+    
+    vec2 normal;
+    vec2 tangent;
 
     float lambdaN = 0.0f;
     float lambdaT = 0.0f;
@@ -52,8 +50,23 @@ struct Collision_constraint {
     float inertiaN;
     float inertiaT;
 
+    float baumgarte;
+
+};
+
+struct Collision_constraint {
+    uint32_t a;
+    uint32_t b;
+    
+    Collider* ca;
+    Transform* ta;
+    Collider* cb;
+    Transform* tb;
+
+    std::vector<col_constraint> constraints;
+
     void get_points();
-    float get_value();
+    void get_value();
 };
 
 struct pos_constraint {
@@ -112,7 +125,7 @@ struct Sap_point {
 struct Physics_system : System {
     float physics_step = 0.02f;
     float physics_time = 0.0f;
-    uint32_t max_frames = 8;
+    uint32_t max_frames = 2;
     uint32_t temporal_iterations = 1;
 
     std::unordered_map<uint64_t, std::vector<Collision_data>> collision_table;
@@ -134,7 +147,7 @@ struct Physics_system : System {
 
     static vec2 support_func(std::vector<vec2>& vertices, vec2 radius, vec2 direction, mat2 orientation = identity<mat2>());
 
-    void insert_collision(uint64_t a, Collision_data c);
+    void insert_collision(Collision_data c);
 
     void solve_constraints(std::vector<Collision_constraint>& constraints);
 

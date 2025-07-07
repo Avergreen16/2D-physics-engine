@@ -256,7 +256,7 @@ std::optional<Collision_data> Physics_system::collision(Collider& ca, Transform&
     std::vector<vec2> a_vertices;
     std::vector<vec2> b_vertices;
 
-    float limit = 0.00001;
+    float limit = 0.01;
 
     transform_vertices(ta, ca, a_vertices, ta.position);
     transform_vertices(tb, cb, b_vertices, ta.position);
@@ -298,7 +298,7 @@ std::optional<Collision_data> Physics_system::collision(Collider& ca, Transform&
                 if(glm::length(difference) < limit) return {};
             }
 
-            if(glm::dot(point_m, direction) < limit * 2) return {};
+            if(glm::dot(point_m, direction) < limit) return {};
 
             simplex.vertices.push_back(Simplex_vertex{point_m, point_a, point_b});
 
@@ -435,28 +435,21 @@ bool Physics_system::collision_point(Collider& ca, vec2 point) {
     }
 }
 
-void Physics_system::insert_collision(uint64_t a, Collision_data c) {
+void Physics_system::insert_collision(Collision_data c) {
+    uint64_t a = uint64_t(c.a) | (uint64_t(c.b) << 32);
+
     if(!collision_table.contains(a)) {
         collision_table.emplace(a, std::vector<Collision_data>());
     }
         
     std::vector<Collision_data>& v = collision_table[a];
 
-    std::vector<uint32_t> delete_values;
-
     for(int i = v.size() - 1; i >= 0; --i) {
         Collision_data& d = v[i];
         vec2 diff_a = d.pa - c.pa;
         vec2 diff_b = d.pb - c.pb;
 
-        if(length(diff_a) < 0.05f || length(diff_b) < 0.05f) {
-            //delete_values.push_back(i);
-            return;
-        }
-    }
-
-    for(uint32_t d : delete_values) {
-        v.erase(v.begin() + d);
+        if(length(diff_a) < 0.05f || length(diff_b) < 0.05f) return;
     }
 
     v.push_back(c);
@@ -513,30 +506,6 @@ std::vector<uint64_t> Physics_system::sweep_and_prune(std::vector<uint32_t>& inp
 
 void Physics_system::physics_loop() {
     profiler.reset();
-    for(auto& [k, d] : collision_table) {
-        for(int i = 0; i < d.size(); ++i) {
-            Collision_data& c = d[i];
-            
-            Transform& at = ecs.get_component<Transform>(c.a);
-            Collider& ac = ecs.get_component<Collider>(c.a);
-            
-            Collision_constraint cc;
-            cc.d = &c;
-            cc.get_points();
-
-            vec2 distance = cc.pa - cc.pb;
-            
-            float dot_normal = dot(distance, c.normal);
-
-            float v = length(distance - c.normal * dot_normal);
-
-            if(dot_normal > 0.01 || v > 0.01) {
-                d.erase(d.begin() + i);
-                --i;
-            }
-        }
-    }
-    profiler.step("prune collisions");
 
     std::vector<uint32_t> input;
     for(uint32_t a : collectors[0].entities) {
@@ -547,98 +516,117 @@ void Physics_system::physics_loop() {
         ac.bounding_box = bounding_box;
 
         input.push_back(a);
-    }
-
-
-    Render_system& rs = ecs.get_system<Render_system>();
-    Input_system& is = ecs.get_system<Input_system>();
-    rs.marker_points.clear();
-
-    for(uint32_t a : collectors[0].entities) {
-        Collider& ca = ecs.get_component<Collider>(a);
-        Transform& ta = ecs.get_component<Transform>(a);
-
-        ca.colliding = false;
+        
+        ac.colliding = false;
     }
 
     std::vector<uint64_t> collisions = sweep_and_prune(input);
     profiler.step("sweep and prune");
-    
+
+    const uint32_t num_threads = 64;
+    std::vector<std::thread> threads(num_threads);
+    std::vector<std::vector<Collision_data>> cdata(num_threads);
+    std::vector<std::vector<uint64_t>> threads_collisions(num_threads);
+
+    uint32_t num_collisions = 0;
+    float num_per_thread = float(collisions.size()) / num_threads;
     for(uint64_t i : collisions) {
-        uint32_t a = i & 0xFFFFFFFF;
-        uint32_t b = i >> 32;
-        
-        Collider& ca = ecs.get_component<Collider>(a);
-        Transform& ta = ecs.get_component<Transform>(a);
+        float f = float(num_collisions) / num_per_thread;
+        uint32_t fi = min(uint32_t(f), num_threads - 1);
 
-        Collider& cb = ecs.get_component<Collider>(b);
-        Transform& tb = ecs.get_component<Transform>(b);
+        threads_collisions[fi].push_back(i);
 
-        if(ca.bounding_box.y < cb.bounding_box.w && cb.bounding_box.y < ca.bounding_box.w) {
-            std::optional<Collision_data> c = collision(ca, ta, cb, tb);
+        ++num_collisions;
+    }
+    profiler.step("load possible collisions");
 
-            if(c.has_value()) {
-                ca.colliding = true;
-                cb.colliding = true;
+    auto thread_GJK = [&](uint32_t j) {
+        for(uint64_t i : threads_collisions[j]) {
+            uint32_t a = i & 0xFFFFFFFF;
+            uint32_t b = i >> 32;
+            
+            Collider& ca = ecs.get_component<Collider>(a);
+            Transform& ta = ecs.get_component<Transform>(a);
 
-                bool insert = true;
+            Collider& cb = ecs.get_component<Collider>(b);
+            Transform& tb = ecs.get_component<Transform>(b);
 
-                if(cb.is_static) {
-                    if(ca.is_static) insert = false;
-                    else {
-                        c->pa = transpose(ta.orientation) * c->pa;
-                        c->pb = ta.position + c->pb;
-                        c->a = a;
+            if(ca.bounding_box.y < cb.bounding_box.w && cb.bounding_box.y < ca.bounding_box.w) {
+                std::optional<Collision_data> c = collision(ca, ta, cb, tb);
+
+                if(c.has_value()) {
+                    ca.colliding = true;
+                    cb.colliding = true;
+
+                    bool insert = true;
+
+                    if(cb.is_static) {
+                        if(ca.is_static) insert = false;
+                        else {
+                            c->pa = transpose(ta.orientation) * c->pa;
+                            c->pb = ta.position + c->pb;
+                            c->a = a;
+                            c->b = 0xFFFFFFFF;
+                        }
+                    } else if(ca.is_static) {
+                        c->a = b;
                         c->b = 0xFFFFFFFF;
+                        
+                        vec2 temp = c->pa;
+                        c->pa = transpose(tb.orientation) * (c->pb + (ta.position - tb.position));
+                        c->pb = ta.position + temp;
+                    } else {
+                        c->pa = transpose(ta.orientation) * (c->pa);
+                        c->pb = transpose(tb.orientation) * (c->pb + (ta.position - tb.position));
+                        c->a = a;
+                        c->b = b;
                     }
-                } else if(ca.is_static) {
-                    c->a = b;
-                    c->b = 0xFFFFFFFF;
-                    
-                    vec2 temp = c->pa;
-                    c->pa = transpose(tb.orientation) * (c->pb + (ta.position - tb.position));
-                    c->pb = ta.position + temp;
-                } else {
-                    c->pa = transpose(ta.orientation) * (c->pa);
-                    c->pb = transpose(tb.orientation) * (c->pb + (ta.position - tb.position));
-                    c->a = a;
-                    c->b = b;
-                }
 
-                if(insert) insert_collision(i, c.value());
+                    if(insert) cdata[j].push_back(c.value());
+                }
             }
         }
+    };
+
+    for(int i = 0; i < num_threads; ++i) {
+        threads[i] = std::thread(thread_GJK, i);
+    }
+    
+    for(int i = 0; i < num_threads; ++i) {
+        threads[i].join();
     }
     profiler.step("GJK");
-
     
-    std::vector<Collision_constraint> collision_constraints;
+    for(auto& c : cdata) {
+        for(Collision_data& collision_data : c) {
+            insert_collision(collision_data);
+        }
+    }
+    profiler.step("insert collision constraints");
+    
+    std::vector<Collision_constraint> collision_constraints(collision_table.size());
 
+    uint32_t i = 0;
     for(auto& [k, d] : collision_table) {
+        Collision_constraint cc;
+        uint32_t a = k & 0xFFFFFFFF;
+        uint32_t b = k >> 32;
+        cc.a = a;
+        cc.b = b;
+        
         for(int i = 0; i < d.size(); ++i) {
+            col_constraint col;
+
             Collision_data& c = d[i];
             
-            Transform& at = ecs.get_component<Transform>(c.a);
-            Collider& ac = ecs.get_component<Collider>(c.a);
-            
-            Collision_constraint cc;
-            cc.d = &c;
+            col.d = &c;
 
-            collision_constraints.push_back(cc);
+            cc.constraints.push_back(col);
         }
+        collision_constraints[i] = cc;
+        ++i;
     }
     profiler.step("load constraint buffer");
-
-    for(uint32_t a : collectors[0].entities) {
-        Collider& ca = ecs.get_component<Collider>(a);
-        Transform& ta = ecs.get_component<Transform>(a);
-
-        if(ca.allow_gravity && !ca.is_static) {
-            vec2 g = get_gravity(ta.position) * -20.0f;
-
-            ca.velocity += g * physics_step;
-        }
-    }
 
     solve_constraints(collision_constraints);
     profiler.step("solve");
@@ -651,9 +639,33 @@ void Physics_system::physics_loop() {
             ta.position += ca.velocity * physics_step;
             mat2 rotation = rotate(ca.angular_velocity * physics_step, vec3(0, 0, 1));
             ta.orientation = rotation * ta.orientation;
+
+            if(ca.allow_gravity) {
+                vec2 g = get_gravity(ta.position) * -20.0f;
+
+                ca.velocity += g * physics_step;
+            }
         }
     }
     profiler.step("add velocities");
+
+    for(Collision_constraint& c : collision_constraints) {
+        for(col_constraint& cc : c.constraints) {
+            vec2 distance = cc.pa - cc.pb;
+
+            float dot_normal = dot(distance, cc.d->normal);
+            float v = length(distance - cc.d->normal * dot_normal);
+            
+            if(dot_normal > 0.01 || v > 0.01) {
+                uint64_t key = uint64_t(c.a) | (uint64_t(c.b) << 32);
+                
+                auto& d = collision_table[key];
+                d.erase(d.begin() + (uint64_t(cc.d) - uint64_t(d.data())) / sizeof(Collision_data));
+                if(d.size() == 0) collision_table.erase(key);
+            }
+        }
+    }
+    profiler.step("prune collisions");
 }
 
 void Physics_system::call() {
@@ -697,43 +709,42 @@ void Physics_system::solve_constraints(std::vector<Collision_constraint>& collis
     }
 
     for(Collision_constraint& data : collisions) {
-        data.lambdaN = data.d->prev_lambdaN;
-        data.lambdaT = data.d->prev_lambdaT;
-        data.ca = &ecs.get_component<Collider>(data.d->a);
-        data.ta = &ecs.get_component<Transform>(data.d->a);
+        data.ca = &ecs.get_component<Collider>(data.a);
+        data.ta = &ecs.get_component<Transform>(data.a);
+        if(data.b != 0xFFFFFFFF) {
+            data.cb = &ecs.get_component<Collider>(data.b);
+            data.tb = &ecs.get_component<Transform>(data.b);
+        }
+
         data.get_points();
+        data.get_value();
 
-        vec2 tangent_vector = vec2(data.d->normal.y, -data.d->normal.x);
+        for(col_constraint& c : data.constraints) {
+            c.lambdaN = c.d->prev_lambdaN;
+            c.lambdaT = c.d->prev_lambdaT;
 
-        data.inertiaN = calculate_inverse_mass(data.ca, data.ta, data.d->normal, data.pa - data.ta->position);
-        data.inertiaT = calculate_inverse_mass(data.ca, data.ta, tangent_vector, data.pa - data.ta->position);
+            if(data.b == 0xFFFFFFFF) {
+                vec2 impulse = c.normal * c.lambdaN;
 
-        if(data.d->b == 0xFFFFFFFF) {
-            vec2 impulse = data.d->normal * data.lambdaN;
+                apply_impulse(data.ca, impulse, c.pa - data.ta->position);
 
-            apply_impulse(data.ca, impulse, data.pa - data.ta->position);
+                vec2 friction_impulse = c.tangent * c.lambdaT;
 
-            vec2 friction_impulse = tangent_vector * data.lambdaT;
+                apply_impulse(data.ca, friction_impulse, c.pa - data.ta->position);
+            } else {                
+                c.inertiaN += calculate_inverse_mass(data.cb, data.tb, c.normal, c.pb - data.tb->position);
+                c.inertiaT += calculate_inverse_mass(data.cb, data.tb, c.tangent, c.pb - data.tb->position);
 
-            apply_impulse(data.ca, friction_impulse, data.pa - data.ta->position);
-        } else {
-            data.cb = &ecs.get_component<Collider>(data.d->b);
-            data.tb = &ecs.get_component<Transform>(data.d->b);
-            
-            data.inertiaN += calculate_inverse_mass(data.cb, data.tb, data.d->normal, data.pb - data.tb->position);
-            data.inertiaT += calculate_inverse_mass(data.cb, data.tb, tangent_vector, data.pb - data.tb->position);
+                vec2 impulse = c.normal * c.lambdaN;
 
-            vec2 impulse = data.d->normal * data.lambdaN;
+                apply_impulse(data.ca, impulse, c.pa - data.ta->position);
+                apply_impulse(data.cb, -impulse, c.pb - data.tb->position);
 
-            apply_impulse(data.ca, impulse, data.pa - data.ta->position);
-            apply_impulse(data.cb, -impulse, data.pb - data.tb->position);
+                vec2 friction_impulse = c.tangent * c.lambdaT;
 
-            // friction
-
-            vec2 friction_impulse = tangent_vector * data.lambdaT;
-
-            apply_impulse(data.ca, friction_impulse, data.pa - data.ta->position);
-            apply_impulse(data.cb, -friction_impulse, data.pb - data.tb->position);
+                apply_impulse(data.ca, friction_impulse, c.pa - data.ta->position);
+                apply_impulse(data.cb, -friction_impulse, c.pb - data.tb->position);
+            }
         }
     }
 
@@ -797,111 +808,113 @@ void Physics_system::solve_constraints(std::vector<Collision_constraint>& collis
         }
         
         for(Collision_constraint& data : collisions) {
-            float inertia = data.inertiaN;
+            for(col_constraint& cc : data.constraints) {
+                float inertia = cc.inertiaN;
 
-            vec2 velocity = calculate_point_velocity(data.ca, data.pa - data.ta->position);
+                vec2 velocity = calculate_point_velocity(data.ca, cc.pa - data.ta->position);
 
-            float diff = data.get_value();
-            diff = diff * spring / physics_step;
+                float diff = cc.baumgarte * spring / physics_step;
 
-            if(data.d->b == 0xFFFFFFFF) {
-                float v = dot(velocity, data.d->normal);
+                if(cc.d->b == 0xFFFFFFFF) {
+                    float v = dot(velocity, cc.d->normal);
 
-                float L = -v - diff; 
-                L /= inertia;
-                L -= softness * data.lambdaN;
-                
-                vec2 limits = vec2(0.0f, __FLT_MAX__);
+                    float L = -v - diff; 
+                    L /= inertia;
+                    L -= softness * cc.lambdaN;
+                    
+                    vec2 limits = vec2(0.0f, __FLT_MAX__);
 
-                float new_lambda = data.lambdaN + L;
-                new_lambda = clamp(new_lambda, limits.x, limits.y);
-                L = new_lambda - data.lambdaN;
-                data.lambdaN = new_lambda;
+                    float new_lambda = cc.lambdaN + L;
+                    new_lambda = clamp(new_lambda, limits.x, limits.y);
+                    L = new_lambda - cc.lambdaN;
+                    cc.lambdaN = new_lambda;
 
-                vec2 impulse = data.d->normal * L;
+                    vec2 impulse = cc.d->normal * L;
 
-                apply_impulse(data.ca, impulse, data.pa - data.ta->position);
+                    apply_impulse(data.ca, impulse, cc.pa - data.ta->position);
 
 
-                // friction
+                    // friction
 
-                float normal_magnitude = length(impulse);
+                    float normal_magnitude = length(impulse);
 
-                velocity = calculate_point_velocity(data.ca, data.pa - data.ta->position);
+                    velocity = calculate_point_velocity(data.ca, cc.pa - data.ta->position);
 
-                vec2 tangent_vector = vec2(data.d->normal.y, -data.d->normal.x);
-                float tangent_velocity = dot(velocity, tangent_vector);
+                    vec2 tangent_vector = vec2(cc.d->normal.y, -cc.d->normal.x);
+                    float tangent_velocity = dot(velocity, tangent_vector);
 
-                
-                float inverse_mass = data.inertiaT;
+                    
+                    float inverse_mass = cc.inertiaT;
 
-                float mu = 0.9f;
+                    float mu = 0.9f;
 
-                float max_friction = abs(mu * data.lambdaN);
+                    float max_friction = abs(mu * cc.lambdaN);
 
-                float new_lambdaT = data.lambdaT - tangent_velocity / inverse_mass;
-                new_lambdaT = clamp(new_lambdaT, -max_friction, max_friction);
-                L = new_lambdaT - data.lambdaT;
-                data.lambdaT = new_lambdaT;
+                    float new_lambdaT = cc.lambdaT - tangent_velocity / inverse_mass;
+                    new_lambdaT = clamp(new_lambdaT, -max_friction, max_friction);
+                    L = new_lambdaT - cc.lambdaT;
+                    cc.lambdaT = new_lambdaT;
 
-                float Pt = L;
+                    float Pt = L;
 
-                vec2 friction_impulse = tangent_vector * Pt;
+                    vec2 friction_impulse = tangent_vector * Pt;
 
-                apply_impulse(data.ca, friction_impulse, data.pa - data.ta->position);
-            } else {
-                velocity -= calculate_point_velocity(data.cb, data.pb - data.tb->position);
+                    apply_impulse(data.ca, friction_impulse, cc.pa - data.ta->position);
+                } else {
+                    velocity -= calculate_point_velocity(data.cb, cc.pb - data.tb->position);
 
-                float v = dot(velocity, data.d->normal);
+                    float v = dot(velocity, cc.normal);
 
-                float L = -v - diff;
-                L /= inertia;
-                L -= softness * data.lambdaN;
-                
-                vec2 limits = vec2(0.0f, __FLT_MAX__);
+                    float L = -v - diff;
+                    L /= inertia;
+                    L -= softness * cc.lambdaN;
+                    
+                    vec2 limits = vec2(0.0f, __FLT_MAX__);
 
-                float new_lambda = data.lambdaN + L;
-                new_lambda = clamp(new_lambda, limits.x, limits.y);
-                L = new_lambda - data.lambdaN;
-                data.lambdaN = new_lambda;
+                    float new_lambda = cc.lambdaN + L;
+                    new_lambda = clamp(new_lambda, limits.x, limits.y);
+                    L = new_lambda - cc.lambdaN;
+                    cc.lambdaN = new_lambda;
 
-                vec2 impulse = data.d->normal * L;
-                
-                apply_impulse(data.ca, impulse, data.pa - data.ta->position);
-                apply_impulse(data.cb, -impulse, data.pb - data.tb->position);
+                    vec2 impulse = cc.normal * L;
+                    
+                    apply_impulse(data.ca, impulse, cc.pa - data.ta->position);
+                    apply_impulse(data.cb, -impulse, cc.pb - data.tb->position);
 
-                // friction
+                    // friction
 
-                float normal_magnitude = length(impulse);
+                    float normal_magnitude = length(impulse);
 
-                velocity = calculate_point_velocity(data.ca, data.pa - data.ta->position) - calculate_point_velocity(data.cb, data.pb - data.tb->position);
-                vec2 tangent_vector = vec2(data.d->normal.y, -data.d->normal.x);
-                float tangent_velocity = dot(velocity, tangent_vector);
-                
-                inertia = data.inertiaT;
-                
-                float mu = 0.9f;
+                    velocity = calculate_point_velocity(data.ca, cc.pa - data.ta->position) - calculate_point_velocity(data.cb, cc.pb - data.tb->position);
+                    float tangent_velocity = dot(velocity, cc.tangent);
+                    
+                    inertia = cc.inertiaT;
+                    
+                    float mu = 0.9f;
 
-                float max_friction = abs(mu * data.lambdaN);
+                    float max_friction = abs(mu * cc.lambdaN);
 
-                float new_lambdaT = data.lambdaT - tangent_velocity / inertia;
-                new_lambdaT = clamp(new_lambdaT, -max_friction, max_friction);
-                L = new_lambdaT - data.lambdaT;
-                data.lambdaT = new_lambdaT;
+                    float new_lambdaT = cc.lambdaT - tangent_velocity / inertia;
+                    new_lambdaT = clamp(new_lambdaT, -max_friction, max_friction);
+                    L = new_lambdaT - cc.lambdaT;
+                    cc.lambdaT = new_lambdaT;
 
-                float Pt = L;
+                    float Pt = L;
 
-                vec2 friction_impulse = tangent_vector * Pt;
+                    vec2 friction_impulse = cc.tangent * Pt;
 
-                apply_impulse(data.ca, friction_impulse, data.pa - data.ta->position);
-                apply_impulse(data.cb, -friction_impulse, data.pb - data.tb->position);
+                    apply_impulse(data.ca, friction_impulse, cc.pa - data.ta->position);
+                    apply_impulse(data.cb, -friction_impulse, cc.pb - data.tb->position);
+                }
             }
         }
     }
     
     for(Collision_constraint& c : collisions) {
-        c.d->prev_lambdaN = c.lambdaN;
-        c.d->prev_lambdaT = c.lambdaT;
+        for(col_constraint& cc : c.constraints) {
+            cc.d->prev_lambdaN = cc.lambdaN;
+            cc.d->prev_lambdaT = cc.lambdaT;
+        }
     }
 }
 
@@ -1006,29 +1019,33 @@ vec4 Physics_system::calculate_bounding_box(Collider& c, Transform& t) {
 }
 
 void Collision_constraint::get_points() {
-    Transform& at = ecs.get_component<Transform>(d->a);
-    Collider& ac = ecs.get_component<Collider>(d->a);
+    for(col_constraint& c : constraints) {
+        vec2 point_a = ta->orientation * c.d->pa + ta->position;
 
-    vec2 point_a = at.orientation * d->pa + at.position;
+        c.pa = point_a;
 
-    pa = point_a;
+        if(c.d->b == 0xFFFFFFFF) {
+            c.pb = c.d->pb;
+        } else {
+            vec2 point_b = tb->orientation * c.d->pb + tb->position;
 
-    if(d->b == 0xFFFFFFFF) {
-        pb = d->pb;
-    } else {
-        Transform& bt = ecs.get_component<Transform>(d->b);
-        Collider& bc = ecs.get_component<Collider>(d->b);
-
-        vec2 point_b = bt.orientation * d->pb + bt.position;
-
-        pb = point_b;
+            c.pb = point_b;
+        }
     }
 }
 
-float Collision_constraint::get_value() {
-    vec2 diff = pa - pb;
-    float dd = dot(diff, d->normal);
-    return dd;
+void Collision_constraint::get_value() {
+    for(col_constraint& c : constraints) {
+        vec2 diff = c.pa - c.pb;
+        float dd = dot(diff, c.d->normal);
+        c.baumgarte = dd;
+        
+        c.tangent = vec2(c.d->normal.y, -c.d->normal.x);
+        c.normal = c.d->normal;
+
+        c.inertiaN = Physics_system::calculate_inverse_mass(ca, ta, c.normal, c.pa - ta->position);
+        c.inertiaT = Physics_system::calculate_inverse_mass(ca, ta, c.tangent, c.pa - ta->position);
+    }
 }
 
 
@@ -1088,8 +1105,9 @@ void Constraint::get_values() {
 vec2 get_gravity(vec2 pos) {
     Physics_system& ps = ecs.get_system<Physics_system>();
 
-    vec2 rel_pos = pos;
-    return normalize(vec2(rel_pos.x / (ps.gravity_aspect.x * ps.gravity_aspect.x), rel_pos.y / (ps.gravity_aspect.y * ps.gravity_aspect.y)));
+    //vec2 rel_pos = pos;
+    //return normalize(vec2(rel_pos.x / (ps.gravity_aspect.x * ps.gravity_aspect.x), rel_pos.y / (ps.gravity_aspect.y * ps.gravity_aspect.y)));
+    return vec2(0.0f, 1.0f);
 }
 
 

@@ -112,12 +112,21 @@ int main() {
     Transform t;
     t.position = vec2(0.0f);
     t.orientation = identity<mat2>();
+    std::vector<vec2> square = {
+        vec2(-1, -1),
+        vec2(1, -1),
+        vec2(1, 1),
+        vec2(-1, 1)
+    };
 
     Collider c;
-    c.radius = planet_radius;
+    c.radius = vec2(0.0f);
+    c.vertices = square;
+    for(vec2& v : c.vertices) v *= vec2(512, 1);
+    /*c.radius = planet_radius;
     c.vertices = {
         vec2(0.0f)
-    };
+    };*/
 
     c.is_static = true;
     
@@ -135,7 +144,7 @@ int main() {
     Camera cc;
     cc.scale = 1.0f;
     
-    t.position = vec2(0.0f, 128.0f);
+    t.position = vec2(0.0f, 0.0f);
 
     ecs.insert_component(entity, t);
     ecs.insert_component(entity, cc);

@@ -215,7 +215,7 @@ void Input_system::call() {
                         prev_shape = entity;
                     }*/
 
-                    uint32_t num_links = 6;
+                    uint32_t num_links = 12;
 
                     float sep = 0.125f;
 
@@ -267,7 +267,7 @@ void Input_system::call() {
                             rc.a = vec2(0, 1);
                             rc.b = vec2(0, 1);
                             
-                            constraint.rot.push_back(rc);
+                            //constraint.rot.push_back(rc);
 
                             ps.constraints.push_back(constraint);
                         }
@@ -303,10 +303,17 @@ void Input_system::call() {
                     ecs.insert_component(base, c2);*/
                 } else {
                     ivec2 start_pos = world_cursor_pos;
-                    ivec2 shape_matrix = ivec2(16);
+                    ivec2 shape_matrix = ivec2(32);
                     float separation = 2.0f;
-                    float max_dim = 2.0f;
-                    float min_dim = 1.0f;
+                    vec2 max_dim = vec2(2.0f);
+                    vec2 min_dim = vec2(0.5f);
+
+                    if(key_map[GLFW_KEY_M]){
+                        shape_matrix = ivec2(3);
+                        separation *= 8.0f;
+                        max_dim *= 8.0f;
+                        min_dim *= 8.0f;
+                    }
 
                     for(int x = 0; x < shape_matrix.x; ++x) {
                         for(int y = 0; y < shape_matrix.y; ++y) {
@@ -327,11 +334,17 @@ void Input_system::call() {
                                 vec2(-1, 1)
                             };
 
-                            c.vertices = square;
-                            for(vec2& v : c.vertices) v *= size * 0.5f;
+                            if(core.random() < 0.0f) {
+                                c.vertices = square;
+                                for(vec2& v : c.vertices) v *= size * 0.5f;
+                                c.radius = vec2(0.0f);
+                                c.mass = size.x * size.y * 25.0f;
+                            } else {
+                                c.vertices = {vec3(0.0f)};
+                                c.radius = size * 0.5f;
+                                c.mass = size.x * size.y * 25.0f;
+                            }
 
-                            c.radius = vec2(0.0f);
-                            c.mass = size.x * size.y * 25.0f;
                             vec2 shift = Physics_system::calculate_inertia(c);
                             t.position += shift;
 
