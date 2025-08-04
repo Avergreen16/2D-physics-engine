@@ -303,7 +303,7 @@ void Input_system::call() {
                     ecs.insert_component(base, c2);*/
                 } else {
                     ivec2 start_pos = world_cursor_pos;
-                    ivec2 shape_matrix = ivec2(32);
+                    ivec2 shape_matrix = ivec2(16);
                     float separation = 2.0f;
                     vec2 max_dim = vec2(2.0f);
                     vec2 min_dim = vec2(0.5f);
@@ -334,7 +334,7 @@ void Input_system::call() {
                                 vec2(-1, 1)
                             };
 
-                            if(core.random() < 0.0f) {
+                            if(core.random() < 0.0f || true) {
                                 c.vertices = square;
                                 for(vec2& v : c.vertices) v *= size * 0.5f;
                                 c.radius = vec2(0.0f);

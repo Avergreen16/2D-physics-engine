@@ -117,9 +117,19 @@ struct Constraint {
 };
 
 struct Sap_point {
-    float start;
-    float end;
+    vec2 start;
+    vec2 end;
     uint32_t id;
+};
+
+struct Collision_input {
+    uint32_t a;
+    uint32_t b;
+
+    Collider* ca;
+    Transform* ta;
+    Collider* cb;
+    Transform* tb;
 };
 
 struct Physics_system : System {
@@ -139,13 +149,14 @@ struct Physics_system : System {
 
     Physics_system();
 
-    static std::optional<Collision_data> collision(Collider& ca, Transform& ta, Collider& cb, Transform& tb);
+    static std::vector<std::optional<Collision_data>> collision(std::vector<Collision_input>);
     
     static bool collision_point(Collider& ca, vec2 point);
 
     static void transform_vertices(Transform& t, Collider& c, std::vector<vec2>& vertices, vec2 origin);
 
-    static vec2 support_func(std::vector<vec2>& vertices, vec2 radius, vec2 direction, mat2 orientation = identity<mat2>());
+    static vec2 support_func(std::vector<vec2>& vertices, float radius, vec2 direction);
+    static simd_vec2 support_func(std::vector<simd_vec2>& vertices, simd_vec2 direction);
 
     void insert_collision(Collision_data c);
 
