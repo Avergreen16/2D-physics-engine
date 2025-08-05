@@ -2,6 +2,7 @@
 
 #include "wrapper.hpp"
 #include "ecs.hpp"
+#include "random.hpp"
 
 struct Collider {
     std::vector<vec2> vertices;
@@ -10,7 +11,7 @@ struct Collider {
     bool colliding = false;
 
     float mass;
-    float inertia;
+    float inertia = __FLT_MAX__;
 
     bool allow_gravity = true;
     bool allow_rotation = true;
@@ -149,7 +150,8 @@ struct Physics_system : System {
 
     Physics_system();
 
-    static std::vector<std::optional<Collision_data>> collision(std::vector<Collision_input>);
+    static std::vector<bool> collision(std::vector<Collision_input>);
+    //static std::vector<std::optional<Collision_data>> collision(std::vector<Collision_input>);
     
     static bool collision_point(Collider& ca, vec2 point);
 

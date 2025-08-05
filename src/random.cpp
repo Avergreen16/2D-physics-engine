@@ -2,6 +2,20 @@
 
 #include <bit>
 
+xsimd::batch_bool<int> bfloat_to_bint(xsimd::batch_bool<float> f) {
+    xsimd::batch<float> i1 = xsimd::bitwise_cast<xsimd::batch<float>>(f);
+    xsimd::batch<int> i2 = xsimd::bitwise_cast<int>(i1);
+
+    return i2 != 0;
+}
+
+xsimd::batch_bool<float> bint_to_bfloat(xsimd::batch_bool<int> f) {
+    xsimd::batch<int> i1 = xsimd::bitwise_cast<xsimd::batch<int>>(f);
+    xsimd::batch<float> i2 = xsimd::bitwise_cast<float>(i1);
+
+    return i2 != 0.0f;
+}
+
 uint32_t hash(uint32_t x) {
     x ^= x >> 16;
     x *= 0x7feb352dU;

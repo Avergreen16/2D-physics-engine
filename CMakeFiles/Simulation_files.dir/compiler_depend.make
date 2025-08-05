@@ -589,37 +589,56 @@ CMakeFiles/Simulation_files.dir/src/core.cpp.obj: src/core.cpp \
   include/glm/geometric.hpp \
   include/glm/gtx/orthonormalize.inl \
   src/random.hpp \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/simd \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_detail.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/numeric_traits.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/bitset \
+  include/xsimd/xsimd.hpp \
+  include/xsimd/config/xsimd_config.hpp \
+  include/xsimd/config/xsimd_inline.hpp \
+  include/xsimd/arch/xsimd_scalar.hpp \
+  C:/msys64/ucrt64/include/c++/15.1.0/complex \
   C:/msys64/ucrt64/include/c++/15.1.0/cstring \
   C:/msys64/ucrt64/include/string.h \
   C:/msys64/ucrt64/include/sec_api/string_s.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/utility \
-  C:/msys64/ucrt64/include/c++/15.1.0/bits/stl_relops.h \
+  include/xsimd/memory/xsimd_aligned_allocator.hpp \
   C:/msys64/ucrt64/include/c++/15.1.0/algorithm \
   C:/msys64/ucrt64/include/c++/15.1.0/bits/ranges_algo.h \
   C:/msys64/ucrt64/include/c++/15.1.0/pstl/glue_algorithm_defs.h \
-  C:/msys64/ucrt64/lib/clang/20/include/x86intrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/ia32intrin.h \
+  C:/msys64/ucrt64/include/c++/15.1.0/utility \
+  C:/msys64/ucrt64/include/c++/15.1.0/bits/stl_relops.h \
+  include/xsimd/config/xsimd_arch.hpp \
+  include/xsimd/types/xsimd_all_registers.hpp \
+  include/xsimd/types/xsimd_fma3_sse_register.hpp \
+  include/xsimd/types/xsimd_sse4_2_register.hpp \
+  include/xsimd/types/xsimd_sse4_1_register.hpp \
+  include/xsimd/types/xsimd_ssse3_register.hpp \
+  include/xsimd/types/xsimd_sse3_register.hpp \
+  include/xsimd/types/xsimd_sse2_register.hpp \
+  include/xsimd/types/xsimd_common_arch.hpp \
+  include/xsimd/config/xsimd_config.hpp \
+  include/xsimd/types/xsimd_register.hpp \
+  C:/msys64/ucrt64/lib/clang/20/include/emmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/xmmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/mmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/pmmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/tmmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/smmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/popcntintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/crc32intrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/nmmintrin.h \
+  include/xsimd/types/xsimd_fma4_register.hpp \
+  include/xsimd/types/xsimd_sse2_register.hpp \
+  include/xsimd/types/xsimd_sse3_register.hpp \
+  include/xsimd/types/xsimd_sse4_1_register.hpp \
+  include/xsimd/types/xsimd_sse4_2_register.hpp \
+  include/xsimd/types/xsimd_avx2_register.hpp \
+  include/xsimd/types/xsimd_avx_register.hpp \
+  include/xsimd/types/xsimd_common_arch.hpp \
   C:/msys64/ucrt64/lib/clang/20/include/immintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/x86gprintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/hresetintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/uintrintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/usermsrintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/crc32intrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/prfchiintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/raointintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/cmpccxaddintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/mmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/xmmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/emmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/pmmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/tmmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/smmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/popcntintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/wmmintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/__wmmintrin_aes.h \
   C:/msys64/ucrt64/lib/clang/20/include/__wmmintrin_pclmul.h \
@@ -724,22 +743,107 @@ CMakeFiles/Simulation_files.dir/src/core.cpp.obj: src/core.cpp \
   C:/msys64/ucrt64/lib/clang/20/include/enqcmdintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/serializeintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/tsxldtrkintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/prfchwintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/ammintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/fma4intrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/xopintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/tbmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/lwpintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/mwaitxintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/clzerointrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/rdpruintrin.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_fixed_size.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_scalar.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_builtin.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_converter.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_x86.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_x86_conversions.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_math.h
+  include/xsimd/types/xsimd_avx_register.hpp \
+  include/xsimd/types/xsimd_avxvnni_register.hpp \
+  include/xsimd/types/xsimd_avx2_register.hpp \
+  include/xsimd/types/xsimd_fma3_avx2_register.hpp \
+  include/xsimd/types/xsimd_fma3_avx_register.hpp \
+  include/xsimd/types/xsimd_avx512vnni_avx512bw_register.hpp \
+  include/xsimd/types/xsimd_avx512bw_register.hpp \
+  include/xsimd/types/xsimd_avx512dq_register.hpp \
+  include/xsimd/types/xsimd_avx512cd_register.hpp \
+  include/xsimd/types/xsimd_avx512f_register.hpp \
+  include/xsimd/types/xsimd_common_arch.hpp \
+  include/xsimd/types/xsimd_avx512vnni_avx512vbmi2_register.hpp \
+  include/xsimd/types/xsimd_avx512vbmi2_register.hpp \
+  include/xsimd/types/xsimd_avx512vbmi_register.hpp \
+  include/xsimd/types/xsimd_avx512ifma_register.hpp \
+  include/xsimd/types/xsimd_avx512bw_register.hpp \
+  include/xsimd/types/xsimd_avx512ifma_register.hpp \
+  include/xsimd/types/xsimd_avx512vbmi2_register.hpp \
+  include/xsimd/types/xsimd_avx512vbmi_register.hpp \
+  include/xsimd/types/xsimd_avx512er_register.hpp \
+  include/xsimd/types/xsimd_avx512dq_register.hpp \
+  include/xsimd/types/xsimd_avx512pf_register.hpp \
+  include/xsimd/types/xsimd_avx512er_register.hpp \
+  include/xsimd/types/xsimd_avx512bw_register.hpp \
+  include/xsimd/types/xsimd_avx512cd_register.hpp \
+  include/xsimd/types/xsimd_avx512dq_register.hpp \
+  include/xsimd/types/xsimd_avx512f_register.hpp \
+  include/xsimd/types/xsimd_i8mm_neon64_register.hpp \
+  include/xsimd/types/xsimd_neon64_register.hpp \
+  include/xsimd/types/xsimd_neon_register.hpp \
+  include/xsimd/types/xsimd_common_arch.hpp \
+  include/xsimd/types/xsimd_register.hpp \
+  include/xsimd/types/xsimd_neon64_register.hpp \
+  include/xsimd/types/xsimd_neon_register.hpp \
+  include/xsimd/types/xsimd_sve_register.hpp \
+  include/xsimd/types/xsimd_common_arch.hpp \
+  include/xsimd/types/xsimd_register.hpp \
+  include/xsimd/types/xsimd_rvv_register.hpp \
+  include/xsimd/types/xsimd_wasm_register.hpp \
+  include/xsimd/config/xsimd_config.hpp \
+  include/xsimd/config/xsimd_cpuid.hpp \
+  include/xsimd/types/xsimd_all_registers.hpp \
+  include/xsimd/types/xsimd_batch.hpp \
+  include/xsimd/config/xsimd_arch.hpp \
+  include/xsimd/memory/xsimd_alignment.hpp \
+  include/xsimd/types/xsimd_utils.hpp \
+  include/xsimd/memory/xsimd_aligned_allocator.hpp \
+  include/xsimd/types/xsimd_utils.hpp \
+  include/xsimd/arch/xsimd_isa.hpp \
+  include/xsimd/config/xsimd_arch.hpp \
+  include/xsimd/arch/xsimd_common_fwd.hpp \
+  include/xsimd/types/xsimd_batch_constant.hpp \
+  include/xsimd/types/xsimd_batch.hpp \
+  include/xsimd/types/xsimd_utils.hpp \
+  include/xsimd/arch/xsimd_sse2.hpp \
+  include/xsimd/types/xsimd_sse2_register.hpp \
+  include/xsimd/arch/xsimd_sse3.hpp \
+  include/xsimd/types/xsimd_sse3_register.hpp \
+  include/xsimd/arch/xsimd_ssse3.hpp \
+  include/xsimd/types/xsimd_ssse3_register.hpp \
+  include/xsimd/types/xsimd_utils.hpp \
+  include/xsimd/arch/xsimd_sse4_1.hpp \
+  include/xsimd/types/xsimd_sse4_1_register.hpp \
+  include/xsimd/arch/xsimd_sse4_2.hpp \
+  include/xsimd/types/xsimd_sse4_2_register.hpp \
+  include/xsimd/arch/xsimd_fma3_sse.hpp \
+  include/xsimd/types/xsimd_fma3_sse_register.hpp \
+  include/xsimd/arch/xsimd_avx.hpp \
+  include/xsimd/types/xsimd_avx_register.hpp \
+  include/xsimd/arch/xsimd_fma3_avx.hpp \
+  include/xsimd/types/xsimd_fma3_avx_register.hpp \
+  include/xsimd/arch/xsimd_avx2.hpp \
+  include/xsimd/types/xsimd_avx2_register.hpp \
+  include/xsimd/arch/xsimd_fma3_avx2.hpp \
+  include/xsimd/types/xsimd_fma3_avx2_register.hpp \
+  include/xsimd/arch/xsimd_fma3_avx.hpp \
+  include/xsimd/arch/xsimd_common.hpp \
+  include/xsimd/arch/common/xsimd_common_arithmetic.hpp \
+  include/xsimd/arch/common/xsimd_common_details.hpp \
+  include/xsimd/math/xsimd_rem_pio2.hpp \
+  include/xsimd/types/xsimd_common_arch.hpp \
+  include/xsimd/types/xsimd_utils.hpp \
+  include/xsimd/arch/xsimd_constants.hpp \
+  include/xsimd/arch/common/xsimd_common_complex.hpp \
+  include/xsimd/arch/common/xsimd_common_logical.hpp \
+  include/xsimd/arch/common/xsimd_common_math.hpp \
+  include/xsimd/arch/xsimd_scalar.hpp \
+  include/xsimd/arch/common/xsimd_common_trigo.hpp \
+  include/xsimd/arch/common/xsimd_common_details.hpp \
+  include/xsimd/arch/common/xsimd_common_memory.hpp \
+  include/xsimd/types/xsimd_batch_constant.hpp \
+  include/xsimd/arch/common/xsimd_common_rounding.hpp \
+  include/xsimd/arch/common/xsimd_common_trigo.hpp \
+  include/xsimd/types/xsimd_batch_constant.hpp \
+  include/xsimd/types/xsimd_traits.hpp \
+  include/xsimd/types/xsimd_batch.hpp \
+  include/xsimd/types/xsimd_batch_constant.hpp \
+  include/xsimd/types/xsimd_traits.hpp \
+  include/xsimd/types/xsimd_api.hpp \
+  include/xsimd/types/xsimd_batch.hpp \
+  include/xsimd/types/xsimd_traits.hpp
 
 CMakeFiles/Simulation_files.dir/src/ecs.cpp.obj: src/ecs.cpp \
   src/ecs.hpp \
@@ -1921,36 +2025,56 @@ CMakeFiles/Simulation_files.dir/src/gui.cpp.obj: src/gui.cpp \
   C:/msys64/ucrt64/include/c++/15.1.0/bitset \
   src/core.hpp \
   src/random.hpp \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/simd \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_detail.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/numeric_traits.h \
+  include/xsimd/xsimd.hpp \
+  include/xsimd/config/xsimd_config.hpp \
+  include/xsimd/config/xsimd_inline.hpp \
+  include/xsimd/arch/xsimd_scalar.hpp \
+  C:/msys64/ucrt64/include/c++/15.1.0/complex \
   C:/msys64/ucrt64/include/c++/15.1.0/cstring \
   C:/msys64/ucrt64/include/string.h \
   C:/msys64/ucrt64/include/sec_api/string_s.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/utility \
-  C:/msys64/ucrt64/include/c++/15.1.0/bits/stl_relops.h \
+  include/xsimd/memory/xsimd_aligned_allocator.hpp \
   C:/msys64/ucrt64/include/c++/15.1.0/algorithm \
   C:/msys64/ucrt64/include/c++/15.1.0/bits/ranges_algo.h \
   C:/msys64/ucrt64/include/c++/15.1.0/pstl/glue_algorithm_defs.h \
-  C:/msys64/ucrt64/lib/clang/20/include/x86intrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/ia32intrin.h \
+  C:/msys64/ucrt64/include/c++/15.1.0/utility \
+  C:/msys64/ucrt64/include/c++/15.1.0/bits/stl_relops.h \
+  include/xsimd/config/xsimd_arch.hpp \
+  include/xsimd/types/xsimd_all_registers.hpp \
+  include/xsimd/types/xsimd_fma3_sse_register.hpp \
+  include/xsimd/types/xsimd_sse4_2_register.hpp \
+  include/xsimd/types/xsimd_sse4_1_register.hpp \
+  include/xsimd/types/xsimd_ssse3_register.hpp \
+  include/xsimd/types/xsimd_sse3_register.hpp \
+  include/xsimd/types/xsimd_sse2_register.hpp \
+  include/xsimd/types/xsimd_common_arch.hpp \
+  include/xsimd/config/xsimd_config.hpp \
+  include/xsimd/types/xsimd_register.hpp \
+  C:/msys64/ucrt64/lib/clang/20/include/emmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/xmmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/mmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/pmmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/tmmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/smmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/popcntintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/crc32intrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/nmmintrin.h \
+  include/xsimd/types/xsimd_fma4_register.hpp \
+  include/xsimd/types/xsimd_sse2_register.hpp \
+  include/xsimd/types/xsimd_sse3_register.hpp \
+  include/xsimd/types/xsimd_sse4_1_register.hpp \
+  include/xsimd/types/xsimd_sse4_2_register.hpp \
+  include/xsimd/types/xsimd_avx2_register.hpp \
+  include/xsimd/types/xsimd_avx_register.hpp \
+  include/xsimd/types/xsimd_common_arch.hpp \
   C:/msys64/ucrt64/lib/clang/20/include/immintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/x86gprintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/hresetintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/uintrintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/usermsrintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/crc32intrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/prfchiintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/raointintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/cmpccxaddintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/mmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/xmmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/emmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/pmmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/tmmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/smmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/popcntintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/wmmintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/__wmmintrin_aes.h \
   C:/msys64/ucrt64/lib/clang/20/include/__wmmintrin_pclmul.h \
@@ -2055,22 +2179,107 @@ CMakeFiles/Simulation_files.dir/src/gui.cpp.obj: src/gui.cpp \
   C:/msys64/ucrt64/lib/clang/20/include/enqcmdintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/serializeintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/tsxldtrkintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/prfchwintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/ammintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/fma4intrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/xopintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/tbmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/lwpintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/mwaitxintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/clzerointrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/rdpruintrin.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_fixed_size.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_scalar.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_builtin.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_converter.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_x86.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_x86_conversions.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_math.h \
+  include/xsimd/types/xsimd_avx_register.hpp \
+  include/xsimd/types/xsimd_avxvnni_register.hpp \
+  include/xsimd/types/xsimd_avx2_register.hpp \
+  include/xsimd/types/xsimd_fma3_avx2_register.hpp \
+  include/xsimd/types/xsimd_fma3_avx_register.hpp \
+  include/xsimd/types/xsimd_avx512vnni_avx512bw_register.hpp \
+  include/xsimd/types/xsimd_avx512bw_register.hpp \
+  include/xsimd/types/xsimd_avx512dq_register.hpp \
+  include/xsimd/types/xsimd_avx512cd_register.hpp \
+  include/xsimd/types/xsimd_avx512f_register.hpp \
+  include/xsimd/types/xsimd_common_arch.hpp \
+  include/xsimd/types/xsimd_avx512vnni_avx512vbmi2_register.hpp \
+  include/xsimd/types/xsimd_avx512vbmi2_register.hpp \
+  include/xsimd/types/xsimd_avx512vbmi_register.hpp \
+  include/xsimd/types/xsimd_avx512ifma_register.hpp \
+  include/xsimd/types/xsimd_avx512bw_register.hpp \
+  include/xsimd/types/xsimd_avx512ifma_register.hpp \
+  include/xsimd/types/xsimd_avx512vbmi2_register.hpp \
+  include/xsimd/types/xsimd_avx512vbmi_register.hpp \
+  include/xsimd/types/xsimd_avx512er_register.hpp \
+  include/xsimd/types/xsimd_avx512dq_register.hpp \
+  include/xsimd/types/xsimd_avx512pf_register.hpp \
+  include/xsimd/types/xsimd_avx512er_register.hpp \
+  include/xsimd/types/xsimd_avx512bw_register.hpp \
+  include/xsimd/types/xsimd_avx512cd_register.hpp \
+  include/xsimd/types/xsimd_avx512dq_register.hpp \
+  include/xsimd/types/xsimd_avx512f_register.hpp \
+  include/xsimd/types/xsimd_i8mm_neon64_register.hpp \
+  include/xsimd/types/xsimd_neon64_register.hpp \
+  include/xsimd/types/xsimd_neon_register.hpp \
+  include/xsimd/types/xsimd_common_arch.hpp \
+  include/xsimd/types/xsimd_register.hpp \
+  include/xsimd/types/xsimd_neon64_register.hpp \
+  include/xsimd/types/xsimd_neon_register.hpp \
+  include/xsimd/types/xsimd_sve_register.hpp \
+  include/xsimd/types/xsimd_common_arch.hpp \
+  include/xsimd/types/xsimd_register.hpp \
+  include/xsimd/types/xsimd_rvv_register.hpp \
+  include/xsimd/types/xsimd_wasm_register.hpp \
+  include/xsimd/config/xsimd_config.hpp \
+  include/xsimd/config/xsimd_cpuid.hpp \
+  include/xsimd/types/xsimd_all_registers.hpp \
+  include/xsimd/types/xsimd_batch.hpp \
+  include/xsimd/config/xsimd_arch.hpp \
+  include/xsimd/memory/xsimd_alignment.hpp \
+  include/xsimd/types/xsimd_utils.hpp \
+  include/xsimd/memory/xsimd_aligned_allocator.hpp \
+  include/xsimd/types/xsimd_utils.hpp \
+  include/xsimd/arch/xsimd_isa.hpp \
+  include/xsimd/config/xsimd_arch.hpp \
+  include/xsimd/arch/xsimd_common_fwd.hpp \
+  include/xsimd/types/xsimd_batch_constant.hpp \
+  include/xsimd/types/xsimd_batch.hpp \
+  include/xsimd/types/xsimd_utils.hpp \
+  include/xsimd/arch/xsimd_sse2.hpp \
+  include/xsimd/types/xsimd_sse2_register.hpp \
+  include/xsimd/arch/xsimd_sse3.hpp \
+  include/xsimd/types/xsimd_sse3_register.hpp \
+  include/xsimd/arch/xsimd_ssse3.hpp \
+  include/xsimd/types/xsimd_ssse3_register.hpp \
+  include/xsimd/types/xsimd_utils.hpp \
+  include/xsimd/arch/xsimd_sse4_1.hpp \
+  include/xsimd/types/xsimd_sse4_1_register.hpp \
+  include/xsimd/arch/xsimd_sse4_2.hpp \
+  include/xsimd/types/xsimd_sse4_2_register.hpp \
+  include/xsimd/arch/xsimd_fma3_sse.hpp \
+  include/xsimd/types/xsimd_fma3_sse_register.hpp \
+  include/xsimd/arch/xsimd_avx.hpp \
+  include/xsimd/types/xsimd_avx_register.hpp \
+  include/xsimd/arch/xsimd_fma3_avx.hpp \
+  include/xsimd/types/xsimd_fma3_avx_register.hpp \
+  include/xsimd/arch/xsimd_avx2.hpp \
+  include/xsimd/types/xsimd_avx2_register.hpp \
+  include/xsimd/arch/xsimd_fma3_avx2.hpp \
+  include/xsimd/types/xsimd_fma3_avx2_register.hpp \
+  include/xsimd/arch/xsimd_fma3_avx.hpp \
+  include/xsimd/arch/xsimd_common.hpp \
+  include/xsimd/arch/common/xsimd_common_arithmetic.hpp \
+  include/xsimd/arch/common/xsimd_common_details.hpp \
+  include/xsimd/math/xsimd_rem_pio2.hpp \
+  include/xsimd/types/xsimd_common_arch.hpp \
+  include/xsimd/types/xsimd_utils.hpp \
+  include/xsimd/arch/xsimd_constants.hpp \
+  include/xsimd/arch/common/xsimd_common_complex.hpp \
+  include/xsimd/arch/common/xsimd_common_logical.hpp \
+  include/xsimd/arch/common/xsimd_common_math.hpp \
+  include/xsimd/arch/xsimd_scalar.hpp \
+  include/xsimd/arch/common/xsimd_common_trigo.hpp \
+  include/xsimd/arch/common/xsimd_common_details.hpp \
+  include/xsimd/arch/common/xsimd_common_memory.hpp \
+  include/xsimd/types/xsimd_batch_constant.hpp \
+  include/xsimd/arch/common/xsimd_common_rounding.hpp \
+  include/xsimd/arch/common/xsimd_common_trigo.hpp \
+  include/xsimd/types/xsimd_batch_constant.hpp \
+  include/xsimd/types/xsimd_traits.hpp \
+  include/xsimd/types/xsimd_batch.hpp \
+  include/xsimd/types/xsimd_batch_constant.hpp \
+  include/xsimd/types/xsimd_traits.hpp \
+  include/xsimd/types/xsimd_api.hpp \
+  include/xsimd/types/xsimd_batch.hpp \
+  include/xsimd/types/xsimd_traits.hpp \
   src/input.hpp \
   src/physics.hpp
 
@@ -2665,36 +2874,56 @@ CMakeFiles/Simulation_files.dir/src/input.cpp.obj: src/input.cpp \
   include/glm/gtx/orthonormalize.inl \
   src/core.hpp \
   src/random.hpp \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/simd \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_detail.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/numeric_traits.h \
+  include/xsimd/xsimd.hpp \
+  include/xsimd/config/xsimd_config.hpp \
+  include/xsimd/config/xsimd_inline.hpp \
+  include/xsimd/arch/xsimd_scalar.hpp \
+  C:/msys64/ucrt64/include/c++/15.1.0/complex \
   C:/msys64/ucrt64/include/c++/15.1.0/cstring \
   C:/msys64/ucrt64/include/string.h \
   C:/msys64/ucrt64/include/sec_api/string_s.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/utility \
-  C:/msys64/ucrt64/include/c++/15.1.0/bits/stl_relops.h \
+  include/xsimd/memory/xsimd_aligned_allocator.hpp \
   C:/msys64/ucrt64/include/c++/15.1.0/algorithm \
   C:/msys64/ucrt64/include/c++/15.1.0/bits/ranges_algo.h \
   C:/msys64/ucrt64/include/c++/15.1.0/pstl/glue_algorithm_defs.h \
-  C:/msys64/ucrt64/lib/clang/20/include/x86intrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/ia32intrin.h \
+  C:/msys64/ucrt64/include/c++/15.1.0/utility \
+  C:/msys64/ucrt64/include/c++/15.1.0/bits/stl_relops.h \
+  include/xsimd/config/xsimd_arch.hpp \
+  include/xsimd/types/xsimd_all_registers.hpp \
+  include/xsimd/types/xsimd_fma3_sse_register.hpp \
+  include/xsimd/types/xsimd_sse4_2_register.hpp \
+  include/xsimd/types/xsimd_sse4_1_register.hpp \
+  include/xsimd/types/xsimd_ssse3_register.hpp \
+  include/xsimd/types/xsimd_sse3_register.hpp \
+  include/xsimd/types/xsimd_sse2_register.hpp \
+  include/xsimd/types/xsimd_common_arch.hpp \
+  include/xsimd/config/xsimd_config.hpp \
+  include/xsimd/types/xsimd_register.hpp \
+  C:/msys64/ucrt64/lib/clang/20/include/emmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/xmmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/mmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/pmmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/tmmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/smmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/popcntintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/crc32intrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/nmmintrin.h \
+  include/xsimd/types/xsimd_fma4_register.hpp \
+  include/xsimd/types/xsimd_sse2_register.hpp \
+  include/xsimd/types/xsimd_sse3_register.hpp \
+  include/xsimd/types/xsimd_sse4_1_register.hpp \
+  include/xsimd/types/xsimd_sse4_2_register.hpp \
+  include/xsimd/types/xsimd_avx2_register.hpp \
+  include/xsimd/types/xsimd_avx_register.hpp \
+  include/xsimd/types/xsimd_common_arch.hpp \
   C:/msys64/ucrt64/lib/clang/20/include/immintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/x86gprintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/hresetintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/uintrintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/usermsrintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/crc32intrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/prfchiintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/raointintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/cmpccxaddintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/mmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/xmmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/emmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/pmmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/tmmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/smmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/popcntintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/wmmintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/__wmmintrin_aes.h \
   C:/msys64/ucrt64/lib/clang/20/include/__wmmintrin_pclmul.h \
@@ -2799,22 +3028,107 @@ CMakeFiles/Simulation_files.dir/src/input.cpp.obj: src/input.cpp \
   C:/msys64/ucrt64/lib/clang/20/include/enqcmdintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/serializeintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/tsxldtrkintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/prfchwintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/ammintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/fma4intrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/xopintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/tbmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/lwpintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/mwaitxintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/clzerointrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/rdpruintrin.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_fixed_size.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_scalar.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_builtin.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_converter.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_x86.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_x86_conversions.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_math.h \
+  include/xsimd/types/xsimd_avx_register.hpp \
+  include/xsimd/types/xsimd_avxvnni_register.hpp \
+  include/xsimd/types/xsimd_avx2_register.hpp \
+  include/xsimd/types/xsimd_fma3_avx2_register.hpp \
+  include/xsimd/types/xsimd_fma3_avx_register.hpp \
+  include/xsimd/types/xsimd_avx512vnni_avx512bw_register.hpp \
+  include/xsimd/types/xsimd_avx512bw_register.hpp \
+  include/xsimd/types/xsimd_avx512dq_register.hpp \
+  include/xsimd/types/xsimd_avx512cd_register.hpp \
+  include/xsimd/types/xsimd_avx512f_register.hpp \
+  include/xsimd/types/xsimd_common_arch.hpp \
+  include/xsimd/types/xsimd_avx512vnni_avx512vbmi2_register.hpp \
+  include/xsimd/types/xsimd_avx512vbmi2_register.hpp \
+  include/xsimd/types/xsimd_avx512vbmi_register.hpp \
+  include/xsimd/types/xsimd_avx512ifma_register.hpp \
+  include/xsimd/types/xsimd_avx512bw_register.hpp \
+  include/xsimd/types/xsimd_avx512ifma_register.hpp \
+  include/xsimd/types/xsimd_avx512vbmi2_register.hpp \
+  include/xsimd/types/xsimd_avx512vbmi_register.hpp \
+  include/xsimd/types/xsimd_avx512er_register.hpp \
+  include/xsimd/types/xsimd_avx512dq_register.hpp \
+  include/xsimd/types/xsimd_avx512pf_register.hpp \
+  include/xsimd/types/xsimd_avx512er_register.hpp \
+  include/xsimd/types/xsimd_avx512bw_register.hpp \
+  include/xsimd/types/xsimd_avx512cd_register.hpp \
+  include/xsimd/types/xsimd_avx512dq_register.hpp \
+  include/xsimd/types/xsimd_avx512f_register.hpp \
+  include/xsimd/types/xsimd_i8mm_neon64_register.hpp \
+  include/xsimd/types/xsimd_neon64_register.hpp \
+  include/xsimd/types/xsimd_neon_register.hpp \
+  include/xsimd/types/xsimd_common_arch.hpp \
+  include/xsimd/types/xsimd_register.hpp \
+  include/xsimd/types/xsimd_neon64_register.hpp \
+  include/xsimd/types/xsimd_neon_register.hpp \
+  include/xsimd/types/xsimd_sve_register.hpp \
+  include/xsimd/types/xsimd_common_arch.hpp \
+  include/xsimd/types/xsimd_register.hpp \
+  include/xsimd/types/xsimd_rvv_register.hpp \
+  include/xsimd/types/xsimd_wasm_register.hpp \
+  include/xsimd/config/xsimd_config.hpp \
+  include/xsimd/config/xsimd_cpuid.hpp \
+  include/xsimd/types/xsimd_all_registers.hpp \
+  include/xsimd/types/xsimd_batch.hpp \
+  include/xsimd/config/xsimd_arch.hpp \
+  include/xsimd/memory/xsimd_alignment.hpp \
+  include/xsimd/types/xsimd_utils.hpp \
+  include/xsimd/memory/xsimd_aligned_allocator.hpp \
+  include/xsimd/types/xsimd_utils.hpp \
+  include/xsimd/arch/xsimd_isa.hpp \
+  include/xsimd/config/xsimd_arch.hpp \
+  include/xsimd/arch/xsimd_common_fwd.hpp \
+  include/xsimd/types/xsimd_batch_constant.hpp \
+  include/xsimd/types/xsimd_batch.hpp \
+  include/xsimd/types/xsimd_utils.hpp \
+  include/xsimd/arch/xsimd_sse2.hpp \
+  include/xsimd/types/xsimd_sse2_register.hpp \
+  include/xsimd/arch/xsimd_sse3.hpp \
+  include/xsimd/types/xsimd_sse3_register.hpp \
+  include/xsimd/arch/xsimd_ssse3.hpp \
+  include/xsimd/types/xsimd_ssse3_register.hpp \
+  include/xsimd/types/xsimd_utils.hpp \
+  include/xsimd/arch/xsimd_sse4_1.hpp \
+  include/xsimd/types/xsimd_sse4_1_register.hpp \
+  include/xsimd/arch/xsimd_sse4_2.hpp \
+  include/xsimd/types/xsimd_sse4_2_register.hpp \
+  include/xsimd/arch/xsimd_fma3_sse.hpp \
+  include/xsimd/types/xsimd_fma3_sse_register.hpp \
+  include/xsimd/arch/xsimd_avx.hpp \
+  include/xsimd/types/xsimd_avx_register.hpp \
+  include/xsimd/arch/xsimd_fma3_avx.hpp \
+  include/xsimd/types/xsimd_fma3_avx_register.hpp \
+  include/xsimd/arch/xsimd_avx2.hpp \
+  include/xsimd/types/xsimd_avx2_register.hpp \
+  include/xsimd/arch/xsimd_fma3_avx2.hpp \
+  include/xsimd/types/xsimd_fma3_avx2_register.hpp \
+  include/xsimd/arch/xsimd_fma3_avx.hpp \
+  include/xsimd/arch/xsimd_common.hpp \
+  include/xsimd/arch/common/xsimd_common_arithmetic.hpp \
+  include/xsimd/arch/common/xsimd_common_details.hpp \
+  include/xsimd/math/xsimd_rem_pio2.hpp \
+  include/xsimd/types/xsimd_common_arch.hpp \
+  include/xsimd/types/xsimd_utils.hpp \
+  include/xsimd/arch/xsimd_constants.hpp \
+  include/xsimd/arch/common/xsimd_common_complex.hpp \
+  include/xsimd/arch/common/xsimd_common_logical.hpp \
+  include/xsimd/arch/common/xsimd_common_math.hpp \
+  include/xsimd/arch/xsimd_scalar.hpp \
+  include/xsimd/arch/common/xsimd_common_trigo.hpp \
+  include/xsimd/arch/common/xsimd_common_details.hpp \
+  include/xsimd/arch/common/xsimd_common_memory.hpp \
+  include/xsimd/types/xsimd_batch_constant.hpp \
+  include/xsimd/arch/common/xsimd_common_rounding.hpp \
+  include/xsimd/arch/common/xsimd_common_trigo.hpp \
+  include/xsimd/types/xsimd_batch_constant.hpp \
+  include/xsimd/types/xsimd_traits.hpp \
+  include/xsimd/types/xsimd_batch.hpp \
+  include/xsimd/types/xsimd_batch_constant.hpp \
+  include/xsimd/types/xsimd_traits.hpp \
+  include/xsimd/types/xsimd_api.hpp \
+  include/xsimd/types/xsimd_batch.hpp \
+  include/xsimd/types/xsimd_traits.hpp \
   src/render.hpp \
   src/gui.hpp \
   src/physics.hpp \
@@ -3410,38 +3724,57 @@ CMakeFiles/Simulation_files.dir/src/physics.cpp.obj: src/physics.cpp \
   include/glm/gtx/orthonormalize.inl \
   src/ecs.hpp \
   C:/msys64/ucrt64/include/c++/15.1.0/bitset \
-  src/render.hpp \
   src/random.hpp \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/simd \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_detail.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/numeric_traits.h \
+  include/xsimd/xsimd.hpp \
+  include/xsimd/config/xsimd_config.hpp \
+  include/xsimd/config/xsimd_inline.hpp \
+  include/xsimd/arch/xsimd_scalar.hpp \
+  C:/msys64/ucrt64/include/c++/15.1.0/complex \
   C:/msys64/ucrt64/include/c++/15.1.0/cstring \
   C:/msys64/ucrt64/include/string.h \
   C:/msys64/ucrt64/include/sec_api/string_s.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/utility \
-  C:/msys64/ucrt64/include/c++/15.1.0/bits/stl_relops.h \
+  include/xsimd/memory/xsimd_aligned_allocator.hpp \
   C:/msys64/ucrt64/include/c++/15.1.0/algorithm \
   C:/msys64/ucrt64/include/c++/15.1.0/bits/ranges_algo.h \
   C:/msys64/ucrt64/include/c++/15.1.0/pstl/glue_algorithm_defs.h \
-  C:/msys64/ucrt64/lib/clang/20/include/x86intrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/ia32intrin.h \
+  C:/msys64/ucrt64/include/c++/15.1.0/utility \
+  C:/msys64/ucrt64/include/c++/15.1.0/bits/stl_relops.h \
+  include/xsimd/config/xsimd_arch.hpp \
+  include/xsimd/types/xsimd_all_registers.hpp \
+  include/xsimd/types/xsimd_fma3_sse_register.hpp \
+  include/xsimd/types/xsimd_sse4_2_register.hpp \
+  include/xsimd/types/xsimd_sse4_1_register.hpp \
+  include/xsimd/types/xsimd_ssse3_register.hpp \
+  include/xsimd/types/xsimd_sse3_register.hpp \
+  include/xsimd/types/xsimd_sse2_register.hpp \
+  include/xsimd/types/xsimd_common_arch.hpp \
+  include/xsimd/config/xsimd_config.hpp \
+  include/xsimd/types/xsimd_register.hpp \
+  C:/msys64/ucrt64/lib/clang/20/include/emmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/xmmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/mmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/pmmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/tmmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/smmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/popcntintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/crc32intrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/nmmintrin.h \
+  include/xsimd/types/xsimd_fma4_register.hpp \
+  include/xsimd/types/xsimd_sse2_register.hpp \
+  include/xsimd/types/xsimd_sse3_register.hpp \
+  include/xsimd/types/xsimd_sse4_1_register.hpp \
+  include/xsimd/types/xsimd_sse4_2_register.hpp \
+  include/xsimd/types/xsimd_avx2_register.hpp \
+  include/xsimd/types/xsimd_avx_register.hpp \
+  include/xsimd/types/xsimd_common_arch.hpp \
   C:/msys64/ucrt64/lib/clang/20/include/immintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/x86gprintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/hresetintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/uintrintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/usermsrintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/crc32intrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/prfchiintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/raointintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/cmpccxaddintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/mmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/xmmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/emmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/pmmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/tmmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/smmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/popcntintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/wmmintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/__wmmintrin_aes.h \
   C:/msys64/ucrt64/lib/clang/20/include/__wmmintrin_pclmul.h \
@@ -3546,22 +3879,108 @@ CMakeFiles/Simulation_files.dir/src/physics.cpp.obj: src/physics.cpp \
   C:/msys64/ucrt64/lib/clang/20/include/enqcmdintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/serializeintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/tsxldtrkintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/prfchwintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/ammintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/fma4intrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/xopintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/tbmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/lwpintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/mwaitxintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/clzerointrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/rdpruintrin.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_fixed_size.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_scalar.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_builtin.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_converter.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_x86.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_x86_conversions.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_math.h \
+  include/xsimd/types/xsimd_avx_register.hpp \
+  include/xsimd/types/xsimd_avxvnni_register.hpp \
+  include/xsimd/types/xsimd_avx2_register.hpp \
+  include/xsimd/types/xsimd_fma3_avx2_register.hpp \
+  include/xsimd/types/xsimd_fma3_avx_register.hpp \
+  include/xsimd/types/xsimd_avx512vnni_avx512bw_register.hpp \
+  include/xsimd/types/xsimd_avx512bw_register.hpp \
+  include/xsimd/types/xsimd_avx512dq_register.hpp \
+  include/xsimd/types/xsimd_avx512cd_register.hpp \
+  include/xsimd/types/xsimd_avx512f_register.hpp \
+  include/xsimd/types/xsimd_common_arch.hpp \
+  include/xsimd/types/xsimd_avx512vnni_avx512vbmi2_register.hpp \
+  include/xsimd/types/xsimd_avx512vbmi2_register.hpp \
+  include/xsimd/types/xsimd_avx512vbmi_register.hpp \
+  include/xsimd/types/xsimd_avx512ifma_register.hpp \
+  include/xsimd/types/xsimd_avx512bw_register.hpp \
+  include/xsimd/types/xsimd_avx512ifma_register.hpp \
+  include/xsimd/types/xsimd_avx512vbmi2_register.hpp \
+  include/xsimd/types/xsimd_avx512vbmi_register.hpp \
+  include/xsimd/types/xsimd_avx512er_register.hpp \
+  include/xsimd/types/xsimd_avx512dq_register.hpp \
+  include/xsimd/types/xsimd_avx512pf_register.hpp \
+  include/xsimd/types/xsimd_avx512er_register.hpp \
+  include/xsimd/types/xsimd_avx512bw_register.hpp \
+  include/xsimd/types/xsimd_avx512cd_register.hpp \
+  include/xsimd/types/xsimd_avx512dq_register.hpp \
+  include/xsimd/types/xsimd_avx512f_register.hpp \
+  include/xsimd/types/xsimd_i8mm_neon64_register.hpp \
+  include/xsimd/types/xsimd_neon64_register.hpp \
+  include/xsimd/types/xsimd_neon_register.hpp \
+  include/xsimd/types/xsimd_common_arch.hpp \
+  include/xsimd/types/xsimd_register.hpp \
+  include/xsimd/types/xsimd_neon64_register.hpp \
+  include/xsimd/types/xsimd_neon_register.hpp \
+  include/xsimd/types/xsimd_sve_register.hpp \
+  include/xsimd/types/xsimd_common_arch.hpp \
+  include/xsimd/types/xsimd_register.hpp \
+  include/xsimd/types/xsimd_rvv_register.hpp \
+  include/xsimd/types/xsimd_wasm_register.hpp \
+  include/xsimd/config/xsimd_config.hpp \
+  include/xsimd/config/xsimd_cpuid.hpp \
+  include/xsimd/types/xsimd_all_registers.hpp \
+  include/xsimd/types/xsimd_batch.hpp \
+  include/xsimd/config/xsimd_arch.hpp \
+  include/xsimd/memory/xsimd_alignment.hpp \
+  include/xsimd/types/xsimd_utils.hpp \
+  include/xsimd/memory/xsimd_aligned_allocator.hpp \
+  include/xsimd/types/xsimd_utils.hpp \
+  include/xsimd/arch/xsimd_isa.hpp \
+  include/xsimd/config/xsimd_arch.hpp \
+  include/xsimd/arch/xsimd_common_fwd.hpp \
+  include/xsimd/types/xsimd_batch_constant.hpp \
+  include/xsimd/types/xsimd_batch.hpp \
+  include/xsimd/types/xsimd_utils.hpp \
+  include/xsimd/arch/xsimd_sse2.hpp \
+  include/xsimd/types/xsimd_sse2_register.hpp \
+  include/xsimd/arch/xsimd_sse3.hpp \
+  include/xsimd/types/xsimd_sse3_register.hpp \
+  include/xsimd/arch/xsimd_ssse3.hpp \
+  include/xsimd/types/xsimd_ssse3_register.hpp \
+  include/xsimd/types/xsimd_utils.hpp \
+  include/xsimd/arch/xsimd_sse4_1.hpp \
+  include/xsimd/types/xsimd_sse4_1_register.hpp \
+  include/xsimd/arch/xsimd_sse4_2.hpp \
+  include/xsimd/types/xsimd_sse4_2_register.hpp \
+  include/xsimd/arch/xsimd_fma3_sse.hpp \
+  include/xsimd/types/xsimd_fma3_sse_register.hpp \
+  include/xsimd/arch/xsimd_avx.hpp \
+  include/xsimd/types/xsimd_avx_register.hpp \
+  include/xsimd/arch/xsimd_fma3_avx.hpp \
+  include/xsimd/types/xsimd_fma3_avx_register.hpp \
+  include/xsimd/arch/xsimd_avx2.hpp \
+  include/xsimd/types/xsimd_avx2_register.hpp \
+  include/xsimd/arch/xsimd_fma3_avx2.hpp \
+  include/xsimd/types/xsimd_fma3_avx2_register.hpp \
+  include/xsimd/arch/xsimd_fma3_avx.hpp \
+  include/xsimd/arch/xsimd_common.hpp \
+  include/xsimd/arch/common/xsimd_common_arithmetic.hpp \
+  include/xsimd/arch/common/xsimd_common_details.hpp \
+  include/xsimd/math/xsimd_rem_pio2.hpp \
+  include/xsimd/types/xsimd_common_arch.hpp \
+  include/xsimd/types/xsimd_utils.hpp \
+  include/xsimd/arch/xsimd_constants.hpp \
+  include/xsimd/arch/common/xsimd_common_complex.hpp \
+  include/xsimd/arch/common/xsimd_common_logical.hpp \
+  include/xsimd/arch/common/xsimd_common_math.hpp \
+  include/xsimd/arch/xsimd_scalar.hpp \
+  include/xsimd/arch/common/xsimd_common_trigo.hpp \
+  include/xsimd/arch/common/xsimd_common_details.hpp \
+  include/xsimd/arch/common/xsimd_common_memory.hpp \
+  include/xsimd/types/xsimd_batch_constant.hpp \
+  include/xsimd/arch/common/xsimd_common_rounding.hpp \
+  include/xsimd/arch/common/xsimd_common_trigo.hpp \
+  include/xsimd/types/xsimd_batch_constant.hpp \
+  include/xsimd/types/xsimd_traits.hpp \
+  include/xsimd/types/xsimd_batch.hpp \
+  include/xsimd/types/xsimd_batch_constant.hpp \
+  include/xsimd/types/xsimd_traits.hpp \
+  include/xsimd/types/xsimd_api.hpp \
+  include/xsimd/types/xsimd_batch.hpp \
+  include/xsimd/types/xsimd_traits.hpp \
+  src/render.hpp \
   src/gui.hpp \
   src/core.hpp \
   src/input.hpp
@@ -4153,37 +4572,56 @@ CMakeFiles/Simulation_files.dir/src/random.cpp.obj: src/random.cpp \
   include/glm/vec3.hpp \
   include/glm/geometric.hpp \
   include/glm/gtx/orthonormalize.inl \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/simd \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_detail.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/numeric_traits.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/bitset \
+  include/xsimd/xsimd.hpp \
+  include/xsimd/config/xsimd_config.hpp \
+  include/xsimd/config/xsimd_inline.hpp \
+  include/xsimd/arch/xsimd_scalar.hpp \
+  C:/msys64/ucrt64/include/c++/15.1.0/complex \
   C:/msys64/ucrt64/include/c++/15.1.0/cstring \
   C:/msys64/ucrt64/include/string.h \
   C:/msys64/ucrt64/include/sec_api/string_s.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/utility \
-  C:/msys64/ucrt64/include/c++/15.1.0/bits/stl_relops.h \
+  include/xsimd/memory/xsimd_aligned_allocator.hpp \
   C:/msys64/ucrt64/include/c++/15.1.0/algorithm \
   C:/msys64/ucrt64/include/c++/15.1.0/bits/ranges_algo.h \
   C:/msys64/ucrt64/include/c++/15.1.0/pstl/glue_algorithm_defs.h \
-  C:/msys64/ucrt64/lib/clang/20/include/x86intrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/ia32intrin.h \
+  C:/msys64/ucrt64/include/c++/15.1.0/utility \
+  C:/msys64/ucrt64/include/c++/15.1.0/bits/stl_relops.h \
+  include/xsimd/config/xsimd_arch.hpp \
+  include/xsimd/types/xsimd_all_registers.hpp \
+  include/xsimd/types/xsimd_fma3_sse_register.hpp \
+  include/xsimd/types/xsimd_sse4_2_register.hpp \
+  include/xsimd/types/xsimd_sse4_1_register.hpp \
+  include/xsimd/types/xsimd_ssse3_register.hpp \
+  include/xsimd/types/xsimd_sse3_register.hpp \
+  include/xsimd/types/xsimd_sse2_register.hpp \
+  include/xsimd/types/xsimd_common_arch.hpp \
+  include/xsimd/config/xsimd_config.hpp \
+  include/xsimd/types/xsimd_register.hpp \
+  C:/msys64/ucrt64/lib/clang/20/include/emmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/xmmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/mmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/pmmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/tmmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/smmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/popcntintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/crc32intrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/nmmintrin.h \
+  include/xsimd/types/xsimd_fma4_register.hpp \
+  include/xsimd/types/xsimd_sse2_register.hpp \
+  include/xsimd/types/xsimd_sse3_register.hpp \
+  include/xsimd/types/xsimd_sse4_1_register.hpp \
+  include/xsimd/types/xsimd_sse4_2_register.hpp \
+  include/xsimd/types/xsimd_avx2_register.hpp \
+  include/xsimd/types/xsimd_avx_register.hpp \
+  include/xsimd/types/xsimd_common_arch.hpp \
   C:/msys64/ucrt64/lib/clang/20/include/immintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/x86gprintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/hresetintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/uintrintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/usermsrintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/crc32intrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/prfchiintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/raointintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/cmpccxaddintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/mmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/xmmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/emmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/pmmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/tmmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/smmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/popcntintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/wmmintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/__wmmintrin_aes.h \
   C:/msys64/ucrt64/lib/clang/20/include/__wmmintrin_pclmul.h \
@@ -4288,22 +4726,107 @@ CMakeFiles/Simulation_files.dir/src/random.cpp.obj: src/random.cpp \
   C:/msys64/ucrt64/lib/clang/20/include/enqcmdintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/serializeintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/tsxldtrkintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/prfchwintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/ammintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/fma4intrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/xopintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/tbmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/lwpintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/mwaitxintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/clzerointrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/rdpruintrin.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_fixed_size.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_scalar.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_builtin.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_converter.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_x86.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_x86_conversions.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_math.h
+  include/xsimd/types/xsimd_avx_register.hpp \
+  include/xsimd/types/xsimd_avxvnni_register.hpp \
+  include/xsimd/types/xsimd_avx2_register.hpp \
+  include/xsimd/types/xsimd_fma3_avx2_register.hpp \
+  include/xsimd/types/xsimd_fma3_avx_register.hpp \
+  include/xsimd/types/xsimd_avx512vnni_avx512bw_register.hpp \
+  include/xsimd/types/xsimd_avx512bw_register.hpp \
+  include/xsimd/types/xsimd_avx512dq_register.hpp \
+  include/xsimd/types/xsimd_avx512cd_register.hpp \
+  include/xsimd/types/xsimd_avx512f_register.hpp \
+  include/xsimd/types/xsimd_common_arch.hpp \
+  include/xsimd/types/xsimd_avx512vnni_avx512vbmi2_register.hpp \
+  include/xsimd/types/xsimd_avx512vbmi2_register.hpp \
+  include/xsimd/types/xsimd_avx512vbmi_register.hpp \
+  include/xsimd/types/xsimd_avx512ifma_register.hpp \
+  include/xsimd/types/xsimd_avx512bw_register.hpp \
+  include/xsimd/types/xsimd_avx512ifma_register.hpp \
+  include/xsimd/types/xsimd_avx512vbmi2_register.hpp \
+  include/xsimd/types/xsimd_avx512vbmi_register.hpp \
+  include/xsimd/types/xsimd_avx512er_register.hpp \
+  include/xsimd/types/xsimd_avx512dq_register.hpp \
+  include/xsimd/types/xsimd_avx512pf_register.hpp \
+  include/xsimd/types/xsimd_avx512er_register.hpp \
+  include/xsimd/types/xsimd_avx512bw_register.hpp \
+  include/xsimd/types/xsimd_avx512cd_register.hpp \
+  include/xsimd/types/xsimd_avx512dq_register.hpp \
+  include/xsimd/types/xsimd_avx512f_register.hpp \
+  include/xsimd/types/xsimd_i8mm_neon64_register.hpp \
+  include/xsimd/types/xsimd_neon64_register.hpp \
+  include/xsimd/types/xsimd_neon_register.hpp \
+  include/xsimd/types/xsimd_common_arch.hpp \
+  include/xsimd/types/xsimd_register.hpp \
+  include/xsimd/types/xsimd_neon64_register.hpp \
+  include/xsimd/types/xsimd_neon_register.hpp \
+  include/xsimd/types/xsimd_sve_register.hpp \
+  include/xsimd/types/xsimd_common_arch.hpp \
+  include/xsimd/types/xsimd_register.hpp \
+  include/xsimd/types/xsimd_rvv_register.hpp \
+  include/xsimd/types/xsimd_wasm_register.hpp \
+  include/xsimd/config/xsimd_config.hpp \
+  include/xsimd/config/xsimd_cpuid.hpp \
+  include/xsimd/types/xsimd_all_registers.hpp \
+  include/xsimd/types/xsimd_batch.hpp \
+  include/xsimd/config/xsimd_arch.hpp \
+  include/xsimd/memory/xsimd_alignment.hpp \
+  include/xsimd/types/xsimd_utils.hpp \
+  include/xsimd/memory/xsimd_aligned_allocator.hpp \
+  include/xsimd/types/xsimd_utils.hpp \
+  include/xsimd/arch/xsimd_isa.hpp \
+  include/xsimd/config/xsimd_arch.hpp \
+  include/xsimd/arch/xsimd_common_fwd.hpp \
+  include/xsimd/types/xsimd_batch_constant.hpp \
+  include/xsimd/types/xsimd_batch.hpp \
+  include/xsimd/types/xsimd_utils.hpp \
+  include/xsimd/arch/xsimd_sse2.hpp \
+  include/xsimd/types/xsimd_sse2_register.hpp \
+  include/xsimd/arch/xsimd_sse3.hpp \
+  include/xsimd/types/xsimd_sse3_register.hpp \
+  include/xsimd/arch/xsimd_ssse3.hpp \
+  include/xsimd/types/xsimd_ssse3_register.hpp \
+  include/xsimd/types/xsimd_utils.hpp \
+  include/xsimd/arch/xsimd_sse4_1.hpp \
+  include/xsimd/types/xsimd_sse4_1_register.hpp \
+  include/xsimd/arch/xsimd_sse4_2.hpp \
+  include/xsimd/types/xsimd_sse4_2_register.hpp \
+  include/xsimd/arch/xsimd_fma3_sse.hpp \
+  include/xsimd/types/xsimd_fma3_sse_register.hpp \
+  include/xsimd/arch/xsimd_avx.hpp \
+  include/xsimd/types/xsimd_avx_register.hpp \
+  include/xsimd/arch/xsimd_fma3_avx.hpp \
+  include/xsimd/types/xsimd_fma3_avx_register.hpp \
+  include/xsimd/arch/xsimd_avx2.hpp \
+  include/xsimd/types/xsimd_avx2_register.hpp \
+  include/xsimd/arch/xsimd_fma3_avx2.hpp \
+  include/xsimd/types/xsimd_fma3_avx2_register.hpp \
+  include/xsimd/arch/xsimd_fma3_avx.hpp \
+  include/xsimd/arch/xsimd_common.hpp \
+  include/xsimd/arch/common/xsimd_common_arithmetic.hpp \
+  include/xsimd/arch/common/xsimd_common_details.hpp \
+  include/xsimd/math/xsimd_rem_pio2.hpp \
+  include/xsimd/types/xsimd_common_arch.hpp \
+  include/xsimd/types/xsimd_utils.hpp \
+  include/xsimd/arch/xsimd_constants.hpp \
+  include/xsimd/arch/common/xsimd_common_complex.hpp \
+  include/xsimd/arch/common/xsimd_common_logical.hpp \
+  include/xsimd/arch/common/xsimd_common_math.hpp \
+  include/xsimd/arch/xsimd_scalar.hpp \
+  include/xsimd/arch/common/xsimd_common_trigo.hpp \
+  include/xsimd/arch/common/xsimd_common_details.hpp \
+  include/xsimd/arch/common/xsimd_common_memory.hpp \
+  include/xsimd/types/xsimd_batch_constant.hpp \
+  include/xsimd/arch/common/xsimd_common_rounding.hpp \
+  include/xsimd/arch/common/xsimd_common_trigo.hpp \
+  include/xsimd/types/xsimd_batch_constant.hpp \
+  include/xsimd/types/xsimd_traits.hpp \
+  include/xsimd/types/xsimd_batch.hpp \
+  include/xsimd/types/xsimd_batch_constant.hpp \
+  include/xsimd/types/xsimd_traits.hpp \
+  include/xsimd/types/xsimd_api.hpp \
+  include/xsimd/types/xsimd_batch.hpp \
+  include/xsimd/types/xsimd_traits.hpp
 
 CMakeFiles/Simulation_files.dir/src/render.cpp.obj: src/render.cpp \
   src/render.hpp \
@@ -4895,36 +5418,56 @@ CMakeFiles/Simulation_files.dir/src/render.cpp.obj: src/render.cpp \
   include/glm/geometric.hpp \
   include/glm/gtx/orthonormalize.inl \
   src/random.hpp \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/simd \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_detail.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/numeric_traits.h \
+  include/xsimd/xsimd.hpp \
+  include/xsimd/config/xsimd_config.hpp \
+  include/xsimd/config/xsimd_inline.hpp \
+  include/xsimd/arch/xsimd_scalar.hpp \
+  C:/msys64/ucrt64/include/c++/15.1.0/complex \
   C:/msys64/ucrt64/include/c++/15.1.0/cstring \
   C:/msys64/ucrt64/include/string.h \
   C:/msys64/ucrt64/include/sec_api/string_s.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/utility \
-  C:/msys64/ucrt64/include/c++/15.1.0/bits/stl_relops.h \
+  include/xsimd/memory/xsimd_aligned_allocator.hpp \
   C:/msys64/ucrt64/include/c++/15.1.0/algorithm \
   C:/msys64/ucrt64/include/c++/15.1.0/bits/ranges_algo.h \
   C:/msys64/ucrt64/include/c++/15.1.0/pstl/glue_algorithm_defs.h \
-  C:/msys64/ucrt64/lib/clang/20/include/x86intrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/ia32intrin.h \
+  C:/msys64/ucrt64/include/c++/15.1.0/utility \
+  C:/msys64/ucrt64/include/c++/15.1.0/bits/stl_relops.h \
+  include/xsimd/config/xsimd_arch.hpp \
+  include/xsimd/types/xsimd_all_registers.hpp \
+  include/xsimd/types/xsimd_fma3_sse_register.hpp \
+  include/xsimd/types/xsimd_sse4_2_register.hpp \
+  include/xsimd/types/xsimd_sse4_1_register.hpp \
+  include/xsimd/types/xsimd_ssse3_register.hpp \
+  include/xsimd/types/xsimd_sse3_register.hpp \
+  include/xsimd/types/xsimd_sse2_register.hpp \
+  include/xsimd/types/xsimd_common_arch.hpp \
+  include/xsimd/config/xsimd_config.hpp \
+  include/xsimd/types/xsimd_register.hpp \
+  C:/msys64/ucrt64/lib/clang/20/include/emmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/xmmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/mmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/pmmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/tmmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/smmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/popcntintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/crc32intrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/nmmintrin.h \
+  include/xsimd/types/xsimd_fma4_register.hpp \
+  include/xsimd/types/xsimd_sse2_register.hpp \
+  include/xsimd/types/xsimd_sse3_register.hpp \
+  include/xsimd/types/xsimd_sse4_1_register.hpp \
+  include/xsimd/types/xsimd_sse4_2_register.hpp \
+  include/xsimd/types/xsimd_avx2_register.hpp \
+  include/xsimd/types/xsimd_avx_register.hpp \
+  include/xsimd/types/xsimd_common_arch.hpp \
   C:/msys64/ucrt64/lib/clang/20/include/immintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/x86gprintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/hresetintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/uintrintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/usermsrintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/crc32intrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/prfchiintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/raointintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/cmpccxaddintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/mmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/xmmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/emmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/pmmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/tmmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/smmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/popcntintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/wmmintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/__wmmintrin_aes.h \
   C:/msys64/ucrt64/lib/clang/20/include/__wmmintrin_pclmul.h \
@@ -5029,22 +5572,107 @@ CMakeFiles/Simulation_files.dir/src/render.cpp.obj: src/render.cpp \
   C:/msys64/ucrt64/lib/clang/20/include/enqcmdintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/serializeintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/tsxldtrkintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/prfchwintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/ammintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/fma4intrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/xopintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/tbmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/lwpintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/mwaitxintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/clzerointrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/rdpruintrin.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_fixed_size.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_scalar.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_builtin.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_converter.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_x86.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_x86_conversions.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_math.h \
+  include/xsimd/types/xsimd_avx_register.hpp \
+  include/xsimd/types/xsimd_avxvnni_register.hpp \
+  include/xsimd/types/xsimd_avx2_register.hpp \
+  include/xsimd/types/xsimd_fma3_avx2_register.hpp \
+  include/xsimd/types/xsimd_fma3_avx_register.hpp \
+  include/xsimd/types/xsimd_avx512vnni_avx512bw_register.hpp \
+  include/xsimd/types/xsimd_avx512bw_register.hpp \
+  include/xsimd/types/xsimd_avx512dq_register.hpp \
+  include/xsimd/types/xsimd_avx512cd_register.hpp \
+  include/xsimd/types/xsimd_avx512f_register.hpp \
+  include/xsimd/types/xsimd_common_arch.hpp \
+  include/xsimd/types/xsimd_avx512vnni_avx512vbmi2_register.hpp \
+  include/xsimd/types/xsimd_avx512vbmi2_register.hpp \
+  include/xsimd/types/xsimd_avx512vbmi_register.hpp \
+  include/xsimd/types/xsimd_avx512ifma_register.hpp \
+  include/xsimd/types/xsimd_avx512bw_register.hpp \
+  include/xsimd/types/xsimd_avx512ifma_register.hpp \
+  include/xsimd/types/xsimd_avx512vbmi2_register.hpp \
+  include/xsimd/types/xsimd_avx512vbmi_register.hpp \
+  include/xsimd/types/xsimd_avx512er_register.hpp \
+  include/xsimd/types/xsimd_avx512dq_register.hpp \
+  include/xsimd/types/xsimd_avx512pf_register.hpp \
+  include/xsimd/types/xsimd_avx512er_register.hpp \
+  include/xsimd/types/xsimd_avx512bw_register.hpp \
+  include/xsimd/types/xsimd_avx512cd_register.hpp \
+  include/xsimd/types/xsimd_avx512dq_register.hpp \
+  include/xsimd/types/xsimd_avx512f_register.hpp \
+  include/xsimd/types/xsimd_i8mm_neon64_register.hpp \
+  include/xsimd/types/xsimd_neon64_register.hpp \
+  include/xsimd/types/xsimd_neon_register.hpp \
+  include/xsimd/types/xsimd_common_arch.hpp \
+  include/xsimd/types/xsimd_register.hpp \
+  include/xsimd/types/xsimd_neon64_register.hpp \
+  include/xsimd/types/xsimd_neon_register.hpp \
+  include/xsimd/types/xsimd_sve_register.hpp \
+  include/xsimd/types/xsimd_common_arch.hpp \
+  include/xsimd/types/xsimd_register.hpp \
+  include/xsimd/types/xsimd_rvv_register.hpp \
+  include/xsimd/types/xsimd_wasm_register.hpp \
+  include/xsimd/config/xsimd_config.hpp \
+  include/xsimd/config/xsimd_cpuid.hpp \
+  include/xsimd/types/xsimd_all_registers.hpp \
+  include/xsimd/types/xsimd_batch.hpp \
+  include/xsimd/config/xsimd_arch.hpp \
+  include/xsimd/memory/xsimd_alignment.hpp \
+  include/xsimd/types/xsimd_utils.hpp \
+  include/xsimd/memory/xsimd_aligned_allocator.hpp \
+  include/xsimd/types/xsimd_utils.hpp \
+  include/xsimd/arch/xsimd_isa.hpp \
+  include/xsimd/config/xsimd_arch.hpp \
+  include/xsimd/arch/xsimd_common_fwd.hpp \
+  include/xsimd/types/xsimd_batch_constant.hpp \
+  include/xsimd/types/xsimd_batch.hpp \
+  include/xsimd/types/xsimd_utils.hpp \
+  include/xsimd/arch/xsimd_sse2.hpp \
+  include/xsimd/types/xsimd_sse2_register.hpp \
+  include/xsimd/arch/xsimd_sse3.hpp \
+  include/xsimd/types/xsimd_sse3_register.hpp \
+  include/xsimd/arch/xsimd_ssse3.hpp \
+  include/xsimd/types/xsimd_ssse3_register.hpp \
+  include/xsimd/types/xsimd_utils.hpp \
+  include/xsimd/arch/xsimd_sse4_1.hpp \
+  include/xsimd/types/xsimd_sse4_1_register.hpp \
+  include/xsimd/arch/xsimd_sse4_2.hpp \
+  include/xsimd/types/xsimd_sse4_2_register.hpp \
+  include/xsimd/arch/xsimd_fma3_sse.hpp \
+  include/xsimd/types/xsimd_fma3_sse_register.hpp \
+  include/xsimd/arch/xsimd_avx.hpp \
+  include/xsimd/types/xsimd_avx_register.hpp \
+  include/xsimd/arch/xsimd_fma3_avx.hpp \
+  include/xsimd/types/xsimd_fma3_avx_register.hpp \
+  include/xsimd/arch/xsimd_avx2.hpp \
+  include/xsimd/types/xsimd_avx2_register.hpp \
+  include/xsimd/arch/xsimd_fma3_avx2.hpp \
+  include/xsimd/types/xsimd_fma3_avx2_register.hpp \
+  include/xsimd/arch/xsimd_fma3_avx.hpp \
+  include/xsimd/arch/xsimd_common.hpp \
+  include/xsimd/arch/common/xsimd_common_arithmetic.hpp \
+  include/xsimd/arch/common/xsimd_common_details.hpp \
+  include/xsimd/math/xsimd_rem_pio2.hpp \
+  include/xsimd/types/xsimd_common_arch.hpp \
+  include/xsimd/types/xsimd_utils.hpp \
+  include/xsimd/arch/xsimd_constants.hpp \
+  include/xsimd/arch/common/xsimd_common_complex.hpp \
+  include/xsimd/arch/common/xsimd_common_logical.hpp \
+  include/xsimd/arch/common/xsimd_common_math.hpp \
+  include/xsimd/arch/xsimd_scalar.hpp \
+  include/xsimd/arch/common/xsimd_common_trigo.hpp \
+  include/xsimd/arch/common/xsimd_common_details.hpp \
+  include/xsimd/arch/common/xsimd_common_memory.hpp \
+  include/xsimd/types/xsimd_batch_constant.hpp \
+  include/xsimd/arch/common/xsimd_common_rounding.hpp \
+  include/xsimd/arch/common/xsimd_common_trigo.hpp \
+  include/xsimd/types/xsimd_batch_constant.hpp \
+  include/xsimd/types/xsimd_traits.hpp \
+  include/xsimd/types/xsimd_batch.hpp \
+  include/xsimd/types/xsimd_batch_constant.hpp \
+  include/xsimd/types/xsimd_traits.hpp \
+  include/xsimd/types/xsimd_api.hpp \
+  include/xsimd/types/xsimd_batch.hpp \
+  include/xsimd/types/xsimd_traits.hpp \
   src/gui.hpp \
   src/core.hpp \
   src/input.hpp \
@@ -5648,11 +6276,11 @@ C:/msys64/ucrt64/lib/clang/20/include/__stddef_offsetof.h:
 
 C:/msys64/ucrt64/include/c++/15.1.0/x86_64-w64-mingw32/bits/basic_file.h:
 
-C:/msys64/ucrt64/include/c++/15.1.0/bits/alloc_traits.h:
-
-C:/msys64/ucrt64/lib/clang/20/include/clzerointrin.h:
-
 C:/msys64/ucrt64/lib/clang/20/include/__stddef_size_t.h:
+
+include/xsimd/types/xsimd_common_arch.hpp:
+
+C:/msys64/ucrt64/include/c++/15.1.0/bits/alloc_traits.h:
 
 src/gui.cpp:
 
@@ -5673,6 +6301,8 @@ include/glm/detail/type_mat4x2.inl:
 include/glad/glad.h:
 
 include/glm/ext/vector_uint2.hpp:
+
+include/xsimd/arch/xsimd_scalar.hpp:
 
 C:/msys64/ucrt64/lib/clang/20/include/tmmintrin.h:
 
@@ -5730,8 +6360,6 @@ C:/msys64/ucrt64/include/c++/15.1.0/x86_64-w64-mingw32/bits/c++allocator.h:
 
 C:/msys64/ucrt64/include/c++/15.1.0/climits:
 
-C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_detail.h:
-
 C:/msys64/ucrt64/include/c++/15.1.0/bits/version.h:
 
 C:/msys64/ucrt64/include/c++/15.1.0/cstdlib:
@@ -5770,8 +6398,6 @@ include/GLFW/glfw3.h:
 
 C:/msys64/ucrt64/lib/clang/20/include/__stddef_header_macro.h:
 
-C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_converter.h:
-
 C:/msys64/ucrt64/include/c++/15.1.0/bits/postypes.h:
 
 C:/msys64/ucrt64/include/c++/15.1.0/pstl/pstl_config.h:
@@ -5792,13 +6418,13 @@ C:/msys64/ucrt64/lib/clang/20/include/__stddef_max_align_t.h:
 
 C:/msys64/ucrt64/include/c++/15.1.0/bits/semaphore_base.h:
 
+include/glm/detail/type_mat4x3.hpp:
+
 C:/msys64/ucrt64/include/c++/15.1.0/bits/requires_hosted.h:
 
 C:/msys64/ucrt64/include/c++/15.1.0/bits/parse_numbers.h:
 
-C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd.h:
-
-include/glm/detail/type_mat4x3.hpp:
+include/xsimd/types/xsimd_fma3_avx_register.hpp:
 
 C:/msys64/ucrt64/include/c++/15.1.0/bits/basic_string.tcc:
 
@@ -5831,6 +6457,10 @@ C:/msys64/ucrt64/include/c++/15.1.0/type_traits:
 include/glm/detail/type_mat4x2.hpp:
 
 C:/msys64/ucrt64/include/c++/15.1.0/bits/locale_facets_nonio.tcc:
+
+include/xsimd/types/xsimd_fma3_sse_register.hpp:
+
+include/xsimd/arch/common/xsimd_common_complex.hpp:
 
 C:/msys64/ucrt64/include/c++/15.1.0/ext/numeric_traits.h:
 
@@ -5868,17 +6498,19 @@ include/glm/packing.hpp:
 
 C:/msys64/ucrt64/include/c++/15.1.0/new:
 
+C:/msys64/ucrt64/lib/clang/20/include/usermsrintrin.h:
+
 C:/msys64/ucrt64/include/c++/15.1.0/bits/exception.h:
 
 include/glm/ext/matrix_double2x4.hpp:
-
-C:/msys64/ucrt64/lib/clang/20/include/usermsrintrin.h:
 
 C:/msys64/ucrt64/include/c++/15.1.0/bits/string_view.tcc:
 
 C:/msys64/ucrt64/include/limits.h:
 
 C:/msys64/ucrt64/include/c++/15.1.0/x86_64-w64-mingw32/bits/time_members.h:
+
+include/xsimd/types/xsimd_i8mm_neon64_register.hpp:
 
 C:/msys64/ucrt64/include/c++/15.1.0/bits/allocator.h:
 
@@ -5970,6 +6602,8 @@ include/glm/ext/matrix_double2x2_precision.hpp:
 
 C:/msys64/ucrt64/include/c++/15.1.0/ostream:
 
+include/xsimd/types/xsimd_avx512ifma_register.hpp:
+
 C:/msys64/ucrt64/include/c++/15.1.0/bits/ostream.h:
 
 C:/msys64/ucrt64/include/c++/15.1.0/list:
@@ -5984,11 +6618,11 @@ C:/msys64/ucrt64/lib/clang/20/include/bmiintrin.h:
 
 C:/msys64/ucrt64/include/c++/15.1.0/bits/stringfwd.h:
 
+C:/msys64/ucrt64/lib/clang/20/include/raointintrin.h:
+
 C:/msys64/ucrt64/include/c++/15.1.0/cwchar:
 
 C:/msys64/ucrt64/include/sec_api/wchar_s.h:
-
-C:/msys64/ucrt64/lib/clang/20/include/raointintrin.h:
 
 C:/msys64/ucrt64/include/wchar.h:
 
@@ -6006,6 +6640,8 @@ C:/msys64/ucrt64/include/corecrt_wctype.h:
 
 C:/msys64/ucrt64/include/_mingw_off_t.h:
 
+include/xsimd/types/xsimd_avx512bw_register.hpp:
+
 C:/msys64/ucrt64/include/_mingw_stat64.h:
 
 include/glm/detail/type_mat2x3.inl:
@@ -6020,9 +6656,13 @@ C:/msys64/ucrt64/include/c++/15.1.0/bits/cxxabi_init_exception.h:
 
 C:/msys64/ucrt64/include/c++/15.1.0/pstl/execution_defs.h:
 
+include/xsimd/types/xsimd_sse4_1_register.hpp:
+
 C:/msys64/ucrt64/include/c++/15.1.0/typeinfo:
 
 include/glm/detail/compute_common.hpp:
+
+include/xsimd/math/xsimd_rem_pio2.hpp:
 
 C:/msys64/ucrt64/include/c++/15.1.0/stdexcept:
 
@@ -6037,8 +6677,6 @@ include/glm/ext/quaternion_geometric.hpp:
 C:/msys64/ucrt64/include/c++/15.1.0/bits/char_traits.h:
 
 C:/msys64/ucrt64/include/c++/15.1.0/bits/localefwd.h:
-
-C:/msys64/ucrt64/lib/clang/20/include/immintrin.h:
 
 C:/msys64/ucrt64/include/c++/15.1.0/x86_64-w64-mingw32/bits/c++locale.h:
 
@@ -6092,8 +6730,6 @@ C:/msys64/ucrt64/include/c++/15.1.0/set:
 
 C:/msys64/ucrt64/include/signal.h:
 
-C:/msys64/ucrt64/lib/clang/20/include/x86intrin.h:
-
 C:/msys64/ucrt64/lib/clang/20/include/amxfp8intrin.h:
 
 C:/msys64/ucrt64/include/pthread_signal.h:
@@ -6122,11 +6758,11 @@ C:/msys64/ucrt64/include/c++/15.1.0/tr1/gamma.tcc:
 
 C:/msys64/ucrt64/include/pthread_unistd.h:
 
-C:/msys64/ucrt64/include/c++/15.1.0/experimental/simd:
-
 C:/msys64/ucrt64/include/c++/15.1.0/x86_64-w64-mingw32/bits/atomic_word.h:
 
 C:/msys64/ucrt64/lib/clang/20/include/__wmmintrin_aes.h:
+
+include/xsimd/memory/xsimd_aligned_allocator.hpp:
 
 C:/msys64/ucrt64/include/c++/15.1.0/bits/locale_classes.h:
 
@@ -6144,11 +6780,11 @@ C:/msys64/ucrt64/include/c++/15.1.0/bits/basic_string.h:
 
 C:/msys64/ucrt64/include/c++/15.1.0/string_view:
 
+C:/msys64/ucrt64/lib/clang/20/include/clflushoptintrin.h:
+
 C:/msys64/ucrt64/include/c++/15.1.0/ext/string_conversions.h:
 
 include/glm/ext/matrix_float3x3.hpp:
-
-C:/msys64/ucrt64/lib/clang/20/include/clflushoptintrin.h:
 
 include/glm/mat2x3.hpp:
 
@@ -6182,6 +6818,8 @@ C:/msys64/ucrt64/include/c++/15.1.0/bits/charconv.h:
 
 C:/msys64/ucrt64/include/c++/15.1.0/bits/locale_classes.tcc:
 
+include/xsimd/types/xsimd_sse4_2_register.hpp:
+
 C:/msys64/ucrt64/include/c++/15.1.0/system_error:
 
 C:/msys64/ucrt64/include/c++/15.1.0/bits/unordered_map.h:
@@ -6198,6 +6836,8 @@ include/glm/detail/type_mat3x3.hpp:
 
 C:/msys64/ucrt64/include/c++/15.1.0/bits/streambuf.tcc:
 
+include/xsimd/arch/common/xsimd_common_arithmetic.hpp:
+
 C:/msys64/ucrt64/include/c++/15.1.0/bits/basic_ios.h:
 
 C:/msys64/ucrt64/include/c++/15.1.0/bits/list.tcc:
@@ -6213,6 +6853,8 @@ C:/msys64/ucrt64/include/c++/15.1.0/cwctype:
 C:/msys64/ucrt64/include/c++/15.1.0/map:
 
 C:/msys64/ucrt64/include/wctype.h:
+
+include/xsimd/types/xsimd_fma4_register.hpp:
 
 C:/msys64/ucrt64/include/c++/15.1.0/x86_64-w64-mingw32/bits/ctype_base.h:
 
@@ -6231,6 +6873,8 @@ C:/msys64/ucrt64/include/c++/15.1.0/bits/atomic_wait.h:
 C:/msys64/ucrt64/include/c++/15.1.0/bits/ostream.tcc:
 
 C:/msys64/ucrt64/include/c++/15.1.0/istream:
+
+include/xsimd/arch/common/xsimd_common_logical.hpp:
 
 C:/msys64/ucrt64/include/c++/15.1.0/bits/enable_special_members.h:
 
@@ -6253,6 +6897,8 @@ include/glm/ext/vector_int4.hpp:
 C:/msys64/ucrt64/include/c++/15.1.0/bits/stl_map.h:
 
 C:/msys64/ucrt64/include/c++/15.1.0/bits/stl_multimap.h:
+
+include/xsimd/arch/xsimd_sse4_2.hpp:
 
 C:/msys64/ucrt64/include/c++/15.1.0/bits/erase_if.h:
 
@@ -6296,8 +6942,6 @@ C:/msys64/ucrt64/include/c++/15.1.0/bits/stl_tempbuf.h:
 
 C:/msys64/ucrt64/include/c++/15.1.0/bits/stl_raw_storage_iter.h:
 
-C:/msys64/ucrt64/lib/clang/20/include/xopintrin.h:
-
 C:/msys64/ucrt64/include/c++/15.1.0/bits/align.h:
 
 C:/msys64/ucrt64/include/c++/15.1.0/bits/unique_ptr.h:
@@ -6312,6 +6956,8 @@ C:/msys64/ucrt64/include/c++/15.1.0/bits/atomic_base.h:
 
 C:/msys64/ucrt64/include/c++/15.1.0/cstdint:
 
+include/xsimd/xsimd.hpp:
+
 C:/msys64/ucrt64/include/c++/15.1.0/backward/auto_ptr.h:
 
 include/glm/mat3x2.hpp:
@@ -6320,11 +6966,11 @@ C:/msys64/ucrt64/include/c++/15.1.0/bits/ranges_uninitialized.h:
 
 C:/msys64/ucrt64/include/c++/15.1.0/bits/ranges_algobase.h:
 
-C:/msys64/ucrt64/lib/clang/20/include/hresetintrin.h:
-
 C:/msys64/ucrt64/include/c++/15.1.0/pstl/glue_memory_defs.h:
 
 C:/msys64/ucrt64/include/c++/15.1.0/chrono:
+
+include/xsimd/types/xsimd_ssse3_register.hpp:
 
 C:/msys64/ucrt64/include/c++/15.1.0/ratio:
 
@@ -6350,6 +6996,8 @@ C:/msys64/ucrt64/include/c++/15.1.0/bits/chrono_io.h:
 
 C:/msys64/ucrt64/include/c++/15.1.0/iomanip:
 
+include/xsimd/types/xsimd_sve_register.hpp:
+
 C:/msys64/ucrt64/include/c++/15.1.0/bits/locale_facets_nonio.h:
 
 include/glm/gtx/quaternion.hpp:
@@ -6357,6 +7005,8 @@ include/glm/gtx/quaternion.hpp:
 C:/msys64/ucrt64/include/c++/15.1.0/x86_64-w64-mingw32/bits/messages_members.h:
 
 C:/msys64/ucrt64/include/c++/15.1.0/bits/locale_conv.h:
+
+include/xsimd/memory/xsimd_alignment.hpp:
 
 include/glm/ext/matrix_float2x3_precision.hpp:
 
@@ -6429,6 +7079,10 @@ C:/msys64/ucrt64/include/c++/15.1.0/mutex:
 C:/msys64/ucrt64/include/c++/15.1.0/bits/unique_lock.h:
 
 include/glm/ext/vector_uint3_sized.hpp:
+
+include/xsimd/config/xsimd_inline.hpp:
+
+include/xsimd/arch/xsimd_common_fwd.hpp:
 
 C:/msys64/ucrt64/include/c++/15.1.0/any:
 
@@ -6508,9 +7162,9 @@ include/glm/ext/vector_bool2_precision.hpp:
 
 include/glm/ext/vector_double2.hpp:
 
-include/glm/ext/vector_int2.hpp:
-
 C:/msys64/ucrt64/lib/clang/20/include/__wmmintrin_pclmul.h:
+
+include/glm/ext/vector_int2.hpp:
 
 include/glm/ext/vector_int2_sized.hpp:
 
@@ -6528,9 +7182,13 @@ include/glm/detail/type_vec3.inl:
 
 include/glm/ext/matrix_float2x2_precision.hpp:
 
+include/xsimd/arch/xsimd_fma3_sse.hpp:
+
 include/glm/ext/vector_float3.hpp:
 
 include/glm/ext/vector_float3_precision.hpp:
+
+include/xsimd/types/xsimd_api.hpp:
 
 include/glm/ext/vector_uint3.hpp:
 
@@ -6542,9 +7200,9 @@ include/glm/ext/vector_bool4.hpp:
 
 include/glm/integer.hpp:
 
-include/glm/detail/type_vec4.hpp:
-
 C:/msys64/ucrt64/lib/clang/20/include/cmpccxaddintrin.h:
+
+include/glm/detail/type_vec4.hpp:
 
 include/glm/detail/type_vec4.inl:
 
@@ -6602,7 +7260,13 @@ include/glm/detail/func_trigonometric.inl:
 
 include/glm/ext/quaternion_exponential.hpp:
 
+include/xsimd/arch/common/xsimd_common_math.hpp:
+
 include/glm/ext/matrix_double3x4.hpp:
+
+include/xsimd/types/xsimd_all_registers.hpp:
+
+include/xsimd/arch/xsimd_common.hpp:
 
 include/glm/ext/matrix_double3x4_precision.hpp:
 
@@ -6628,6 +7292,8 @@ include/glm/ext/matrix_projection.hpp:
 
 include/glm/geometric.hpp:
 
+include/xsimd/types/xsimd_avxvnni_register.hpp:
+
 include/glm/detail/func_geometric.inl:
 
 C:/msys64/ucrt64/lib/clang/20/include/avx10_2bf16intrin.h:
@@ -6644,6 +7310,8 @@ C:/msys64/ucrt64/lib/clang/20/include/amxavx512intrin.h:
 
 include/glm/common.hpp:
 
+include/xsimd/types/xsimd_avx512vnni_avx512vbmi2_register.hpp:
+
 include/glm/detail/func_common.inl:
 
 include/glm/trigonometric.hpp:
@@ -6651,6 +7319,8 @@ include/glm/trigonometric.hpp:
 C:/msys64/ucrt64/lib/clang/20/include/avx512bf16intrin.h:
 
 include/glm/detail/type_half.hpp:
+
+include/xsimd/config/xsimd_config.hpp:
 
 include/glm/detail/func_integer.inl:
 
@@ -6668,11 +7338,15 @@ include/glm/gtc/constants.inl:
 
 include/glm/ext/matrix_clip_space.inl:
 
+include/xsimd/arch/xsimd_avx2.hpp:
+
 include/glm/ext/matrix_transform.inl:
 
 include/glm/ext/quaternion_relational.inl:
 
 include/glm/gtx/transform.inl:
+
+include/xsimd/types/xsimd_avx2_register.hpp:
 
 include/glm/ext/vector_relational.inl:
 
@@ -6700,19 +7374,19 @@ include/glm/gtx/norm.hpp:
 
 include/glm/gtx/component_wise.hpp:
 
-include/glm/gtx/component_wise.inl:
-
 C:/msys64/ucrt64/lib/clang/20/include/x86gprintrin.h:
+
+include/glm/gtx/component_wise.inl:
 
 src/render.hpp:
 
 include/glm/gtx/norm.inl:
 
+C:/msys64/ucrt64/include/c++/15.1.0/complex:
+
 include/glm/gtx/quaternion.inl:
 
 src/random.cpp:
-
-C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_x86_conversions.h:
 
 include/glm/gtx/orthonormalize.hpp:
 
@@ -6720,35 +7394,29 @@ include/glm/gtx/orthonormalize.inl:
 
 src/random.hpp:
 
-C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/numeric_traits.h:
-
-C:/msys64/ucrt64/include/c++/15.1.0/bitset:
-
 C:/msys64/ucrt64/include/string.h:
 
 C:/msys64/ucrt64/include/sec_api/string_s.h:
-
-C:/msys64/ucrt64/include/c++/15.1.0/utility:
-
-C:/msys64/ucrt64/include/c++/15.1.0/bits/stl_relops.h:
 
 C:/msys64/ucrt64/include/c++/15.1.0/algorithm:
 
 C:/msys64/ucrt64/include/c++/15.1.0/pstl/glue_algorithm_defs.h:
 
-C:/msys64/ucrt64/lib/clang/20/include/fxsrintrin.h:
+C:/msys64/ucrt64/include/c++/15.1.0/utility:
 
-C:/msys64/ucrt64/lib/clang/20/include/ia32intrin.h:
+C:/msys64/ucrt64/include/c++/15.1.0/bits/stl_relops.h:
 
-C:/msys64/ucrt64/lib/clang/20/include/uintrintrin.h:
+include/xsimd/config/xsimd_arch.hpp:
 
-C:/msys64/ucrt64/lib/clang/20/include/crc32intrin.h:
+include/xsimd/types/xsimd_sse3_register.hpp:
 
-C:/msys64/ucrt64/lib/clang/20/include/prfchiintrin.h:
+include/xsimd/types/xsimd_sse2_register.hpp:
 
-C:/msys64/ucrt64/lib/clang/20/include/mmintrin.h:
+include/xsimd/types/xsimd_register.hpp:
 
 C:/msys64/ucrt64/lib/clang/20/include/emmintrin.h:
+
+C:/msys64/ucrt64/lib/clang/20/include/mmintrin.h:
 
 C:/msys64/ucrt64/lib/clang/20/include/pmmintrin.h:
 
@@ -6757,6 +7425,20 @@ src/input.cpp:
 C:/msys64/ucrt64/lib/clang/20/include/fmaintrin.h:
 
 C:/msys64/ucrt64/lib/clang/20/include/popcntintrin.h:
+
+C:/msys64/ucrt64/lib/clang/20/include/crc32intrin.h:
+
+C:/msys64/ucrt64/lib/clang/20/include/nmmintrin.h:
+
+include/xsimd/types/xsimd_avx_register.hpp:
+
+C:/msys64/ucrt64/lib/clang/20/include/immintrin.h:
+
+C:/msys64/ucrt64/lib/clang/20/include/hresetintrin.h:
+
+C:/msys64/ucrt64/lib/clang/20/include/uintrintrin.h:
+
+C:/msys64/ucrt64/lib/clang/20/include/prfchiintrin.h:
 
 C:/msys64/ucrt64/lib/clang/20/include/wmmintrin.h:
 
@@ -6826,7 +7508,11 @@ C:/msys64/ucrt64/lib/clang/20/include/sha512intrin.h:
 
 C:/msys64/ucrt64/lib/clang/20/include/sm3intrin.h:
 
+include/xsimd/types/xsimd_avx512vnni_avx512bw_register.hpp:
+
 C:/msys64/ucrt64/lib/clang/20/include/sm4intrin.h:
+
+C:/msys64/ucrt64/lib/clang/20/include/fxsrintrin.h:
 
 C:/msys64/ucrt64/lib/clang/20/include/xsaveintrin.h:
 
@@ -6842,6 +7528,8 @@ C:/msys64/ucrt64/lib/clang/20/include/adxintrin.h:
 
 C:/msys64/ucrt64/lib/clang/20/include/wbnoinvdintrin.h:
 
+include/xsimd/arch/common/xsimd_common_memory.hpp:
+
 C:/msys64/ucrt64/lib/clang/20/include/cldemoteintrin.h:
 
 C:/msys64/ucrt64/lib/clang/20/include/waitpkgintrin.h:
@@ -6853,6 +7541,8 @@ C:/msys64/ucrt64/lib/clang/20/include/movrs_avx10_2intrin.h:
 C:/msys64/ucrt64/lib/clang/20/include/movrs_avx10_2_512intrin.h:
 
 C:/msys64/ucrt64/lib/clang/20/include/pconfigintrin.h:
+
+include/xsimd/arch/common/xsimd_common_trigo.hpp:
 
 C:/msys64/ucrt64/lib/clang/20/include/invpcidintrin.h:
 
@@ -6886,6 +7576,8 @@ C:/msys64/ucrt64/lib/clang/20/include/avx10_2satcvtintrin.h:
 
 C:/msys64/ucrt64/lib/clang/20/include/avx10_2_512convertintrin.h:
 
+include/xsimd/types/xsimd_utils.hpp:
+
 C:/msys64/ucrt64/lib/clang/20/include/avx10_2_512minmaxintrin.h:
 
 C:/msys64/ucrt64/lib/clang/20/include/avx10_2_512satcvtintrin.h:
@@ -6894,31 +7586,63 @@ C:/msys64/ucrt64/lib/clang/20/include/enqcmdintrin.h:
 
 C:/msys64/ucrt64/lib/clang/20/include/serializeintrin.h:
 
-C:/msys64/ucrt64/lib/clang/20/include/prfchwintrin.h:
+include/xsimd/types/xsimd_fma3_avx2_register.hpp:
 
-C:/msys64/ucrt64/lib/clang/20/include/ammintrin.h:
+include/xsimd/types/xsimd_avx512dq_register.hpp:
 
-C:/msys64/ucrt64/lib/clang/20/include/fma4intrin.h:
+include/xsimd/types/xsimd_avx512cd_register.hpp:
 
-C:/msys64/ucrt64/lib/clang/20/include/tbmintrin.h:
+include/xsimd/types/xsimd_avx512f_register.hpp:
 
-C:/msys64/ucrt64/lib/clang/20/include/lwpintrin.h:
+include/xsimd/types/xsimd_avx512vbmi_register.hpp:
 
-C:/msys64/ucrt64/lib/clang/20/include/mwaitxintrin.h:
+include/xsimd/types/xsimd_avx512vbmi2_register.hpp:
 
-C:/msys64/ucrt64/lib/clang/20/include/rdpruintrin.h:
+include/xsimd/types/xsimd_avx512er_register.hpp:
 
-C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_fixed_size.h:
+include/xsimd/types/xsimd_avx512pf_register.hpp:
 
-C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_scalar.h:
+include/xsimd/types/xsimd_neon64_register.hpp:
 
-C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_builtin.h:
+include/xsimd/types/xsimd_neon_register.hpp:
 
-C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_x86.h:
+include/xsimd/types/xsimd_rvv_register.hpp:
 
-C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_math.h:
+include/xsimd/types/xsimd_wasm_register.hpp:
+
+include/xsimd/config/xsimd_cpuid.hpp:
+
+include/xsimd/types/xsimd_batch.hpp:
+
+include/xsimd/arch/xsimd_isa.hpp:
+
+include/xsimd/types/xsimd_batch_constant.hpp:
+
+include/xsimd/arch/xsimd_sse2.hpp:
+
+include/xsimd/arch/xsimd_sse3.hpp:
+
+include/xsimd/arch/xsimd_ssse3.hpp:
+
+include/xsimd/arch/xsimd_sse4_1.hpp:
+
+include/xsimd/arch/xsimd_avx.hpp:
+
+include/xsimd/arch/xsimd_fma3_avx.hpp:
+
+include/xsimd/arch/xsimd_fma3_avx2.hpp:
+
+include/xsimd/arch/common/xsimd_common_details.hpp:
+
+include/xsimd/arch/xsimd_constants.hpp:
+
+include/xsimd/arch/common/xsimd_common_rounding.hpp:
+
+include/xsimd/types/xsimd_traits.hpp:
 
 src/ecs.cpp:
+
+C:/msys64/ucrt64/include/c++/15.1.0/bitset:
 
 include/stb_image_write.h:
 

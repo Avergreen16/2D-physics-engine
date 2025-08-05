@@ -269,10 +269,11 @@ struct simd_vec2 {
     }
 
     simd_vec2 operator-() {
-        x = -x;
-        y = -y;
+        simd_vec2 v;
+        v.x = -x;
+        v.y = -y;
 
-        return *this;
+        return v;
     }
 
     simd_vec2 floor() {
@@ -500,6 +501,10 @@ struct simd_ivec2 {
         y = xsimd::batch_cast<int>(v.y);
     }
 };
+
+xsimd::batch_bool<int> bfloat_to_bint(xsimd::batch_bool<float> f);
+
+xsimd::batch_bool<float> bint_to_bfloat(xsimd::batch_bool<int> f);
 
 uint32_t hash(uint32_t x);
 

@@ -303,7 +303,7 @@ void Input_system::call() {
                     ecs.insert_component(base, c2);*/
                 } else {
                     ivec2 start_pos = world_cursor_pos;
-                    ivec2 shape_matrix = ivec2(16);
+                    ivec2 shape_matrix = ivec2(1);
                     float separation = 2.0f;
                     vec2 max_dim = vec2(2.0f);
                     vec2 min_dim = vec2(0.5f);
@@ -326,6 +326,8 @@ void Input_system::call() {
                             t.orientation = mat2(rotate(float(M_PI) * core.random(), vec3(0.0f, 0.0f, 1.0f)));
                             Collider c;
                             vec2 size = vec2(core.random() * 0.5f + 0.5f, core.random() * 0.5f + 0.5f) * (max_dim - min_dim) + min_dim;
+                            c.allow_rotation = false;
+                            c.allow_gravity = false;
 
                             std::vector<vec2> square = {
                                 vec2(-1, -1),
@@ -420,6 +422,23 @@ void Input_system::call() {
         } else if(key == GLFW_KEY_0) {
             profiler.output();
             profiler.restart();
+        } else if(key == GLFW_KEY_P) {
+            int b[N] = {1, 0, 0, 0, 1, 0, 1, 1};
+
+            xsimd::batch<int> bi;
+            bi = xsimd::load_unaligned(b);
+
+            auto bbi = bi != 0;
+
+            auto bbf = bint_to_bfloat(bbi);
+
+            xsimd::batch<float> tmp_batch = static_cast<xsimd::batch<float>>(bbf);
+            float b2[N];
+            tmp_batch.store_unaligned(b2);
+
+            for(int i = 0; i < N; ++i) {
+                std::cout << b[i] << " " << b2[i] << "\n";
+            }
         }
     }
     
