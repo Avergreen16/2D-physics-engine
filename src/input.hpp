@@ -27,6 +27,8 @@ struct Input_system : System {
     uint32_t held_object = 0xFFFFFFFF;
     uint32_t held_constraint;
 
+    bool debug_physics = false;
+
     Input_system();
 
     void call();

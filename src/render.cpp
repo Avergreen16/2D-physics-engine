@@ -296,8 +296,6 @@ void Render_system::call() {
     
     Physics_system& ps = ecs.get_system<Physics_system>();
 
-    marker_points.clear();
-
     /*for(auto& [k, d] : ps.collision_table) {
         for(Collision_data& c : d) {
             Transform& ta = ecs.get_component<Transform>(c.a);

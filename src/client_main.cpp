@@ -111,7 +111,8 @@ int main() {
 
     Transform t;
     t.position = vec2(0.0f);
-    t.orientation = (mat2)rotate((float)M_PI * 0.15f, vec3(0, 0, 1));
+    t.orientation = identity<mat2>();
+    //t.orientation = (mat2)rotate((float)M_PI * 0.15f, vec3(0, 0, 1));
     std::vector<vec2> square = {
         vec2(-1, -1),
         vec2(1, -1),
@@ -129,7 +130,6 @@ int main() {
     };*/
 
     c.is_static = true;
-    c.allow_gravity = false;
     
     Mesh m;
     create_mesh(m, {c.vertices}, c.radius);

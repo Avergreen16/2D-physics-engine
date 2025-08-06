@@ -24,6 +24,8 @@ struct Collider {
 };
 
 struct Collision_data {
+    bool collide = false;
+
     uint32_t a;
     uint32_t b;
 
@@ -150,14 +152,14 @@ struct Physics_system : System {
 
     Physics_system();
 
-    static std::vector<bool> collision(std::vector<Collision_input>);
+    static std::vector<Collision_data> collision(std::vector<Collision_input>);
     //static std::vector<std::optional<Collision_data>> collision(std::vector<Collision_input>);
     
     static bool collision_point(Collider& ca, vec2 point);
 
     static void transform_vertices(Transform& t, Collider& c, std::vector<vec2>& vertices, vec2 origin);
 
-    static vec2 support_func(std::vector<vec2>& vertices, float radius, vec2 direction);
+    static vec2 support_func(std::vector<vec2>& vertices, vec2 direction);
     static simd_vec2 support_func(std::vector<simd_vec2>& vertices, simd_vec2 direction);
 
     void insert_collision(Collision_data c);

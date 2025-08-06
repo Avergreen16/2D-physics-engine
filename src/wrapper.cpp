@@ -117,7 +117,7 @@ Vertices::~Vertices() {
     if(initialized) {
         glDeleteBuffers(1, &vertex_buffer);
         glDeleteBuffers(1, &index_buffer);
-        glDeleteBuffers(1, &vertex_array);
+        glDeleteVertexArrays(1, &vertex_array);
     }
 }
 
