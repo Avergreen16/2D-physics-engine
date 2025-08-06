@@ -74,15 +74,15 @@ CMakeFiles/Glad.dir/src/glad.c.obj: CMakeFiles/Glad.dir/includes_C.rsp
 CMakeFiles/Glad.dir/src/glad.c.obj: src/glad.c
 CMakeFiles/Glad.dir/src/glad.c.obj: CMakeFiles/Glad.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building C object CMakeFiles/Glad.dir/src/glad.c.obj"
-	C:/mingw64/bin/gcc.exe $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/Glad.dir/src/glad.c.obj -MF CMakeFiles/Glad.dir/src/glad.c.obj.d -o CMakeFiles/Glad.dir/src/glad.c.obj -c C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/glad.c
+	C:/msys64/ucrt64/bin/clang.exe $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/Glad.dir/src/glad.c.obj -MF CMakeFiles/Glad.dir/src/glad.c.obj.d -o CMakeFiles/Glad.dir/src/glad.c.obj -c C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/glad.c
 
 CMakeFiles/Glad.dir/src/glad.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing C source to CMakeFiles/Glad.dir/src/glad.c.i"
-	C:/mingw64/bin/gcc.exe $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/glad.c > CMakeFiles/Glad.dir/src/glad.c.i
+	C:/msys64/ucrt64/bin/clang.exe $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/glad.c > CMakeFiles/Glad.dir/src/glad.c.i
 
 CMakeFiles/Glad.dir/src/glad.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/Glad.dir/src/glad.c.s"
-	C:/mingw64/bin/gcc.exe $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/glad.c -o CMakeFiles/Glad.dir/src/glad.c.s
+	C:/msys64/ucrt64/bin/clang.exe $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/glad.c -o CMakeFiles/Glad.dir/src/glad.c.s
 
 # Object files for target Glad
 Glad_OBJECTS = \

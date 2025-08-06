@@ -4,7 +4,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY lib)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY bin)
 
 include_directories(src include include/asio)
 link_directories(lib)
@@ -21,7 +20,7 @@ target_link_libraries(Simulation Glad)
 
 target_link_libraries(Simulation Simulation_files)
 
-target_link_libraries(Simulation glfw3 gdi32 msvcrt user32 shell32 opengl32 assimp.dll ws2_32 wsock32)
+target_link_libraries(Simulation glfw3 gdi32 msvcrt user32 shell32 opengl32 assimp.dll ws2_32 wsock32 mingw32 mingwex msvcrt stdc++)
 
 set(CMAKE_BUILD_TYPE Release)
 

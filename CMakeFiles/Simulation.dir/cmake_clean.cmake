@@ -1,9 +1,9 @@
 file(REMOVE_RECURSE
   "CMakeFiles/Simulation.dir/src/client_main.cpp.obj"
   "CMakeFiles/Simulation.dir/src/client_main.cpp.obj.d"
-  "bin/Simulation.exe"
-  "bin/Simulation.exe.manifest"
-  "bin/Simulation.pdb"
+  "Simulation.exe"
+  "Simulation.exe.manifest"
+  "Simulation.pdb"
   "lib/libSimulation.dll.a"
 )
 
