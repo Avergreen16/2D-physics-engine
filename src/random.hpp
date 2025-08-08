@@ -313,9 +313,9 @@ struct simd_vec2 {
 
         return size;
     }
-
-
 };
+
+simd_vec2 select(xsimd::batch_bool<float>& batch_bool, simd_vec2 a, simd_vec2 b);
 
 struct simd_ivec2 {
     batch_int x;

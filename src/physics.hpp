@@ -152,7 +152,7 @@ struct Physics_system : System {
 
     Physics_system();
 
-    static std::vector<Collision_data> collision(std::vector<Collision_input>);
+    static std::vector<Collision_data> collision(std::vector<Collision_input>& input, bool profiler);
     //static std::vector<std::optional<Collision_data>> collision(std::vector<Collision_input>);
     
     static bool collision_point(Collider& ca, vec2 point);
@@ -190,7 +190,7 @@ void get_normal(vec2 a, vec2 b, vec2 r, vec2& normal, vec2& center);
 struct Profiler {
     std::vector<double> times;
     std::vector<std::string> names;
-    uint32_t current_pos = 0;
+    std::vector<int> num_times;
     double prev_time;
     uint32_t iterations = 0;
 
@@ -204,3 +204,4 @@ struct Profiler {
 };
 
 extern Profiler profiler;
+extern Profiler profiler2;

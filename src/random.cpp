@@ -16,6 +16,14 @@ xsimd::batch_bool<float> bint_to_bfloat(xsimd::batch_bool<int> f) {
     return i2 != 0.0f;
 }
 
+simd_vec2 select(xsimd::batch_bool<float>& batch_bool, simd_vec2 a, simd_vec2 b) {
+    simd_vec2 ret;
+    ret.x = xsimd::select(batch_bool, a.x, b.x);
+    ret.y = xsimd::select(batch_bool, a.y, b.y);
+
+    return ret;
+}
+
 uint32_t hash(uint32_t x) {
     x ^= x >> 16;
     x *= 0x7feb352dU;

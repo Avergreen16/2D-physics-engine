@@ -303,7 +303,7 @@ void Input_system::call() {
                     ecs.insert_component(base, c2);*/
                 } else {
                     ivec2 start_pos = world_cursor_pos;
-                    ivec2 shape_matrix = ivec2(16);
+                    ivec2 shape_matrix = ivec2(32);
                     float separation = 2.0f;
                     vec2 max_dim = vec2(2.0f);
                     vec2 min_dim = vec2(0.5f);
@@ -421,6 +421,8 @@ void Input_system::call() {
         } else if(key == GLFW_KEY_0) {
             profiler.output();
             profiler.restart();
+            profiler2.output();
+            profiler2.restart();
         } else if(key == GLFW_KEY_P) {
             int b[N] = {1, 0, 0, 0, 1, 0, 1, 1};
 
