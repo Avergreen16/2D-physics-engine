@@ -303,7 +303,7 @@ void Input_system::call() {
                     ecs.insert_component(base, c2);*/
                 } else {
                     ivec2 start_pos = world_cursor_pos;
-                    ivec2 shape_matrix = ivec2(32);
+                    ivec2 shape_matrix = ivec2(1);
                     float separation = 2.0f;
                     vec2 max_dim = vec2(2.0f);
                     vec2 min_dim = vec2(0.5f);
@@ -338,7 +338,7 @@ void Input_system::call() {
                             if(core.random() < 0.0f || true) {
                                 c.vertices = square;
                                 for(vec2& v : c.vertices) v *= size * 0.5f;
-                                c.radius = vec2(0.0f);
+                                c.radius = vec2(skin);
                                 c.mass = size.x * size.y * 25.0f;
                             } else {
                                 c.vertices = {vec3(0.0f)};
@@ -442,6 +442,16 @@ void Input_system::call() {
             }
         } else if(key == GLFW_KEY_F5) {
             debug_physics = !debug_physics;
+        } else if(key == GLFW_KEY_F3) {
+            debug_mode = !debug_mode;
+        } else if(key == GLFW_KEY_F4) {
+            use_skin = !use_skin;
+        } else if(key == GLFW_KEY_EQUAL) {
+            if(debug_physics) {
+                Physics_system& ps = ecs.get_system<Physics_system>();
+
+                ps.physics_loop();
+            }
         }
     }
     

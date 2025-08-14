@@ -26,6 +26,7 @@ struct Render_system : System {
     uvec2 screen_size = {800, 600};
     
     std::vector<vec2> marker_points;
+    std::vector<vec2> normals;
 
     std::shared_ptr<Vertices> vv = std::shared_ptr<Vertices>(new Vertices);
 
@@ -39,7 +40,7 @@ struct Render_system : System {
 
     void render_object(uint32_t object, uint32_t camera);
     
-    void render_marker(vec2 pos, uint32_t camera);
+    void render_marker(vec2 pos, vec2 normal, uint32_t camera);
 
     void render_cursor();
 

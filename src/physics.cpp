@@ -3,6 +3,9 @@
 #include "input.hpp"
 #include "core.hpp"
 
+float skin = 0.2f;
+bool use_skin = true;
+
 Physics_system::Physics_system() {
     Signature s = ecs.update_signature<Collider>();
     ecs.update_signature<Transform>(s);
@@ -59,13 +62,14 @@ simd_vec2 Physics_system::support_func(std::vector<simd_vec2>& vertices, simd_ve
     simd_vec2 vv;
 
     for(simd_vec2& v : vertices) {
-        batch dot_v = v.dot(direction);
+        simd_vec2 v2 = v + direction * skin;
+        batch dot_v = v2.dot(direction);
 
         auto m = dot_v > max_dot;
 
         max_dot = xsimd::select(m, dot_v, max_dot);
-        vv.x = xsimd::select(m, v.x, vv.x);
-        vv.y = xsimd::select(m, v.y, vv.y);
+        vv.x = xsimd::select(m, v2.x, vv.x);
+        vv.y = xsimd::select(m, v2.y, vv.y);
     }
 
     return vv;
@@ -357,13 +361,13 @@ simd_vec2 segment_project(simd_vec2& a, simd_vec2& b, simd_vec2& p) {
 
     simd_vec2 weights = {dist_b * dist_c, dist_a * dist_c};
 
-    auto wa = weights.x > weights.y && weights.x > 1.0f;
+    /*auto wa = weights.x > weights.y && weights.x > 1.0f;
     auto wb = weights.y > weights.x && weights.y > 1.0f;
 
     weights.x = xsimd::select(wa, xsimd::broadcast(1.0f), weights.x);
     weights.y = xsimd::select(wa, xsimd::broadcast(0.0f), weights.y);
     weights.x = xsimd::select(wb, xsimd::broadcast(0.0f), weights.x);
-    weights.y = xsimd::select(wb, xsimd::broadcast(1.0f), weights.y);
+    weights.y = xsimd::select(wb, xsimd::broadcast(1.0f), weights.y);*/
 
     p = cc;
 
@@ -374,6 +378,7 @@ struct simd_preturn {
     simd_simplex_vertex a;
     simd_simplex_vertex b;
     simd_vec2 weights;
+    simd_vec2 p;
 };
 
 simd_preturn find_closest_face(simd_simplex& simplex) {
@@ -393,7 +398,7 @@ simd_preturn find_closest_face(simd_simplex& simplex) {
     batch min_value = xsimd::broadcast(FLT_MAX);
 
     for(int i = 0; i < 3; ++i) {
-        auto is_valid = bint_to_bfloat((simplex.num_v - 1) >= max(i, (i + 1) % 3));
+        auto is_valid = bint_to_bfloat(max(i, (i + 1) % 3) < simplex.num_v);
 
         simd_simplex_vertex& a = simplex.vertices[i];
         simd_simplex_vertex& b = simplex.vertices[(i + 1) % 3];
@@ -402,7 +407,10 @@ simd_preturn find_closest_face(simd_simplex& simplex) {
 
         simd_vec2 w = segment_project(a.m, b.m, p);
 
-        is_valid = is_valid && (p.length() < min_value);
+        batch len = p.length();
+
+        is_valid = is_valid && (len < min_value);
+        min_value = xsimd::select(is_valid, len, min_value);
 
         ret.a.a.x = xsimd::select(is_valid, a.a.x, ret.a.a.x);
         ret.a.a.y = xsimd::select(is_valid, a.a.y, ret.a.a.y);
@@ -420,6 +428,8 @@ simd_preturn find_closest_face(simd_simplex& simplex) {
 
         ret.weights.x = xsimd::select(is_valid, w.x, ret.weights.x);
         ret.weights.y = xsimd::select(is_valid, w.y, ret.weights.y);
+
+        ret.p = select(is_valid, p, ret.p);
     } 
 
     return ret;
@@ -428,18 +438,60 @@ simd_preturn find_closest_face(simd_simplex& simplex) {
 struct Polygon_edge {
     std::vector<uint32_t> vertices;
     vec2 normal;
+    float distance;
 };
 
 struct Polygon {
     std::vector<Simplex_vertex> vertices;
     std::vector<Polygon_edge> edges;
 
-    Polygon_return find_closest_face() {
+    /*Polygon_return find_closest_face() {
         Polygon_return ret;
 
         float min_dist = FLT_MAX;
         for(int i = 0; i < edges.size(); ++i) {
             Polygon_edge& edge = edges[i];
+
+            if(edge.distance < min_dist) {
+                uint32_t a = edge.vertices[0];
+                uint32_t b = edge.vertices[1];
+
+                Simplex_vertex va = vertices[a];
+                Simplex_vertex vb = vertices[b];
+
+                vec2 center;
+
+                vec2 w = segment_project(va.m, vb.m, vec2(0.0f), center);
+                if(w.x != -1) {
+                    min_dist = edge.distance;
+                    
+                    ret.vertices = {va, vb};
+                    vec2 c;
+                    get_normal(va.m, vb.m, vec2(0.0f), ret.normal, c);
+                    ret.weights = w;
+                }
+            }
+        }
+
+        return ret;
+    }*/
+    
+    Polygon_return find_closest_face() {
+        Polygon_return ret;
+
+        float min_dist = FLT_MAX;
+        int edge_i = -1;
+        for(int i = 0; i < edges.size(); ++i) {
+            Polygon_edge& edge = edges[i];
+
+            if(edge.distance < min_dist) {
+                min_dist = edge.distance;
+                edge_i = i;
+            }
+        }
+
+        if(edge_i != -1) {
+            Polygon_edge& edge = edges[edge_i];
             uint32_t a = edge.vertices[0];
             uint32_t b = edge.vertices[1];
 
@@ -451,15 +503,10 @@ struct Polygon {
             vec2 w = segment_project(va.m, vb.m, vec2(0.0f), center);
 
             if(w.x != -1) {
-                float dist = length(center);
-                if(dist < min_dist) {
-                    min_dist = dist;
-                    
-                    ret.vertices = {va, vb};
-                    vec2 c;
-                    get_normal(va.m, vb.m, vec2(0.0f), ret.normal, c);
-                    ret.weights = w;
-                }
+                ret.vertices = {va, vb};
+                vec2 c;
+                get_normal(va.m, vb.m, vec2(0.0f), ret.normal, c);
+                ret.weights = w;
             }
         }
 
@@ -477,6 +524,7 @@ struct Polygon {
         Polygon_edge e;
         e.vertices = {a, b};
         e.normal = normal;
+        e.distance = abs(dot(normal, -center));
 
         edges.push_back(e);
     }
@@ -542,6 +590,9 @@ Polygon from_simplex(Simplex& s) {
     return p;
 }
 
+// simd polygon
+
+/*
 struct simd_edge {
     simd_simplex_vertex a;
     simd_simplex_vertex b;
@@ -549,7 +600,7 @@ struct simd_edge {
     xsimd::batch_bool<float> active = xsimd::batch_bool<float>(false);
 };
 
-struct Polygon_return {
+struct simd_polygon_return {
     simd_simplex_vertex a;
     simd_simplex_vertex b;
     simd_vec2 normal;
@@ -686,290 +737,12 @@ struct simd_polygon {
         }
     }
 };
-
-// simd polygon
-
-/*
-struct Polygon {
-    // vertices
-    std::vector<float> ax;
-    std::vector<float> ay;
-    std::vector<float> bx;
-    std::vector<float> by;
-    std::vector<float> mx;
-    std::vector<float> my;
-
-    // faces
-    std::vector<int> edge_1;
-    std::vector<int> edge_2;
-    std::vector<float> nx;
-    std::vector<float> ny;
-
-    Polygon_return find_closest_face() {
-        Polygon_return ret;
-
-        float min_dist = FLT_MAX;
-        for(int i = 0; i < edges.size(); ++i) {
-            Polygon_edge& edge = edges[i];
-            uint32_t a = edge.vertices[0];
-            uint32_t b = edge.vertices[1];
-
-            Simplex_vertex va = vertices[a];
-            Simplex_vertex vb = vertices[b];
-
-            vec2 center;
-
-            vec2 w = segment_project(va.m, vb.m, vec2(0.0f), center);
-
-            if(w.x != -1) {
-                float dist = length(center);
-                if(dist < min_dist) {
-                    min_dist = dist;
-                    
-                    ret.vertices = {va, vb};
-                    vec2 c;
-                    get_normal(va.m, vb.m, vec2(0.0f), ret.normal, c);
-                    ret.weights = w;
-                }
-            }
-        }
-
-        return ret;
-    }
-
-    void insert_edge(uint32_t a, uint32_t b) {
-        vec2 pa = vertices[a].m;
-        vec2 pb = vertices[b].m;
-
-        vec2 normal;
-        vec2 center;
-        get_normal(pa, pb, vec2(0.0f), normal, center);
-
-        Polygon_edge e;
-        e.vertices = {a, b};
-        e.normal = normal;
-
-        edges.push_back(e);
-    }
-
-    void expand(Simplex_vertex vertex) {
-        uint32_t v_n = vertices.size();
-        vertices.push_back(vertex);
-
-        std::vector<uint32_t> edges_seen;
-        std::vector<uint32_t> vertices_seen;
-        for(int i = 0; i < edges.size(); ++i) {
-            Polygon_edge& e = edges[i];
-
-            vec2 diff = vertex.m - vertices[e.vertices[0]].m;
-
-            if(dot(e.normal, diff) > 0.0f) {
-                edges_seen.push_back(i);
-                vertices_seen.push_back(e.vertices[0]);
-                vertices_seen.push_back(e.vertices[1]);
-            }
-        }
-        
-        std::sort(edges_seen.begin(), edges_seen.end());
-
-        int i = 0;
-        for(uint32_t edge : edges_seen) {
-            edges.erase(edges.begin() + edge - i);
-            ++i;
-        }
-
-        for(uint32_t vertex : vertices_seen) {
-            if(std::count(vertices_seen.begin(), vertices_seen.end(), vertex) == 1) {
-                uint32_t a = vertex;
-                
-                insert_edge(a, v_n);
-            }
-        }
-    }
-};
 */
-
-/*struct simd_polygon_edge {
-    simd_simplex_vertex a;
-    simd_simplex_vertex b;
-    simd_vec2 normal;
-};
-
-struct simd_polygon_return {
-    simd_polygon_edge edge;
-    simd_vec2 weights = {xsimd::broadcast(-1.0f), xsimd::broadcast(-1.0f)};
-};
-
-simd_vec2 segment_project(simd_vec2& a, simd_vec2& b, simd_vec2& center) {
-    simd_vec2 line_axis = b - a;
-    batch dist_c = line_axis.length();
-    line_axis /= dist_c;
-
-    simd_vec2 normal;
-    normal.x = line_axis.y;
-    normal.y = -line_axis.x;
-
-    simd_vec2 rel_origin = -a;
-    rel_origin = rel_origin - normal * normal.dot(rel_origin);
-    rel_origin += a;
-
-    simd_vec2 da = a - rel_origin;
-    simd_vec2 db = b - rel_origin;
-
-    simd_vec2 ret = {xsimd::broadcast(-1.0f), xsimd::broadcast(-1.0f)};
-
-    auto mask = da.dot(db) <= 0.0f;
-
-    batch dist_a = da.length();
-    batch dist_b = db.length();
-
-    return {dist_b / dist_c, dist_a / dist_c};
-}
-
-struct simd_polygon {
-    std::vector<simd_polygon_edge> edges;
-    batch_int num_edges = xsimd::broadcast(0);
-
-    simd_polygon_return find_closest_face() {
-        simd_polygon_return ret;
-        batch min_dist = xsimd::broadcast(FLT_MAX);
-
-        int max_edges = xsimd::reduce_max(num_edges);
-
-        for(int i = 0; i < max_edges; ++i) {
-            auto mask = i < num_edges;
-
-            simd_polygon_edge& edge = edges[i];
-            // va = edge.a
-            // vb = edge.b
-
-            simd_vec2 center;
-
-            simd_vec2 weights = segment_project(edge.a.m, edge.b.m, center);
-
-            auto mask_weights = weights.x != -1.0f;
-
-            batch dist = center.length();
-
-            auto total_mask = bint_to_bfloat(mask) && mask_weights && (dist < min_dist);
-            
-            // if total_mask
-
-            min_dist = select(total_mask, dist, min_dist);
-
-            ret.edge.a.a.x = select(total_mask, edge.a.a.x, ret.edge.a.a.x);
-            ret.edge.a.a.y = select(total_mask, edge.a.a.y, ret.edge.a.a.y);
-            ret.edge.a.b.x = select(total_mask, edge.a.b.x, ret.edge.a.b.x);
-            ret.edge.a.b.y = select(total_mask, edge.a.b.y, ret.edge.a.b.y);
-            ret.edge.a.m.x = select(total_mask, edge.a.m.x, ret.edge.a.m.x);
-            ret.edge.a.m.y = select(total_mask, edge.a.m.y, ret.edge.a.m.y);
-
-            ret.edge.b.a.x = select(total_mask, edge.b.a.x, ret.edge.b.a.x);
-            ret.edge.b.a.y = select(total_mask, edge.b.a.y, ret.edge.b.a.y);
-            ret.edge.b.b.x = select(total_mask, edge.b.b.x, ret.edge.b.b.x);
-            ret.edge.b.b.y = select(total_mask, edge.b.b.y, ret.edge.b.b.y);
-            ret.edge.b.m.x = select(total_mask, edge.b.m.x, ret.edge.b.m.x);
-            ret.edge.b.m.y = select(total_mask, edge.b.m.y, ret.edge.b.m.y);
-
-            ret.edge.normal.x = select(total_mask, edge.normal.x, ret.edge.normal.x);
-            ret.edge.normal.y = select(total_mask, edge.normal.y, ret.edge.normal.y);
-
-            ret.weights.x = select(total_mask, weights.x, ret.weights.x);
-            ret.weights.y = select(total_mask, weights.y, ret.weights.y);
-        }
-
-        return ret;
-    }
-
-    void insert_edge(vec2 aa, vec2 ab, vec2 am, vec2 ba, vec2 bb, vec2 bm, int NN) {
-        int num_vertices = num_edges.get(NN);
-
-        if(num_vertices + 1 >= edges.size()) {
-            edges.resize(num_vertices + 1);
-        }
-
-        simd_polygon_edge& edge = edges[num_vertices];
-
-        edge.a.a.x
-
-        vec2 pa = vertices[a].m;
-        vec2 pb = vertices[b].m;
-
-        vec2 normal;
-        vec2 center;
-        get_normal(pa, pb, vec2(0.0f), normal, center);
-
-        Polygon_edge e;
-        e.vertices = {a, b};
-        e.normal = normal;
-
-        edges.push_back(e);
-    }
-
-    void expand(Simplex_vertex vertex) {
-        uint32_t v_n = vertices.size();
-        vertices.push_back(vertex);
-
-        std::vector<uint32_t> edges_seen;
-        std::vector<uint32_t> vertices_seen;
-        for(int i = 0; i < edges.size(); ++i) {
-            Polygon_edge& e = edges[i];
-
-            vec2 diff = vertex.m - vertices[e.vertices[0]].m;
-
-            if(dot(e.normal, diff) > 0.0f) {
-                edges_seen.push_back(i);
-                vertices_seen.push_back(e.vertices[0]);
-                vertices_seen.push_back(e.vertices[1]);
-            }
-        }
-        
-        std::sort(edges_seen.begin(), edges_seen.end());
-
-        int i = 0;
-        for(uint32_t edge : edges_seen) {
-            edges.erase(edges.begin() + edge - i);
-            ++i;
-        }
-
-        for(uint32_t vertex : vertices_seen) {
-            if(std::count(vertices_seen.begin(), vertices_seen.end(), vertex) == 1) {
-                uint32_t a = vertex;
-                
-                insert_edge(a, v_n);
-            }
-        }
-    }
-};
-
-Polygon from_simplex(Simplex& s) {
-    Polygon p;
-    p.vertices = s.vertices;
-    
-    for(int i = 0; i < 3; ++i) {
-        uint32_t a = i;
-        uint32_t b = (i + 1) % 3;
-
-        vec2 pa = p.vertices[a].m;
-        vec2 pb = p.vertices[b].m;
-
-        vec2 normal;
-        vec2 center;
-        get_normal(pa, pb, vec2(0.0f), normal, center);
-
-        Polygon_edge e;
-        e.vertices = {a, b};
-        e.normal = normal;
-
-        p.edges.push_back(e);
-    }
-
-    return p;
-}*/
 
 std::vector<Polygon> from_simplex(simd_simplex& v, bool* bools) {
     std::vector<Polygon> p(N);
     std::vector<int> active_lanes;
+    active_lanes.reserve(N);
     
     for(int j = 0; j < N; ++j) {
         if(bools[j]) active_lanes.push_back(j);
@@ -977,6 +750,10 @@ std::vector<Polygon> from_simplex(simd_simplex& v, bool* bools) {
         p[j].vertices.resize(3);
     }
 
+    for(int i = 0; i < 3; ++i) {
+        uint32_t a = i;
+        v.vertices[a].m = v.vertices[a].a - v.vertices[a].b;
+    }
     
     for(int i = 0; i < 3; ++i) {
         uint32_t a = i;
@@ -992,13 +769,15 @@ std::vector<Polygon> from_simplex(simd_simplex& v, bool* bools) {
         normal.y = xsimd::select(mask, -normal.y, normal.y);
 
         for(int j : active_lanes) {
+            vec2 vm = vec2{v.vertices[a].m.x.get(j), v.vertices[a].m.y.get(j)};
             p[j].vertices[i].a = {v.vertices[a].a.x.get(j), v.vertices[a].a.y.get(j)};
             p[j].vertices[i].b = {v.vertices[a].b.x.get(j), v.vertices[a].b.y.get(j)};
-            p[j].vertices[i].m = {v.vertices[a].m.x.get(j), v.vertices[a].m.y.get(j)};
+            p[j].vertices[i].m = vm;
             
             Polygon_edge e;
             e.vertices = {a, b};
             e.normal = {normal.x.get(j), normal.y.get(j)};
+            e.distance = abs(dot(e.normal, vm));
             p[j].edges[i] = e;
         }
     }
@@ -1007,7 +786,10 @@ std::vector<Polygon> from_simplex(simd_simplex& v, bool* bools) {
 }
 
 std::vector<Collision_data> Physics_system::collision(std::vector<Collision_input>& input, bool lp) {
+    Render_system& render_system = ecs.get_system<Render_system>();
+
     // get sizes
+    std::vector<Collision_data> data(N);
 
     //std::cout << "a";
 
@@ -1122,8 +904,8 @@ std::vector<Collision_data> Physics_system::collision(std::vector<Collision_inpu
         
         int size = simplex.vertices.size();
 
-        simd_vec2 point_a = support_func(a_vertices, direction);
-        simd_vec2 point_b = support_func(b_vertices, -direction);
+        simd_vec2 point_a = support_func(a_vertices, direction) - direction * skin * float(use_skin);
+        simd_vec2 point_b = support_func(b_vertices, -direction) + direction * skin * float(use_skin);
         
         simd_vec2 point_m = point_a - point_b;
 
@@ -1148,7 +930,7 @@ std::vector<Collision_data> Physics_system::collision(std::vector<Collision_inpu
 
         batch_int ii = 0;
         for(int i = 0; i < 3; ++i) {
-            xsimd::batch_bool<float> mask_n = bint_to_bfloat(simplex.num_v == i);
+            xsimd::batch_bool<float> mask_n = bint_to_bfloat(simplex.num_v == i) && active_total;
             
             simplex.vertices[i].m.x = xsimd::select(mask_n, point_m.x, simplex.vertices[i].m.x);
             simplex.vertices[i].a.x = xsimd::select(mask_n, point_a.x, simplex.vertices[i].a.x);
@@ -1211,15 +993,98 @@ std::vector<Collision_data> Physics_system::collision(std::vector<Collision_inpu
         direction.y = xsimd::select(mask_2, dir_2.y, direction.y);
 
         active = active && bfloat_to_bint(active_total);
+
+        if(iterations > 12) {
+            active_total = active_total && bint_to_bfloat(!active);
+            break;
+        }
     }
     
     if(lp) profiler2.step("GJK");
+
+    // distance check
+    //distance_check = !active_total;
+
+    if(any(distance_check) && use_skin) {
+        simd_preturn ret = find_closest_face(simplex);
+
+        simd_vec2 cp_a = ret.a.a * ret.weights.x + ret.b.a * ret.weights.y;
+        simd_vec2 cp_b = ret.a.b * ret.weights.x + ret.b.b * ret.weights.y;
+        
+        simd_vec2 separation_vector = cp_a - cp_b;
+        simd_vec2 collision_normal = separation_vector.normalize2();
+        cp_a -= collision_normal * skin;
+        cp_b += collision_normal * skin;
+
+        auto dc = distance_check && (collision_normal.dot(cp_a - cp_b) < 0.0f);
+
+        
+        auto is_nan = isnan(collision_normal.x);
+
+        alignas(32) bool dcheck[N];
+        dc.store_aligned(dcheck);
+        
+        alignas(32) float cax[N];
+        alignas(32) float cay[N];
+        alignas(32) float cbx[N];
+        alignas(32) float cby[N];
+        alignas(32) float nx[N];
+        alignas(32) float ny[N];
+
+        cp_a.x.store_aligned(cax);
+        cp_a.y.store_aligned(cay);
+        cp_b.x.store_aligned(cbx);
+        cp_b.y.store_aligned(cby);
+        collision_normal.x.store_aligned(nx);
+        collision_normal.y.store_aligned(ny);
+
+        for(int i = 0; i < N; ++i) {
+            if(dcheck[i]) {
+                Collision_data collision_data;
+                collision_data.collide = true;
+                collision_data.a = 1;
+                collision_data.b = 0;
+                collision_data.pa = {cax[i], cay[i]};
+                collision_data.pb = {cbx[i], cby[i]};
+                collision_data.normal = {nx[i], ny[i]};
+
+                data[i] = collision_data;
+            } else {
+                if(i < input.size()) {
+                    vec2 marker_point_a = vec2(cax[i], cay[i]);
+                    vec2 marker_point_b = vec2(cbx[i], cby[i]);
+                    marker_point_a = marker_point_a + input[i].ta->position;
+                    marker_point_b = marker_point_b + input[i].ta->position;
+
+                    render_system.marker_points.push_back(marker_point_a);
+                    render_system.marker_points.push_back(marker_point_b);
+                    render_system.normals.push_back(vec2(0.0f));
+                    render_system.normals.push_back(vec2(0.0f));
+
+                    vec2 pa1 = vec2(ret.a.a.x.get(i), ret.a.a.y.get(i)) + input[i].ta->position;
+                    vec2 pa2 = vec2(ret.b.a.x.get(i), ret.b.a.y.get(i)) + input[i].ta->position;
+                    vec2 pp = vec2(ret.p.x.get(i), ret.p.y.get(i)) + input[i].ta->position;
+                    
+                    render_system.marker_points.push_back(pa1);
+                    render_system.marker_points.push_back(pa2);
+                    render_system.marker_points.push_back(pp);
+                    render_system.normals.push_back(vec2(0.0f));
+                    render_system.normals.push_back(vec2(0.0f));
+                    render_system.normals.push_back(vec2(0.0f));
+                    
+                    std::cout << ret.weights.x.get(i) << " " << ret.weights.y.get(i) << "\n";
+                }
+            }
+        }
+    }
+    
+    if(lp) profiler2.step("distance check");
+
+    //
     
     struct array_N {
         alignas(32) float array[N];
     };
-    
-    std::vector<Collision_data> data(N);
     
     //std::cout << "d";
 
@@ -1497,6 +1362,7 @@ void Physics_system::physics_loop() {
 
     Render_system& render_system = ecs.get_system<Render_system>();
     render_system.marker_points.clear();
+    render_system.normals.clear();
 
     std::vector<uint32_t> input;
     for(uint32_t a : collectors[0].entities) {
@@ -1504,7 +1370,7 @@ void Physics_system::physics_loop() {
         Transform& at = ecs.get_component<Transform>(a);
         
         Mesh& am = ecs.get_component<Mesh>(a);
-        am.color = vec3(1.0f, 0.25f, 0.25f);
+        am.color = vec3(0.0f, 0.0f, 0.0f);
 
         vec4 bounding_box = calculate_bounding_box(ac, at);
         ac.bounding_box = bounding_box;
@@ -1576,26 +1442,20 @@ void Physics_system::physics_loop() {
                 //std::cout << std::to_string(t) + "b ";
 
                 for(int j = 0; j < inputs.size(); ++j) {
-                    if(cc[j].collide) {
-                        Collision_input& input = inputs[j];
-
-                        Mesh& am = ecs.get_component<Mesh>(input.a);
-                        Mesh& bm = ecs.get_component<Mesh>(input.b);
-                        
-                        if(cc[j].a == 1) {
-                            am.color = vec3(0.25f, 0.25f, 1.0f);
-                            bm.color = vec3(0.25f, 0.25f, 1.0f);
-                        } else {
-                            am.color = vec3(0.25f, 1.0f, 0.25f);
-                            bm.color = vec3(0.25f, 1.0f, 0.25f);
-                        }
-                    }
-                }
-
-                for(int j = 0; j < inputs.size(); ++j) {
                     Collision_data& c = cc[j];
                     if(c.collide) {
                         Collision_input& ci = inputs[j];
+
+                        Mesh& am = ecs.get_component<Mesh>(ci.a);
+                        Mesh& bm = ecs.get_component<Mesh>(ci.b);
+                        
+                        if(cc[j].a == 1) {
+                            am.color.b += 1.0f;
+                            bm.color.b += 1.0f;
+                        } else {
+                            am.color.g += 1.0f;
+                            bm.color.g += 1.0f;
+                        }
 
                         ci.ca->colliding = true;
                         ci.cb->colliding = true;
@@ -1716,13 +1576,40 @@ void Physics_system::physics_loop() {
     }
     profiler.step("prune collisions");
 
-    
-    /*for(Collision_constraint& c : collision_constraints) {
-        for(col_constraint& cc : c.constraints) {
-            render_system.marker_points.push_back(cc.pa);
-            render_system.marker_points.push_back(cc.pb);
+    Input_system& input_system = ecs.get_system<Input_system>();
+
+    vec2 collision_threshold = vec2(0.5f, 3);
+
+    for(uint32_t a : collectors[0].entities) {
+        Mesh& am = ecs.get_component<Mesh>(a);
+        vec3 color = am.color;
+
+        vec2 m = max(vec2(0.0f), color.gb() - collision_threshold) / collision_threshold;
+        float mm = max(m.x, m.y);
+        
+        color.g = min(1.0f, color.g / collision_threshold.x);
+        color.b = min(1.0f, color.b / collision_threshold.y);
+        color.b = max(0.0f, color.b - m.x);
+
+        float t = 0.3f;
+        t = max(0.0f, t - mm * t);
+
+        color = color * (1.0f - t) + t;
+
+        am.color = {color.g, color.b, color.r};
+    }
+
+    if(input_system.debug_mode) {
+        for(Collision_constraint& c : collision_constraints) {
+            c.get_points();
+            for(col_constraint& cc : c.constraints) {
+                render_system.marker_points.push_back(cc.pa);
+                render_system.marker_points.push_back(cc.pb);
+                render_system.normals.push_back(cc.normal);
+                render_system.normals.push_back(-cc.normal);
+            }
         }
-    }*/
+    }
 }
 
 void Physics_system::call() {
@@ -2096,7 +1983,7 @@ void Collision_constraint::get_points() {
 void Collision_constraint::get_value() {
     for(col_constraint& c : constraints) {
         vec2 diff = c.pa - c.pb;
-        float dd = max(0.0f, -dot(diff, c.d->normal)) + 0.01f;
+        float dd = max(0.0f, -dot(diff, c.d->normal));
         c.baumgarte = -dd;
         
         c.tangent = vec2(c.d->normal.y, -c.d->normal.x);

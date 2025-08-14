@@ -151,7 +151,7 @@ Render_system::Render_system() {
     framebuffers.emplace_back(Framebuffer({800, 600}, {{{GL_RGBA16F, GL_RGBA, GL_HALF_FLOAT}, GL_COLOR_ATTACHMENT0, 0}, {{GL_DEPTH_COMPONENT32F, GL_RED, GL_FLOAT}, GL_DEPTH_ATTACHMENT}}));
     framebuffers.emplace_back(Framebuffer({4096, 4096}, {{{GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE}, GL_COLOR_ATTACHMENT1, 1}, {{GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE}, GL_COLOR_ATTACHMENT2, 2}, {{GL_DEPTH_COMPONENT32F, GL_RED, GL_FLOAT}, GL_DEPTH_ATTACHMENT}}));
 
-    framebuffer_link = {0.5f, 0.5f, 0};
+    framebuffer_link = {1, 1, 0};
 }
 
 void Render_system::resize_framebuffers() {
@@ -209,19 +209,20 @@ void Render_system::render_object(uint32_t object, uint32_t camera) {
     glUniformMatrix4fv(2, 1, false, &model[0][0]);
     glUniform4fv(3, 1, &color[0]);
 
-    glLineWidth(2);
+    glLineWidth(1);
     om.vertices->draw_vertices(GL_LINES);
 }
 
-void Render_system::render_marker(vec2 pos, uint32_t camera) {
+void Render_system::render_marker(vec2 pos, vec2 normal, uint32_t camera) {
     Transform ct = ecs.get_component<Transform>(camera);
     Camera& cc = ecs.get_component<Camera>(camera);
 
     vec2 size = {10, 10};
     vec4 tex_range = {5, 0, 5, 5};
 
-    size /= float(core.window.viewport_size.x) * 0.5f;
-    size /= cc.scale;
+    float scale_inv = 1.0f / (float(core.window.viewport_size.x) * 0.5f * cc.scale);
+
+    size *= scale_inv;
 
     std::vector<Texture_vertex> v = {
         Texture_vertex({-size.x * 0.5f, -size.y * 0.5f, 0.5}, tex_range.xy()),
@@ -253,8 +254,6 @@ void Render_system::render_marker(vec2 pos, uint32_t camera) {
     float aspect_ratio = float(core.window.screen_size.y) / core.window.screen_size.x;
     mat4 proj = scale(vec3(1.0f, 1.0f / aspect_ratio, 1.0f));
 
-    vec4 color = vec4(0.3f, 0.3f, 1.0f, 1.0f);
-
     core.shaders["texture_shader"]->use();
     texture->bind(0);
     vv->bind();
@@ -264,6 +263,33 @@ void Render_system::render_marker(vec2 pos, uint32_t camera) {
     glUniformMatrix4fv(2, 1, false, &model[0][0]);
 
     vv->draw_vertices(GL_TRIANGLES);
+
+    std::vector<vec3> v2 = {
+        {0, 0, 0.5f},
+        {normal * 20.0f, 0.5f}
+    };
+
+    for(vec3& v : v2) {
+        v.x *= scale_inv;
+        v.y *= scale_inv;
+    }
+
+    vv->vertex_buffer_data(v2.data(), v2.size(), sizeof(vec3), GL_STREAM_DRAW);
+    vv->add_vertex_attribute(0, 3, GL_FLOAT, false, sizeof(vec3), 0);
+    
+    core.shaders["color_shader"]->use();
+
+    vv->bind();
+
+    vec4 color = vec4(1.0f, 1.0f, 0.25f, 1.0f);
+
+    glUniformMatrix4fv(0, 1, false, &view[0][0]);
+    glUniformMatrix4fv(1, 1, false, &proj[0][0]);
+    glUniformMatrix4fv(2, 1, false, &model[0][0]);
+    glUniform4fv(3, 1, &color[0]);
+
+    glLineWidth(1);
+    vv->draw_vertices(GL_LINES);
 }
 
 void Render_system::call() {
@@ -296,7 +322,9 @@ void Render_system::call() {
     
     Physics_system& ps = ecs.get_system<Physics_system>();
 
-    /*for(auto& [k, d] : ps.collision_table) {
+    /*std::vector<vec2> normals;
+
+    for(auto& [k, d] : ps.collision_table) {
         for(Collision_data& c : d) {
             Transform& ta = ecs.get_component<Transform>(c.a);
             vec2 point_a = ta.orientation * c.pa + ta.position;
@@ -312,6 +340,8 @@ void Render_system::call() {
 
             marker_points.push_back(point_a);
             marker_points.push_back(point_b);
+            normals.push_back(c.normal);
+            normals.push_back(-c.normal);
         }
     }*/
 
@@ -322,7 +352,12 @@ void Render_system::call() {
             render_object(entity, camera);
         }
 
-        for(vec2 v : marker_points) render_marker(v, camera);
+        int i = 0;
+        for(vec2 v : marker_points) {
+            vec2 normal = normals[i];
+            render_marker(v, normal, camera);
+            ++i;
+        }
     }
 
 

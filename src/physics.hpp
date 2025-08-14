@@ -4,6 +4,9 @@
 #include "ecs.hpp"
 #include "random.hpp"
 
+extern float skin;
+extern bool use_skin;
+
 struct Collider {
     std::vector<vec2> vertices;
     vec2 radius = vec2(0.0f);
