@@ -154,11 +154,21 @@ int main() {
     t.position = vec2(2.5f, 2.75f);
     t.orientation = mat2(rotate(float(M_PI) * core.random(), vec3(0.0f, 0.0f, 1.0f)));
     
+    /*
     c.vertices = {
         vec2(0.5f, 0.5f),
         vec2(-1.0f, -0.5f),
         vec2(1.0f, -0.5f),
     };
+    */
+   
+    c.vertices = {
+        vec2(-1, -1),
+        vec2(1, -1),
+        vec2(1, 1),
+        vec2(-1, 1),
+    };
+    for(vec2& v : c.vertices) v *= vec2(0.5f);
 
     c.radius = vec2(0.0f);
     c.mass = size.x * size.y * 25.0f;

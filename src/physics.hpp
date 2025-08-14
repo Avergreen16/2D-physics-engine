@@ -2,6 +2,7 @@
 
 #include "wrapper.hpp"
 #include "ecs.hpp"
+#include "core.hpp"
 
 struct Collider {
     std::vector<vec2> vertices;

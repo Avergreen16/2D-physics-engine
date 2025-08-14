@@ -1222,6 +1222,7 @@ void Visualizer::step_collisions() {
     int iterations = 0;
 
     bool loop = true;
+    bool distance_check = false;
 
     while(loop) {
         ++step;
@@ -1313,10 +1314,10 @@ void Visualizer::step_collisions() {
             for(Simplex_vertex& v : simplex.vertices) {
                 vec2 difference = point_m - v.m;
 
-                if(glm::length(difference) < limit) goto exit_return_false;
+                if(glm::length(difference) < limit) goto exit_distance;
             }
 
-            if(glm::dot(point_m, direction) < limit) goto exit_return_false;
+            //if(glm::dot(point_m, direction) < limit) goto exit_distance;
 
             simplex.vertices.push_back(Simplex_vertex{point_m, point_a, point_b});
 
@@ -1531,6 +1532,43 @@ void Visualizer::step_collisions() {
         }
     }
 
+    exit_distance: 
+
+    if(simplex.vertices.size() == 1) {
+        points.push_back(Visualizer_v(simplex.vertices[0].a + ta.position, vec4(1.0f, 0.25f, 1.0f, 1.0f)));
+        points.push_back(Visualizer_v(simplex.vertices[0].b + ta.position, vec4(1.0f, 0.25f, 1.0f, 1.0f)));
+        points.push_back(Visualizer_v(simplex.vertices[0].m, vec4(1.0f, 0.25f, 1.0f, 1.0f)));
+    } else if(simplex.vertices.size() == 2) {
+        vec2 p0 = simplex.vertices[0].m;
+        vec2 p1 = simplex.vertices[1].m;
+
+        vec2 line_axis = p1 - p0;
+        float dist_c = length(line_axis);
+
+        line_axis /= dist_c;
+        vec2 normal = vec2(line_axis.y, -line_axis.x);
+
+        vec2 p2 = -p0;
+        p2 = p2 - normal * dot(normal, p2);
+        p2 += p0;
+
+        vec2 p3 = p0 - p2;
+        vec2 p4 = p1 - p2;
+
+        vec2 weights = vec2(length(p4) / dist_c, length(p3) / dist_c);
+
+        if(weights.x > 1.0f && weights.x > weights.y) weights = vec2(1.0f, 0.0f);
+        else if(weights.y > 1.0f && weights.y > weights.x) weights = vec2(0.0f, 1.0f);
+
+        vec2 pm = p0 * weights.x + p1 * weights.y;
+        vec2 pa = simplex.vertices[0].a * weights.x + simplex.vertices[1].a * weights.y;
+        vec2 pb = simplex.vertices[0].b * weights.x + simplex.vertices[1].b * weights.y;
+        
+        points.push_back(Visualizer_v(pa + ta.position, vec4(1.0f, 0.25f, 1.0f, 1.0f)));
+        points.push_back(Visualizer_v(pb + ta.position, vec4(1.0f, 0.25f, 1.0f, 1.0f)));
+        points.push_back(Visualizer_v(pm, vec4(1.0f, 0.25f, 1.0f, 1.0f)));
+    }
+
     exit_return_false:
     
     for(int i = 0; i < a_vertices.size(); ++i) {
@@ -1540,7 +1578,7 @@ void Visualizer::step_collisions() {
 
             vec2 diff = a_v - b_v;
 
-            points_b.push_back(Visualizer_v(diff, vec4(1.0f, 0.25f, 0.25f, 1.0f)));
+            points_b.push_back(Visualizer_v(diff, vec4(1.0f, 0.25f, 0.25f, 0.25f)));
         }   
     }
 

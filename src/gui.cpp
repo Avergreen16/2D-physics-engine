@@ -1314,7 +1314,7 @@ void GUI_system::add_text(std::function<std::string()> callback) {
     
 }
 
-void GUI_system::widget_return(int32_t v = 1) {
+void GUI_system::widget_return(int32_t v) {
     if(v == -1) {
         while(true) {
             Widget& w = ecs.get_component<Widget>(current_entity);
