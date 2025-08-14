@@ -3,7 +3,7 @@
 #include "input.hpp"
 #include "core.hpp"
 
-float skin = 0.2f;
+float skin = 0.05f;
 bool use_skin = true;
 
 Physics_system::Physics_system() {
@@ -360,6 +360,11 @@ simd_vec2 segment_project(simd_vec2& a, simd_vec2& b, simd_vec2& p) {
     batch dist_b = db.length();
 
     simd_vec2 weights = {dist_b * dist_c, dist_a * dist_c};
+
+    auto set_x = weights.x > weights.y && weights.x > 1.0f;
+    auto set_y = weights.y > weights.x && weights.y > 1.0f;
+    weights = select(set_x, {xsimd::broadcast(1.0f), xsimd::broadcast(0.0f)}, weights);
+    weights = select(set_y, {xsimd::broadcast(0.0f), xsimd::broadcast(1.0f)}, weights);
 
     /*auto wa = weights.x > weights.y && weights.x > 1.0f;
     auto wb = weights.y > weights.x && weights.y > 1.0f;
@@ -791,8 +796,6 @@ std::vector<Collision_data> Physics_system::collision(std::vector<Collision_inpu
     // get sizes
     std::vector<Collision_data> data(N);
 
-    //std::cout << "a";
-
     batch b0 = xsimd::broadcast(0.0f);
     batch b1 = xsimd::broadcast(1.0f);
 
@@ -877,8 +880,6 @@ std::vector<Collision_data> Physics_system::collision(std::vector<Collision_inpu
 
     // GJK
     
-    //std::cout << "b";
-    
     float limit = 0.01f;
     simd_simplex simplex;
 
@@ -891,8 +892,6 @@ std::vector<Collision_data> Physics_system::collision(std::vector<Collision_inpu
     xsimd::batch_bool<int> active = a_num_verts != 0;
     xsimd::batch_bool<float> active_total = bint_to_bfloat(active);
     xsimd::batch_bool<float> distance_check = bint_to_bfloat(a_num_verts == -1);
-    
-    //std::cout << "c";
     
     while(!none(active)) {
         ++iterations;
@@ -924,9 +923,9 @@ std::vector<Collision_data> Physics_system::collision(std::vector<Collision_inpu
             active_total = active_total && !return_mask;
         }
 
-        auto return_mask = point_m.dot(direction) > limit;
+        /*auto return_mask = point_m.dot(direction) > limit;
         distance_check = distance_check || !return_mask;
-        active_total = active_total && return_mask;
+        active_total = active_total && return_mask;*/
 
         batch_int ii = 0;
         for(int i = 0; i < 3; ++i) {
@@ -1049,7 +1048,7 @@ std::vector<Collision_data> Physics_system::collision(std::vector<Collision_inpu
                 collision_data.normal = {nx[i], ny[i]};
 
                 data[i] = collision_data;
-            } else {
+            }/* else {
                 if(i < input.size()) {
                     vec2 marker_point_a = vec2(cax[i], cay[i]);
                     vec2 marker_point_b = vec2(cbx[i], cby[i]);
@@ -1071,10 +1070,8 @@ std::vector<Collision_data> Physics_system::collision(std::vector<Collision_inpu
                     render_system.normals.push_back(vec2(0.0f));
                     render_system.normals.push_back(vec2(0.0f));
                     render_system.normals.push_back(vec2(0.0f));
-                    
-                    std::cout << ret.weights.x.get(i) << " " << ret.weights.y.get(i) << "\n";
                 }
-            }
+            }*/
         }
     }
     
@@ -1085,8 +1082,6 @@ std::vector<Collision_data> Physics_system::collision(std::vector<Collision_inpu
     struct array_N {
         alignas(32) float array[N];
     };
-    
-    //std::cout << "d";
 
     auto epa_check = bfloat_to_bint(active_total) && bfloat_to_bint(!distance_check);
 
@@ -1212,8 +1207,6 @@ std::vector<Collision_data> Physics_system::collision(std::vector<Collision_inpu
         ++iterations;
         if(lp) profiler2.step("EPA update polygons");
     }
-    
-    //std::cout << "f";
 
     return data;
 }
@@ -1227,7 +1220,6 @@ bool Physics_system::collision_point(Collider& ca, vec2 point) {
     for(vec2 v : ca.vertices) {
         a_vertices.push_back(v - point);
     }
-    ////std::cout << "collision started\n";
 
     Simplex simplex;
 
@@ -1437,9 +1429,7 @@ void Physics_system::physics_loop() {
                 }
                 if(t == 0) profiler2.step("load inputs");
 
-                //std::cout << std::to_string(t) + "a ";
                 std::vector<Collision_data> cc = collision(inputs, t == 0);
-                //std::cout << std::to_string(t) + "b ";
 
                 for(int j = 0; j < inputs.size(); ++j) {
                     Collision_data& c = cc[j];
@@ -2112,7 +2102,6 @@ void Profiler::output() {
         total_time += t;
 
         std::cout << names[number] << " : " << t / iterations << " = " << (t / total) * 100 << "%\n";
-        //std::cout << names[number] << " : " << t / iterations << " = " << (t / total) * 100 << "%\n";
         ++number;
     }
     
