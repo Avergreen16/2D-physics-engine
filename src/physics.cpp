@@ -3,7 +3,7 @@
 #include "input.hpp"
 #include "core.hpp"
 
-float skin = 0.1f;
+float skin = 0.05f;
 bool use_skin = true;
 bool expand = true;
 
@@ -150,12 +150,17 @@ int simplex_contains(glm::vec2 p, std::vector<Simplex_vertex>& points) {
     vec2 normal;
 
     get_normal(points[1].m, points[2].m, points[0].m, normal, centroid);
-
-    if(glm::dot(p - centroid, normal) > 0.0f) return 0;
+    float d0 = glm::dot(p - centroid, normal);
 
     get_normal(points[0].m, points[2].m, points[1].m, normal, centroid);
+    float d1 = glm::dot(p - centroid, normal);
 
-    if(glm::dot(p - centroid, normal) > 0.0f) return 1;
+    get_normal(points[0].m, points[1].m, points[2].m, normal, centroid);
+    float d2 = glm::dot(p - centroid, normal);
+
+    if(d0 > 0 && d0 > max(d1, d2)) return 0;
+    if(d1 > 0 && d1 > max(d0, d2)) return 1;
+    if(d2 > 0 && d2 > max(d0, d1)) return 2;
 
     return -1;
 }
