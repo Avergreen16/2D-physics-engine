@@ -305,8 +305,8 @@ void Input_system::call() {
                     ivec2 start_pos = world_cursor_pos;
                     ivec2 shape_matrix = ivec2(16);
                     float separation = 2.0f;
-                    vec2 max_dim = vec2(2.0f);
-                    vec2 min_dim = vec2(0.5f);
+                    vec2 max_dim = vec2(2.0f - skin * expand);
+                    vec2 min_dim = vec2(0.5f - skin * expand);
 
                     if(key_map[GLFW_KEY_M]){
                         shape_matrix = ivec2(3);
@@ -338,7 +338,7 @@ void Input_system::call() {
                             if(core.random() < 0.0f || true) {
                                 c.vertices = square;
                                 for(vec2& v : c.vertices) v *= size * 0.5f;
-                                c.radius = vec2(skin);
+                                c.radius = vec2(skin) * float(expand);
                                 c.mass = size.x * size.y * 25.0f;
                             } else {
                                 c.vertices = {vec3(0.0f)};

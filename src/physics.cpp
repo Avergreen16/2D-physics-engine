@@ -3,8 +3,9 @@
 #include "input.hpp"
 #include "core.hpp"
 
-float skin = 0.05f;
+float skin = 0.1f;
 bool use_skin = true;
+bool expand = true;
 
 Physics_system::Physics_system() {
     Signature s = ecs.update_signature<Collider>();
@@ -62,7 +63,7 @@ simd_vec2 Physics_system::support_func(std::vector<simd_vec2>& vertices, simd_ve
     simd_vec2 vv;
 
     for(simd_vec2& v : vertices) {
-        simd_vec2 v2 = v + direction * skin;
+        simd_vec2 v2 = v + direction * skin * float(expand);
         batch dot_v = v2.dot(direction);
 
         auto m = dot_v > max_dot;
@@ -903,10 +904,10 @@ std::vector<Collision_data> Physics_system::collision(std::vector<Collision_inpu
         
         int size = simplex.vertices.size();
 
-        simd_vec2 point_a = support_func(a_vertices, direction) - direction * skin * float(use_skin);
-        simd_vec2 point_b = support_func(b_vertices, -direction) + direction * skin * float(use_skin);
+        simd_vec2 point_a = support_func(a_vertices, direction) - direction * skin * float(use_skin) * float(expand);
+        simd_vec2 point_b = support_func(b_vertices, -direction) + direction * skin * float(use_skin) * float(expand);
         
-        simd_vec2 point_m = point_a - point_b;
+        simd_vec2 point_m = point_a - point_b - direction * skin * float(use_skin) * float(!expand);
 
         auto is_3 = simplex.num_v == 3;
 
@@ -1010,10 +1011,23 @@ std::vector<Collision_data> Physics_system::collision(std::vector<Collision_inpu
         simd_vec2 cp_a = ret.a.a * ret.weights.x + ret.b.a * ret.weights.y;
         simd_vec2 cp_b = ret.a.b * ret.weights.x + ret.b.b * ret.weights.y;
         
-        simd_vec2 separation_vector = cp_a - cp_b;
-        simd_vec2 collision_normal = separation_vector.normalize2();
-        cp_a -= collision_normal * skin;
-        cp_b += collision_normal * skin;
+        simd_vec2 collision_normal;
+        if(expand) {
+            simd_vec2 separation_vector = cp_a - cp_b;
+            collision_normal = separation_vector.normalize2();
+            cp_a -= collision_normal * skin;
+            cp_b += collision_normal * skin;
+        } else {
+            simd_vec2 separation_vector = cp_a - cp_b;
+            batch len = ret.p.length();
+            collision_normal = ret.p / len;//separation_vector.normalize2();
+            auto mask = len == 0.0f;
+            collision_normal = select(mask, {xsimd::broadcast(0.0f), xsimd::broadcast(1.0f)}, collision_normal);
+
+            //cp_a -= collision_normal * skin;
+            //cp_b += collision_normal * skin;
+
+        }
 
         auto dc = distance_check && (collision_normal.dot(cp_a - cp_b) < 0.0f);
 

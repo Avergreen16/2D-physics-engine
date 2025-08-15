@@ -123,8 +123,8 @@ int main() {
     Collider c;
     c.radius = vec2(0.0f);
     c.vertices = square;
-    c.radius = vec2(skin);
-    for(vec2& v : c.vertices) v *= vec2(512, 1);
+    c.radius = vec2(skin) * float(expand);
+    for(vec2& v : c.vertices) v *= vec2(512, 1) - skin * expand;
     /*c.radius = planet_radius;
     c.vertices = {
         vec2(0.0f)

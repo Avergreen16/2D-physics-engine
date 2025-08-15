@@ -6,6 +6,7 @@
 
 extern float skin;
 extern bool use_skin;
+extern bool expand;
 
 struct Collider {
     std::vector<vec2> vertices;
