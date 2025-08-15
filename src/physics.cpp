@@ -115,16 +115,17 @@ int simplex_contains(glm::vec2 p, std::vector<Simplex_vertex>& points) {
     vec2 normal;
 
     get_normal(points[1].m, points[2].m, points[0].m, normal, centroid);
-
-    if(glm::dot(p - centroid, normal) > 0.0f) return 0;
+    float d0 = glm::dot(p - centroid, normal);
 
     get_normal(points[0].m, points[2].m, points[1].m, normal, centroid);
-
-    if(glm::dot(p - centroid, normal) > 0.0f) return 1;
+    float d1 = glm::dot(p - centroid, normal);
 
     get_normal(points[0].m, points[1].m, points[2].m, normal, centroid);
+    float d2 = glm::dot(p - centroid, normal);
 
-    if(glm::dot(p - centroid, normal) > 0.0f) return 2;
+    if(d0 > 0 && d0 > max(d1, d2)) return 0;
+    if(d1 > 0 && d1 > max(d0, d2)) return 1;
+    if(d2 > 0 && d2 > max(d0, d1)) return 2;
 
     return -1;
 }
@@ -1203,6 +1204,17 @@ void Visualizer::step_collisions() {
     ps.transform_vertices(ta, ca, a_vertices, ta.position);
     ps.transform_vertices(tb, cb, b_vertices, ta.position);
 
+    for(int i = 0; i < a_vertices.size(); ++i) {
+        vec2 a_v = a_vertices[i];
+        for(int j = 0; j < b_vertices.size(); ++j) {
+            vec2 b_v = b_vertices[j];
+
+            vec2 diff = a_v - b_v;
+
+            points_b.push_back(Visualizer_v(diff, vec4(1.0f, 0.25f, 0.25f, 0.25f)));
+        }   
+    }
+
     ////std::cout << "collision started\n";
 
     uint32_t step = -1;
@@ -1567,20 +1579,11 @@ void Visualizer::step_collisions() {
         points.push_back(Visualizer_v(pa + ta.position, vec4(1.0f, 0.25f, 1.0f, 1.0f)));
         points.push_back(Visualizer_v(pb + ta.position, vec4(1.0f, 0.25f, 1.0f, 1.0f)));
         points.push_back(Visualizer_v(pm, vec4(1.0f, 0.25f, 1.0f, 1.0f)));
+        points.push_back(Visualizer_v(p0, vec4(1.0f, 1.0f, 0.25f, 1.0f)));
+        points.push_back(Visualizer_v(p1, vec4(1.0f, 1.0f, 0.25f, 1.0f)));
     }
 
     exit_return_false:
-    
-    for(int i = 0; i < a_vertices.size(); ++i) {
-        vec2 a_v = a_vertices[i];
-        for(int j = 0; j < b_vertices.size(); ++j) {
-            vec2 b_v = b_vertices[j];
-
-            vec2 diff = a_v - b_v;
-
-            points_b.push_back(Visualizer_v(diff, vec4(1.0f, 0.25f, 0.25f, 0.25f)));
-        }   
-    }
 
     exit_flag:
 }
