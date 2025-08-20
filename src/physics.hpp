@@ -156,7 +156,7 @@ struct Physics_system : System {
 
     Physics_system();
 
-    static std::vector<Collision_data> collision(std::vector<Collision_input>& input, bool profiler);
+    static std::vector<std::vector<Collision_data>> collision(std::vector<Collision_input>& input, bool profiler);
     //static std::vector<std::optional<Collision_data>> collision(std::vector<Collision_input>);
     
     static bool collision_point(Collider& ca, vec2 point);

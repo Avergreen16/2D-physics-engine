@@ -3,7 +3,7 @@
 #include "input.hpp"
 #include "core.hpp"
 
-float skin = 0.05f;
+float skin = 0.025f;
 bool use_skin = true;
 bool expand = true;
 
@@ -155,12 +155,12 @@ int simplex_contains(glm::vec2 p, std::vector<Simplex_vertex>& points) {
     get_normal(points[0].m, points[2].m, points[1].m, normal, centroid);
     float d1 = glm::dot(p - centroid, normal);
 
-    get_normal(points[0].m, points[1].m, points[2].m, normal, centroid);
-    float d2 = glm::dot(p - centroid, normal);
+    //get_normal(points[0].m, points[1].m, points[2].m, normal, centroid);
+    //float d2 = glm::dot(p - centroid, normal);
 
-    if(d0 > 0 && d0 > max(d1, d2)) return 0;
-    if(d1 > 0 && d1 > max(d0, d2)) return 1;
-    if(d2 > 0 && d2 > max(d0, d1)) return 2;
+    if(d0 > 0 && d0 > d1) return 0;
+    if(d1 > 0 && d1 > d0) return 1;
+    //if(d2 > 0 && d2 > max(d0, d1)) return 2;
 
     return -1;
 }
@@ -796,11 +796,11 @@ std::vector<Polygon> from_simplex(simd_simplex& v, bool* bools) {
     return p;
 }
 
-std::vector<Collision_data> Physics_system::collision(std::vector<Collision_input>& input, bool lp) {
+std::vector<std::vector<Collision_data>> Physics_system::collision(std::vector<Collision_input>& input, bool lp) {
     Render_system& render_system = ecs.get_system<Render_system>();
 
     // get sizes
-    std::vector<Collision_data> data(N);
+    std::vector<std::vector<Collision_data>> data(N);
 
     batch b0 = xsimd::broadcast(0.0f);
     batch b1 = xsimd::broadcast(1.0f);
@@ -898,6 +898,9 @@ std::vector<Collision_data> Physics_system::collision(std::vector<Collision_inpu
     xsimd::batch_bool<int> active = a_num_verts != 0;
     xsimd::batch_bool<float> active_total = bint_to_bfloat(active);
     xsimd::batch_bool<float> distance_check = bint_to_bfloat(a_num_verts == -1);
+
+    simd_vec2 ppoint_a;
+    simd_vec2 ppoint_b;
     
     while(!none(active)) {
         ++iterations;
@@ -1010,6 +1013,9 @@ std::vector<Collision_data> Physics_system::collision(std::vector<Collision_inpu
     // distance check
     //distance_check = !active_total;
 
+    simd_vec2 normal;
+    xsimd::batch_bool<float> finish = xsimd::broadcast(0.0f) != 0.0f;
+
     if(any(distance_check) && use_skin) {
         simd_preturn ret = find_closest_face(simplex);
 
@@ -1034,7 +1040,8 @@ std::vector<Collision_data> Physics_system::collision(std::vector<Collision_inpu
 
         }
 
-        auto dc = distance_check && (collision_normal.dot(cp_a - cp_b) < 0.0f);
+        simd_vec2 subtract = cp_a - cp_b;
+        auto dc = distance_check && (collision_normal.dot(subtract) < 0.0f) && abs(subtract.dot(simd_vec2{collision_normal.y, -collision_normal.x})) < 0.03f;
 
         
         auto is_nan = isnan(collision_normal.x);
@@ -1056,42 +1063,11 @@ std::vector<Collision_data> Physics_system::collision(std::vector<Collision_inpu
         collision_normal.x.store_aligned(nx);
         collision_normal.y.store_aligned(ny);
 
-        for(int i = 0; i < N; ++i) {
-            if(dcheck[i]) {
-                Collision_data collision_data;
-                collision_data.collide = true;
-                collision_data.a = 1;
-                collision_data.b = 0;
-                collision_data.pa = {cax[i], cay[i]};
-                collision_data.pb = {cbx[i], cby[i]};
-                collision_data.normal = {nx[i], ny[i]};
+        ppoint_a = cp_a;
+        ppoint_b = cp_b;
 
-                data[i] = collision_data;
-            }/* else {
-                if(i < input.size()) {
-                    vec2 marker_point_a = vec2(cax[i], cay[i]);
-                    vec2 marker_point_b = vec2(cbx[i], cby[i]);
-                    marker_point_a = marker_point_a + input[i].ta->position;
-                    marker_point_b = marker_point_b + input[i].ta->position;
-
-                    render_system.marker_points.push_back(marker_point_a);
-                    render_system.marker_points.push_back(marker_point_b);
-                    render_system.normals.push_back(vec2(0.0f));
-                    render_system.normals.push_back(vec2(0.0f));
-
-                    vec2 pa1 = vec2(ret.a.a.x.get(i), ret.a.a.y.get(i)) + input[i].ta->position;
-                    vec2 pa2 = vec2(ret.b.a.x.get(i), ret.b.a.y.get(i)) + input[i].ta->position;
-                    vec2 pp = vec2(ret.p.x.get(i), ret.p.y.get(i)) + input[i].ta->position;
-                    
-                    render_system.marker_points.push_back(pa1);
-                    render_system.marker_points.push_back(pa2);
-                    render_system.marker_points.push_back(pp);
-                    render_system.normals.push_back(vec2(0.0f));
-                    render_system.normals.push_back(vec2(0.0f));
-                    render_system.normals.push_back(vec2(0.0f));
-                }
-            }*/
-        }
+        normal = collision_normal;
+        finish = dc;
     }
     
     if(lp) profiler2.step("distance check");
@@ -1120,6 +1096,21 @@ std::vector<Collision_data> Physics_system::collision(std::vector<Collision_inpu
     if(lp) profiler2.step("load EPA polygons");
     //simd_vec2 direction;
     iterations = 0;
+    
+    // normals;
+    alignas(32) float normal_x[N];
+    alignas(32) float normal_y[N];
+    alignas(32) float insert_normal[N];
+
+    auto prev_bools = epa_check;
+
+    alignas(32) float _cp_a_x[N];
+    alignas(32) float _cp_a_y[N];
+    alignas(32) float _cp_b_x[N];
+    alignas(32) float _cp_b_y[N];
+    alignas(32) float flip[N];
+    std::fill(std::begin(flip), std::end(flip), 0.0f);
+    std::fill(std::begin(insert_normal), std::end(insert_normal), 0.0f);
 
     while(any(epa_check) && iterations < 12) {
         alignas(32) bool new_epa[N];
@@ -1202,8 +1193,21 @@ std::vector<Collision_data> Physics_system::collision(std::vector<Collision_inpu
                     if(isnan(collision_normal.x)) {
                         break;
                     }
+                    
+                    normal_x[i] = collision_normal.x;
+                    normal_y[i] = collision_normal.y;
+                    insert_normal[i] = 1.0f;
+                    
+                    EPA_bools[i] = false;
+                    epa_bools[i] = 0;
 
-                    Collision_data collision_data;
+                    _cp_a_x[i] = cp_a.x;
+                    _cp_a_y[i] = cp_a.y;
+                    _cp_b_x[i] = cp_b.x;
+                    _cp_b_y[i] = cp_b.y;
+                    flip[i] = 1.0f;
+
+                    /*Collision_data collision_data;
                     collision_data.collide = true;
                     collision_data.a = 0;
                     collision_data.b = 0;
@@ -1214,17 +1218,127 @@ std::vector<Collision_data> Physics_system::collision(std::vector<Collision_inpu
                     data[i] = collision_data;
                     
                     EPA_bools[i] = false;
-                    epa_bools[i] = 0;
+                    epa_bools[i] = 0;*/
                 } else {
                     polygons[i].expand({{pmx[i], pmy[i]}, {pax[i], pay[i]}, {pbx[i], pby[i]}});
                 }
             }
         }
         epa_check = xsimd::load_aligned(epa_bools) != 0;
+
         // if not mask
 
         ++iterations;
         if(lp) profiler2.step("EPA update polygons");
+    }
+
+    auto mask_m = xsimd::load_aligned(flip) != 0.0f;
+    simd_vec2 ppa = {xsimd::load_aligned(_cp_a_x), xsimd::load_aligned(_cp_a_y)};
+    simd_vec2 ppb = {xsimd::load_aligned(_cp_b_x), xsimd::load_aligned(_cp_b_y)};
+    ppoint_a = select(mask_m, ppa, ppoint_a);
+    ppoint_b = select(mask_m, ppb, ppoint_b);
+
+    epa_check = prev_bools;
+
+    simd_vec2 new_normals = {xsimd::load_aligned(normal_x), xsimd::load_aligned(normal_y)};
+    auto add_normals = xsimd::load_aligned(insert_normal) != 0.0f;
+    finish = finish || add_normals;
+
+    normal = select(add_normals, new_normals, normal);
+
+    // clipping
+    simd_vec2 pa = support_func(a_vertices, -normal);
+    batch da0 = xsimd::broadcast(FLT_MAX);
+    batch da1 = xsimd::broadcast(-FLT_MAX);
+    
+    simd_vec2 pb = support_func(b_vertices, normal);
+    batch db0 = xsimd::broadcast(FLT_MAX);
+    batch db1 = xsimd::broadcast(-FLT_MAX);
+
+    simd_vec2 sideways = {normal.y, -normal.x};
+
+    
+
+    float margin = 0.02f;
+
+    for(int i = 0; i < max_a; ++i) {
+        auto mask = bint_to_bfloat(i < a_num_verts);
+
+        simd_vec2& v = a_vertices[i];
+        batch d = v.dot(sideways);
+
+        mask = mask && ((v - pa).dot(-normal) > -margin);
+
+        auto mask0 = d < da0;
+        auto mask1 = d > da1;
+        mask0 = mask0 && mask;
+        mask1 = mask1 && mask;
+
+        da0 = xsimd::select(mask0, d, da0);
+        da1 = xsimd::select(mask1, d, da1);
+    }
+
+    for(int i = 0; i < max_b; ++i) {
+        auto mask = bint_to_bfloat(i < b_num_verts);
+
+        simd_vec2& v = b_vertices[i];
+        batch d = v.dot(sideways);
+
+        mask = mask && ((v - pb).dot(normal) > -margin);
+
+        auto mask0 = d < db0;
+        auto mask1 = d > db1;
+        mask0 = mask0 && mask;
+        mask1 = mask1 && mask;
+
+        db0 = xsimd::select(mask0, d, db0);
+        db1 = xsimd::select(mask1, d, db1);
+    }
+
+    batch c0 = max(da0, db0);
+    batch c1 = min(da1, db1);
+
+    simd_vec2 a2 = pa + sideways * (c0 - pa.dot(sideways));
+    simd_vec2 a3 = pa + sideways * (c1 - pa.dot(sideways));
+    simd_vec2 b2 = pb + sideways * (c0 - pb.dot(sideways));
+    simd_vec2 b3 = pb + sideways * (c1 - pb.dot(sideways));
+
+    auto mask0 = da0 <= db1 && db0 <= da1;
+
+    for(int i = 0; i < N; ++i) {
+        bool finish_n = finish.get(i);
+        if(finish_n) {
+            vec2 normal_n = {normal.x.get(i), normal.y.get(i)};
+
+            bool overlap = mask0.get(i);
+
+            if(overlap) {
+                Collision_data collision_data;
+                collision_data.collide = true;
+                collision_data.a = !epa_check.get(i);
+                collision_data.b = 0;
+                collision_data.pa = {a2.x.get(i), a2.y.get(i)};
+                collision_data.pb = {b2.x.get(i), b2.y.get(i)};
+                collision_data.normal = normal_n;
+
+                data[i].push_back(collision_data);
+                
+                collision_data.pa = {a3.x.get(i), a3.y.get(i)};
+                collision_data.pb = {b3.x.get(i), b3.y.get(i)};
+
+                data[i].push_back(collision_data);
+            } else {
+                Collision_data collision_data;
+                collision_data.collide = true;
+                collision_data.a = !epa_check.get(i);
+                collision_data.b = 0;
+                collision_data.pa = {ppoint_a.x.get(i), ppoint_a.y.get(i)};
+                collision_data.pb = {ppoint_b.x.get(i), ppoint_b.y.get(i)};
+                collision_data.normal = normal_n;
+
+                data[i].push_back(collision_data);
+            }
+        }
     }
 
     return data;
@@ -1448,52 +1562,54 @@ void Physics_system::physics_loop() {
                 }
                 if(t == 0) profiler2.step("load inputs");
 
-                std::vector<Collision_data> cc = collision(inputs, t == 0);
+                std::vector<std::vector<Collision_data>> cc = collision(inputs, t == 0);
 
                 for(int j = 0; j < inputs.size(); ++j) {
-                    Collision_data& c = cc[j];
-                    if(c.collide) {
-                        Collision_input& ci = inputs[j];
+                    std::vector<Collision_data>& cv = cc[j];
+                    if(cv.size()) {
+                        for(Collision_data& c : cv) {
+                            Collision_input& ci = inputs[j];
 
-                        Mesh& am = ecs.get_component<Mesh>(ci.a);
-                        Mesh& bm = ecs.get_component<Mesh>(ci.b);
-                        
-                        if(cc[j].a == 1) {
-                            am.color.b += 1.0f;
-                            bm.color.b += 1.0f;
-                        } else {
-                            am.color.g += 1.0f;
-                            bm.color.g += 1.0f;
-                        }
-
-                        ci.ca->colliding = true;
-                        ci.cb->colliding = true;
-
-                        bool insert = true;
-
-                        if(ci.cb->is_static) {
-                            if(ci.ca->is_static) insert = false;
-                            else {
-                                c.pa = transpose(ci.ta->orientation) * c.pa;
-                                c.pb = ci.ta->position + c.pb;
-                                c.a = ci.a;
-                                c.b = 0xFFFFFFFF;
-                            }
-                        } else if(ci.ca->is_static) {
-                            c.a = ci.b;
-                            c.b = 0xFFFFFFFF;
+                            Mesh& am = ecs.get_component<Mesh>(ci.a);
+                            Mesh& bm = ecs.get_component<Mesh>(ci.b);
                             
-                            vec2 temp = c.pa;
-                            c.pa = transpose(ci.tb->orientation) * (c.pb + (ci.ta->position - ci.tb->position));
-                            c.pb = ci.ta->position + temp;
-                        } else {
-                            c.pa = transpose(ci.ta->orientation) * (c.pa);
-                            c.pb = transpose(ci.tb->orientation) * (c.pb + (ci.ta->position - ci.tb->position));
-                            c.a = ci.a;
-                            c.b = ci.b;
-                        }
+                            if(c.a == 1) {
+                                am.color.b += 1.0f;
+                                bm.color.b += 1.0f;
+                            } else {
+                                am.color.g += 1.0f;
+                                bm.color.g += 1.0f;
+                            }
 
-                        if(insert) cdata[t].push_back(c);
+                            ci.ca->colliding = true;
+                            ci.cb->colliding = true;
+
+                            bool insert = true;
+
+                            if(ci.cb->is_static) {
+                                if(ci.ca->is_static) insert = false;
+                                else {
+                                    c.pa = transpose(ci.ta->orientation) * c.pa;
+                                    c.pb = ci.ta->position + c.pb;
+                                    c.a = ci.a;
+                                    c.b = 0xFFFFFFFF;
+                                }
+                            } else if(ci.ca->is_static) {
+                                c.a = ci.b;
+                                c.b = 0xFFFFFFFF;
+                                
+                                vec2 temp = c.pa;
+                                c.pa = transpose(ci.tb->orientation) * (c.pb + (ci.ta->position - ci.tb->position));
+                                c.pb = ci.ta->position + temp;
+                            } else {
+                                c.pa = transpose(ci.ta->orientation) * (c.pa);
+                                c.pb = transpose(ci.tb->orientation) * (c.pb + (ci.ta->position - ci.tb->position));
+                                c.a = ci.a;
+                                c.b = ci.b;
+                            }
+
+                            if(insert) cdata[t].push_back(c);
+                        }
                     }
                 }
                 if(t == 0) profiler2.step("inserting data");
@@ -1587,7 +1703,7 @@ void Physics_system::physics_loop() {
 
     Input_system& input_system = ecs.get_system<Input_system>();
 
-    vec2 collision_threshold = vec2(0.5f, 3);
+    vec2 collision_threshold = vec2(0.5f, 2);
 
     for(uint32_t a : collectors[0].entities) {
         Mesh& am = ecs.get_component<Mesh>(a);
@@ -1597,8 +1713,11 @@ void Physics_system::physics_loop() {
         float mm = max(m.x, m.y);
         
         color.g = min(1.0f, color.g / collision_threshold.x);
-        color.b = min(1.0f, color.b / collision_threshold.y);
-        color.b = max(0.0f, color.b - m.x);
+        color.b = color.b / collision_threshold.y;
+        if(am.color.g != 0.0f) color.b = 0.0f;
+        if(color.b > 1.0f) {
+            color.r = min(1.0f, color.b - 1.0f);
+        }
 
         float t = 0.3f;
         t = max(0.0f, t - mm * t);
