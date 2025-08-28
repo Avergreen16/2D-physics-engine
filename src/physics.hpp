@@ -6,7 +6,6 @@
 
 extern float skin;
 extern bool use_skin;
-extern bool expand;
 
 struct Collider {
     std::vector<vec2> vertices;
@@ -127,6 +126,7 @@ struct Sap_point {
     vec2 start;
     vec2 end;
     uint32_t id;
+    bool is_start = true;
 };
 
 struct Collision_input {
@@ -142,7 +142,7 @@ struct Collision_input {
 struct Physics_system : System {
     float physics_step = 0.02f;
     float physics_time = 0.0f;
-    uint32_t max_frames = 2;
+    uint32_t max_frames = 1;
     uint32_t temporal_iterations = 1;
 
     std::unordered_map<uint64_t, std::vector<Collision_data>> collision_table;
@@ -168,19 +168,21 @@ struct Physics_system : System {
 
     void insert_collision(Collision_data c);
 
-    void solve_constraints(std::vector<Collision_constraint>& constraints);
+    void velocity_solve(std::vector<Collision_constraint>& constraints);
+    void position_solve(std::vector<Collision_constraint>& constraints);
 
     static vec2 calculate_inertia(Collider& c);
 
     static vec4 calculate_bounding_box(Collider& c, Transform& t);
 
-    std::vector<uint64_t> sweep_and_prune(std::vector<uint32_t>& input);
+    std::vector<uint64_t> broad_phase(std::vector<uint32_t>& input);
     
     static vec2 calculate_point_velocity(Collider* c, vec2 point);
 
     static float calculate_inverse_mass(Collider* c, Transform* t, vec2 impulse_dir, vec2 point);
 
     static void apply_impulse(Collider* c, vec2 impulse, vec2 point);
+    static void apply_position(Collider* c, Transform* t, vec2 impulse, vec2 point);
 
     void physics_loop();
 

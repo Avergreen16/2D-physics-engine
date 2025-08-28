@@ -303,10 +303,10 @@ void Input_system::call() {
                     ecs.insert_component(base, c2);*/
                 } else {
                     ivec2 start_pos = world_cursor_pos;
-                    ivec2 shape_matrix = ivec2(32, 8);
-                    float separation = 2.0f;
-                    vec2 max_dim = vec2(2.0f - skin * expand);
-                    vec2 min_dim = vec2(0.5f - skin * expand);
+                    ivec2 shape_matrix = ivec2(1);
+                    float separation = 1.0f;
+                    vec2 max_dim = vec2(1.0f - skin * use_skin);
+                    vec2 min_dim = vec2(0.25f - skin * use_skin);
 
                     if(key_map[GLFW_KEY_M]){
                         shape_matrix = ivec2(3);
@@ -323,7 +323,7 @@ void Input_system::call() {
                             
                             Transform t;
                             t.position = position;
-                            t.orientation = mat2(rotate(float(M_PI) * core.random(), vec3(0.0f, 0.0f, 1.0f)));
+                            t.orientation = mat2(rotate(float(M_PI) * (core.random() * 1.0f), vec3(0.0f, 0.0f, 1.0f)));
                             Collider c;
                             vec2 size = vec2(core.random() * 0.5f + 0.5f, core.random() * 0.5f + 0.5f) * (max_dim - min_dim) + min_dim;
                             //c.allow_gravity = false;
@@ -338,7 +338,7 @@ void Input_system::call() {
                             if(core.random() < 0.0f || true) {
                                 c.vertices = square;
                                 for(vec2& v : c.vertices) v *= size * 0.5f;
-                                c.radius = vec2(skin) * float(expand);
+                                c.radius = vec2(skin) * float(use_skin);
                                 c.mass = size.x * size.y * 25.0f;
                             } else {
                                 c.vertices = {vec3(0.0f)};

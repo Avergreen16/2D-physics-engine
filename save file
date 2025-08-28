@@ -1,0 +1,75 @@
+void Physics_system::position_solve(std::vector<Collision_constraint>& collisions) {
+    int iterations = 4;
+    float spring = 0.2f;
+    float softness = 0.0f;
+
+    for(Collision_constraint& data : collisions) {
+        data.ca = &ecs.get_component<Collider>(data.a);
+        data.ta = &ecs.get_component<Transform>(data.a);
+        if(data.b != 0xFFFFFFFF) {
+            data.cb = &ecs.get_component<Collider>(data.b);
+            data.tb = &ecs.get_component<Transform>(data.b);
+        }
+
+        for(col_constraint& cc : data.constraints) {
+            cc.lambdaN = 0.0f;
+        }
+    }
+
+    for(int i = 0; i < iterations; ++i) {
+        for(Collision_constraint& data : collisions) {
+
+            for(col_constraint& cc : data.constraints) {
+                data.get_points();
+                data.get_value();
+
+                float inertia = cc.inertiaN;
+
+                vec2 difference = cc.pa - cc.pb;
+
+                if(cc.d->b == 0xFFFFFFFF) {
+                    float v = dot(difference, cc.d->normal);
+
+                    float L = -v; 
+                    L /= inertia;
+                    L -= softness * cc.lambdaN;
+                    
+                    vec2 limits = vec2(0.0f, FLT_MAX);
+
+                    float new_lambda = cc.lambdaN + L;
+                    new_lambda = clamp(new_lambda, limits.x, limits.y);
+                    L = new_lambda - cc.lambdaN;
+                    cc.lambdaN = new_lambda;
+
+                    vec2 delta = cc.d->normal * L;
+                    apply_position(data.ca, data.ta, delta, cc.pa - data.ta->position);
+                } else {
+                    float v = dot(difference, cc.normal);
+
+                    float L = -v;
+                    L /= inertia;
+                    L -= softness * cc.lambdaN;
+                    
+                    vec2 limits = vec2(0.0f, FLT_MAX);
+
+                    float new_lambda = cc.lambdaN + L;
+                    new_lambda = clamp(new_lambda, limits.x, limits.y);
+                    L = new_lambda - cc.lambdaN;
+                    cc.lambdaN = new_lambda;
+
+                    vec2 delta = cc.normal * L;
+
+                    apply_position(data.ca, data.ta, delta, cc.pa - data.ta->position);
+                    apply_position(data.cb, data.tb, -delta, cc.pb - data.tb->position);
+                }
+            }
+        }
+    }
+}
+
+void Physics_system::apply_position(Collider* c, Transform* t, vec2 delta, vec2 point) {
+    t->position += delta / c->mass;
+    float delta_rotation = cross(vec3(point, 0.0f), vec3(delta, 0.0f)).z / c->inertia;
+    t->orientation = mat2(rotate(delta_rotation, vec3(0.0f, 0.0f, 1.0f))) * t->orientation;
+}
+
