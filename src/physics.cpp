@@ -1223,13 +1223,14 @@ void Visualizer::step_collisions() {
 
     vec2 direction = glm::normalize(b_vertices[0] - a_vertices[0]);
     
+    /*
     vec2 offset = vec2(direction.y, -direction.x);
 
     if(glm::dot(offset, direction) > 0.99) {
         offset = vec2(direction.x, -direction.y);
     }
 
-    direction = glm::normalize(direction + offset * 0.1f);
+    direction = glm::normalize(direction + offset * 0.1f);*/
 
     int iterations = 0;
 

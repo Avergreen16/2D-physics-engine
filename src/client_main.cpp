@@ -118,23 +118,24 @@ int main() {
     ecs.insert_component(entity, cc);
 
     // square
-                            
+    
     entity = ecs.insert_entity();
     visualizer.a = entity;
     
     t.position = vec2(2.0f, 2.0f);
     t.orientation = mat2(rotate(float(M_PI) * core.random(), vec3(0.0f, 0.0f, 1.0f)));
 
-    vec2 size = vec2(1.0f, 2.0f);
+    vec2 size = vec2(1.0f);
     c.vertices = {
-        vec2(-1, -1),
-        vec2(1, -1),
-        vec2(1, 1),
-        vec2(-1, 1),
+        vec2(0, 0)
+        //vec2(-1, -1),
+        //vec2(1, -1),
+        //vec2(1, 1),
+        //vec2(-1, 1),
     };
     for(vec2& v : c.vertices) v *= size;
 
-    c.radius = vec2(0.0f);
+    c.radius = vec2(0.5f);
     c.mass = size.x * size.y * 25.0f;
     vec2 shift = Physics_system::calculate_inertia(c);
     t.position += shift;
@@ -163,14 +164,15 @@ int main() {
     */
    
     c.vertices = {
-        vec2(-1, -1),
-        vec2(1, -1),
-        vec2(1, 1),
-        vec2(-1, 1),
+        vec2(0, 0)
+        //vec2(-1, -1),
+        //vec2(1, -1),
+        //vec2(1, 1),
+        //vec2(-1, 1),
     };
-    for(vec2& v : c.vertices) v *= vec2(0.5f);
+    //for(vec2& v : c.vertices) v *= vec2(0.5f);
 
-    c.radius = vec2(0.0f);
+    c.radius = vec2(0.5f);
     c.mass = size.x * size.y * 25.0f;
     shift = Physics_system::calculate_inertia(c);
     t.position += shift;
