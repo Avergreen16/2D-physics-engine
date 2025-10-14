@@ -123,9 +123,9 @@ int simplex_contains(glm::vec2 p, std::vector<Simplex_vertex>& points) {
     get_normal(points[0].m, points[1].m, points[2].m, normal, centroid);
     float d2 = glm::dot(p - centroid, normal);
 
-    if(d0 > 0 && d0 > max(d1, d2)) return 0;
-    if(d1 > 0 && d1 > max(d0, d2)) return 1;
-    if(d2 > 0 && d2 > max(d0, d1)) return 2;
+    if(d0 > 0.01 && d0 > max(d1, d2)) return 0;
+    if(d1 > 0.01 && d1 > max(d0, d2)) return 1;
+    if(d2 > 0.01 && d2 > max(d0, d1)) return 2;
 
     return -1;
 }
@@ -144,6 +144,7 @@ struct Polygon_edge {
 struct Polygon {
     std::vector<Simplex_vertex> vertices;
     std::vector<Polygon_edge> edges;
+    vec2 sum = vec2(0.0f);
 
     Polygon_return find_closest_face() {
         Polygon_return ret;
@@ -168,7 +169,7 @@ struct Polygon {
                     
                     ret.vertices = {va, vb};
                     vec2 c;
-                    get_normal(va.m, vb.m, vec2(0.0f), ret.normal, c);
+                    get_normal(va.m, vb.m, sum / float(vertices.size()), ret.normal, c);
                     ret.weights = w;
                 }
             }
@@ -183,7 +184,7 @@ struct Polygon {
 
         vec2 normal;
         vec2 center;
-        get_normal(pa, pb, vec2(0.0f), normal, center);
+        get_normal(pa, pb, sum / float(vertices.size()), normal, center);
 
         Polygon_edge e;
         e.vertices = {a, b};
@@ -195,6 +196,8 @@ struct Polygon {
     void expand(Simplex_vertex vertex) {
         uint32_t v_n = vertices.size();
         vertices.push_back(vertex);
+
+        sum += vertex.m;
 
         std::vector<uint32_t> edges_seen;
         std::vector<uint32_t> vertices_seen;
@@ -233,6 +236,10 @@ Polygon from_simplex(Simplex& s) {
     p.vertices = s.vertices;
     
     for(int i = 0; i < 3; ++i) {
+        p.sum += p.vertices[i].m;
+    }
+    
+    for(int i = 0; i < 3; ++i) {
         uint32_t a = i;
         uint32_t b = (i + 1) % 3;
 
@@ -241,7 +248,7 @@ Polygon from_simplex(Simplex& s) {
 
         vec2 normal;
         vec2 center;
-        get_normal(pa, pb, vec2(0.0f), normal, center);
+        get_normal(pa, pb, p.sum / 3.0f, normal, center);
 
         Polygon_edge e;
         e.vertices = {a, b};
@@ -1335,24 +1342,30 @@ void Visualizer::step_collisions() {
             simplex.vertices.push_back(Simplex_vertex{point_m, point_a, point_b});
 
             if(size == 0) {
-                direction = -glm::normalize(point_m);
+                float dir_len = glm::length(point_m);
+                if(dir_len != 0.0f) direction = -point_m / dir_len;
+                else direction = vec2(direction.y, -direction.x);
             } else if(size == 1) {
                 vec2 line_direction = glm::normalize(simplex.vertices[0].m - simplex.vertices[1].m);
                 vec2 rel_origin_pos = -simplex.vertices[1].m;
 
                 vec2 closest_point = line_direction * glm::dot(rel_origin_pos, line_direction) + simplex.vertices[1].m;
-                direction = glm::normalize(-closest_point);
+                float dir_len = glm::length(closest_point);
+                if(dir_len != 0.0f) direction = -closest_point / dir_len;
+                else direction = vec2(direction.y, -direction.x);
             }
         } else {
             int n = simplex_contains(vec2(0, 0), simplex.vertices);
             if(n == -1) {
+                // EPA
+
                 Polygon p = from_simplex(simplex);
 
                 iterations = 0;
 
                 while(true) {
                     ++step;
-                    if(step >= steps || steps == -1) {
+                    if(step >= steps || steps == -1) { // blank triangle
                         for(int i = 0; i < a_vertices.size(); ++i) {
                             vec2 a_v = a_vertices[i];
                             for(int j = 0; j < b_vertices.size(); ++j) {
@@ -1400,7 +1413,7 @@ void Visualizer::step_collisions() {
                     vec2 point_m = point_a - point_b;
 
                     ++step;
-                    if(step >= steps) {
+                    if(step >= steps) { // selected line
                         for(int i = 0; i < a_vertices.size(); ++i) {
                             vec2 a_v = a_vertices[i];
                             for(int j = 0; j < b_vertices.size(); ++j) {
@@ -1433,12 +1446,16 @@ void Visualizer::step_collisions() {
                         }
                             
                         lines.push_back({Visualizer_v(r.vertices[0].m, vec4(0.25f, 1.0f, 1.0f, 1.0f)), Visualizer_v(r.vertices[1].m, vec4(0.25f, 1.0f, 1.0f, 1.0f))});
+                        
+                        vec2 pos = r.vertices[0].m + r.vertices[1].m;
+                        pos *= 0.5f;
+                        lines.push_back({Visualizer_v(pos, vec4(0.25f, 1.0f, 1.0f, 1.0f)), Visualizer_v(pos + direction * 0.25f, vec4(0.25f, 1.0f, 1.0f, 1.0f))});
 
                         goto exit_flag;
                     }
                     
                     ++step;
-                    if(step >= steps) {
+                    if(step >= steps) { // inserted point
                         for(int i = 0; i < a_vertices.size(); ++i) {
                             vec2 a_v = a_vertices[i];
                             for(int j = 0; j < b_vertices.size(); ++j) {
@@ -1540,7 +1557,9 @@ void Visualizer::step_collisions() {
                 vec2 rel_origin_pos = -simplex.vertices[1].m;
 
                 vec2 closest_point = line_direction * glm::dot(rel_origin_pos, line_direction) + simplex.vertices[1].m;
-                direction = glm::normalize(-closest_point);
+                float dir_len = glm::length(closest_point);
+                if(dir_len != 0.0f) direction = -closest_point / dir_len;
+                else direction = vec2(direction.y, -direction.x);
             }
         }
     }
