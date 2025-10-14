@@ -78,15 +78,16 @@ simd_vec2 Physics_system::support_func(std::vector<simd_vec2>& vertices, simd_ve
         vv.y = xsimd::select(m, v2.y, vv.y);
     }
     
-    batch factor = sqrt(radius.x * radius.x * direction.x * direction.x + radius.y * radius.y * direction.y * direction.y);
+    //batch factor = sqrt(radius.x * radius.x * direction.x * direction.x + radius.y * radius.y * direction.y * direction.y);
 
-    xsimd::batch_bool mask = factor > xsimd::broadcast(0.0f);
+    //xsimd::batch_bool mask = factor > xsimd::broadcast(0.0f);
 
-    batch rx = radius.x * radius.x * direction.x / factor;
-    batch ry = radius.y * radius.y * direction.y / factor;
-    simd_vec2 ellipsoid = {rx, ry};
+    //batch rx = radius.x * radius.x * direction.x / factor;
+    //batch ry = radius.y * radius.y * direction.y / factor;
+    //simd_vec2 ellipsoid = {rx, ry};
 
-    vv = select(mask, vv + ellipsoid, vv);
+    //vv = select(mask, vv + ellipsoid, vv);
+    vv += direction * radius.x;
 
     return vv;
 }
@@ -345,17 +346,17 @@ batch_int simplex_contains(simd_simplex& simplex) {
     batch_int ret = xsimd::broadcast(-1);
 
     get_normal(simplex.vertices[1].m, simplex.vertices[2].m, simplex.vertices[0].m, normal, centroid);
-    auto m = normal.dot(-centroid) < 0.0f; // if normal is *not* pointed towards zero, c and zero are on different sides of the line (so return c)
+    auto m = normal.dot(-centroid) < -0.001f; // if normal is *not* pointed towards zero, c and zero are on different sides of the line (so return c)
     auto int_m = bfloat_to_bint(m);
     ret = xsimd::select(int_m, xsimd::broadcast(0), ret);
 
     get_normal(simplex.vertices[0].m, simplex.vertices[2].m, simplex.vertices[1].m, normal, centroid);
-    m = normal.dot(-centroid) < 0.0f; 
+    m = normal.dot(-centroid) < -0.001f;
     int_m = bfloat_to_bint(m);
     ret = xsimd::select(int_m, xsimd::broadcast(1), ret);
     
     get_normal(simplex.vertices[0].m, simplex.vertices[1].m, simplex.vertices[2].m, normal, centroid);
-    m = normal.dot(-centroid) < 0.0f;
+    m = normal.dot(-centroid) < -0.001f;
     int_m = bfloat_to_bint(m);
     ret = xsimd::select(int_m, xsimd::broadcast(2), ret);
 
@@ -515,6 +516,7 @@ struct Polygon {
                 edge_i = i;
             }
         }
+        std::cout << "edge: " << edge_i << "\n";
 
         if(edge_i != -1) {
             Polygon_edge& edge = edges[edge_i];
@@ -525,6 +527,8 @@ struct Polygon {
             Simplex_vertex vb = vertices[b];
 
             vec2 center;
+
+            std::cout << va.m.x << " " << va.m.y << " "  << vb.m.x << " "  << vb.m.y << "\n";
 
             vec2 w = segment_project(va.m, vb.m, vec2(0.0f), center);
 
@@ -941,7 +945,7 @@ std::vector<std::vector<Collision_data>> Physics_system::collision(std::vector<C
     simd_simplex simplex;
 
     simd_vec2 direction = b_vertices[0] - a_vertices[0];
-    //direction.normalize();
+    direction.normalize();
 
     int iterations = 0;
     uint32_t max_iteration = 1280;
@@ -1026,6 +1030,7 @@ std::vector<std::vector<Collision_data>> Physics_system::collision(std::vector<C
         active = active && !mask;
 
         // insert pos into simplex;
+        simd_simplex_vertex v2 = simplex.vertices[2];
         simplex.erase_vertices(contains, !mask && is_3);
 
         // switching dir
@@ -1047,9 +1052,22 @@ std::vector<std::vector<Collision_data>> Physics_system::collision(std::vector<C
 
         active = active && bfloat_to_bint(active_total);
 
-        if(iterations > 256 && false) {
-            active_total = active_total && bint_to_bfloat(!active);
-            break;
+        if(iterations > 256) {
+            alignas(32) bool flag[N];
+
+            active.store_aligned(flag);
+            
+            int num = 0;
+            for(int i = 0; i < N; ++i) {
+                if(flag[i]) {
+                    std::cout << i << " " << contains.get(i) << " " << is_3.get(i) << "\n";
+                    std::cout << v2.m.x.get(i) << " " << v2.m.y.get(i) << "\n\n";
+                }
+            }
+
+            
+            //active_total = active_total && bint_to_bfloat(!active);
+            //break;
         }
     }
     
@@ -1101,7 +1119,12 @@ std::vector<std::vector<Collision_data>> Physics_system::collision(std::vector<C
     std::fill(std::begin(flip), std::end(flip), 0.0f);
     std::fill(std::begin(insert_normal), std::end(insert_normal), 0.0f);
 
-    while(any(epa_check) && iterations < 256) {
+    while(any(epa_check)) {
+        if(iterations > 256) {
+            std::cout << "EPA\n";
+            std::cout << epa_check.get(0) << " ";
+            std::cout << polygons[0].vertices.size() << "\n";
+        }
         alignas(32) bool new_epa[N];
         alignas(32) float ndirx[N];
         alignas(32) float ndiry[N];
@@ -1126,7 +1149,11 @@ std::vector<std::vector<Collision_data>> Physics_system::collision(std::vector<C
 
                     weightsx[i] = r.weights.x;
                     weightsy[i] = r.weights.y;
+
+                    std::cout << r.normal.x << " " << r.normal.y << " " << r.weights.x << " " << r.weights.y << "\n";
                 }
+
+                std::cout << "v: " << r.vertices.size() << "\n";
             }
         }
         if(lp) profiler2.step("EPA find closest face");

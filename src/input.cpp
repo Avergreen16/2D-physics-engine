@@ -303,7 +303,7 @@ void Input_system::call() {
                     ecs.insert_component(base, c2);*/
                 } else {
                     ivec2 start_pos = world_cursor_pos;
-                    ivec2 shape_matrix = ivec2(8, 8);
+                    ivec2 shape_matrix = ivec2(1, 1);
                     float separation = 1.25f;
                     vec2 max_dim = vec2(1.0f);
                     vec2 min_dim = vec2(1.0f);
