@@ -23,6 +23,9 @@
 //Value Computed by CMake
 2D_Physics_Engine_SOURCE_DIR:STATIC=C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine
 
+//No help, variable specified on the command line.
+CAMKE_C_COMPILER:UNINITIALIZED=clang
+
 //Path to a program.
 CMAKE_ADDR2LINE:FILEPATH=C:/msys64/ucrt64/bin/addr2line.exe
 

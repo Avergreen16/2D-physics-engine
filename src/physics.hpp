@@ -139,6 +139,12 @@ struct Collision_input {
     Transform* tb;
 };
 
+struct input_data {
+    Collider* collider;
+    Transform* transform;
+    uint32_t id;
+};
+
 struct Physics_system : System {
     float physics_step = 0.02f;
     float physics_time = 0.0f;
@@ -163,19 +169,18 @@ struct Physics_system : System {
 
     static void transform_vertices(Transform& t, Collider& c, std::vector<vec2>& vertices, vec2 origin);
 
-    static vec2 support_func(std::vector<vec2>& vertices, vec2 direction);
-    static simd_vec2 support_func(std::vector<simd_vec2>& vertices, simd_vec2 direction);
+    static vec2 support_func(std::vector<vec2>& vertices, vec2 radius, vec2 direction);
+    static simd_vec2 support_func(std::vector<simd_vec2>& vertices, simd_vec2 radius, simd_vec2 direction);
 
     void insert_collision(Collision_data c);
 
     void velocity_solve(std::vector<Collision_constraint>& constraints);
-    void position_solve(std::vector<Collision_constraint>& constraints);
 
     static vec2 calculate_inertia(Collider& c);
 
     static vec4 calculate_bounding_box(Collider& c, Transform& t);
 
-    std::vector<uint64_t> broad_phase(std::vector<uint32_t>& input);
+    std::vector<uint64_t> broad_phase(std::vector<input_data>& input);
     
     static vec2 calculate_point_velocity(Collider* c, vec2 point);
 

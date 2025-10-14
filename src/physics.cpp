@@ -41,7 +41,7 @@ void Physics_system::transform_vertices(Transform& t, Collider& c, std::vector<v
     return return_vertex;
 }*/
 
-vec2 Physics_system::support_func(std::vector<vec2>& vertices, vec2 direction) {
+vec2 Physics_system::support_func(std::vector<vec2>& vertices, vec2 radius, vec2 direction) {
     float max_dot = -FLT_MAX;
     vec2 return_vertex;
 
@@ -53,16 +53,22 @@ vec2 Physics_system::support_func(std::vector<vec2>& vertices, vec2 direction) {
             return_vertex = v;
         }
     }
+    
+    float s = sqrt(radius.x * radius.x * direction.x * direction.x + radius.y * radius.y * direction.y * direction.y);
+    if(s > 0.0f) {
+        vec2 ellipsoid = vec2(radius.x * radius.x * direction.x, radius.y * radius.y * direction.y) / s;
+        return_vertex += ellipsoid;
+    }
 
     return return_vertex;
 }
 
-simd_vec2 Physics_system::support_func(std::vector<simd_vec2>& vertices, simd_vec2 direction) {
+simd_vec2 Physics_system::support_func(std::vector<simd_vec2>& vertices, simd_vec2 radius, simd_vec2 direction) {
     batch max_dot = xsimd::broadcast(-FLT_MAX);
     simd_vec2 vv;
 
     for(simd_vec2& v : vertices) {
-        simd_vec2 v2 = v + direction * skin;
+        simd_vec2 v2 = v;
         batch dot_v = v2.dot(direction);
 
         auto m = dot_v > max_dot;
@@ -71,6 +77,16 @@ simd_vec2 Physics_system::support_func(std::vector<simd_vec2>& vertices, simd_ve
         vv.x = xsimd::select(m, v2.x, vv.x);
         vv.y = xsimd::select(m, v2.y, vv.y);
     }
+    
+    batch factor = sqrt(radius.x * radius.x * direction.x * direction.x + radius.y * radius.y * direction.y * direction.y);
+
+    xsimd::batch_bool mask = factor > xsimd::broadcast(0.0f);
+
+    batch rx = radius.x * radius.x * direction.x / factor;
+    batch ry = radius.y * radius.y * direction.y / factor;
+    simd_vec2 ellipsoid = {rx, ry};
+
+    vv = select(mask, vv + ellipsoid, vv);
 
     return vv;
 }
@@ -798,6 +814,8 @@ std::vector<Polygon> from_simplex(simd_simplex& v, bool* bools) {
 std::vector<std::vector<Collision_data>> Physics_system::collision(std::vector<Collision_input>& input, bool lp) {
     Render_system& render_system = ecs.get_system<Render_system>();
 
+    //xsimd::batch_bool main_mask;
+
     // get sizes
     std::vector<std::vector<Collision_data>> data(N);
 
@@ -838,8 +856,16 @@ std::vector<std::vector<Collision_data>> Physics_system::collision(std::vector<C
 
     // transform verts
 
+    simd_vec2 a_radii;
+    simd_vec2 b_radii;
+
     std::vector<simd_vec2> a_vertices(max_a);
     std::vector<simd_vec2> b_vertices(max_b);
+    
+    alignas(32) float arx[N];
+    alignas(32) float ary[N];
+    alignas(32) float brx[N];
+    alignas(32) float bry[N];
     
     for(int j = 0; j < max_a; ++j) {
         alignas(32) float vx[N];
@@ -860,6 +886,19 @@ std::vector<std::vector<Collision_data>> Physics_system::collision(std::vector<C
         a_vertices[j].x = xsimd::load_aligned(vx);
         a_vertices[j].y = xsimd::load_aligned(vy);
     }
+    
+    for(int i = 0; i < N; ++i) {
+        if(i < input.size()) {
+            Collision_input& ci = input[i];
+            arx[i] = ci.ca->radius.x;
+            ary[i] = ci.ca->radius.y;
+        } else {
+            arx[i] = INFINITY;
+            ary[i] = INFINITY;
+        }
+    }
+    a_radii.x = xsimd::load_aligned(arx);
+    a_radii.y = xsimd::load_aligned(ary);
 
     for(int j = 0; j < max_b; ++j) {
         alignas(32) float vx[N];
@@ -881,6 +920,19 @@ std::vector<std::vector<Collision_data>> Physics_system::collision(std::vector<C
         b_vertices[j].y = xsimd::load_aligned(vy);
     }
 
+    for(int i = 0; i < N; ++i) {
+        if(i < input.size()) {
+            Collision_input& ci = input[i];
+            brx[i] = ci.cb->radius.x;
+            bry[i] = ci.cb->radius.y;
+        } else {
+            brx[i] = INFINITY;
+            bry[i] = INFINITY;
+        }
+    }
+    b_radii.x = xsimd::load_aligned(brx);
+    b_radii.y = xsimd::load_aligned(bry);
+
     if(lp) profiler2.step("GJK setup");
 
     // GJK
@@ -889,14 +941,13 @@ std::vector<std::vector<Collision_data>> Physics_system::collision(std::vector<C
     simd_simplex simplex;
 
     simd_vec2 direction = b_vertices[0] - a_vertices[0];
-    direction.normalize();
+    //direction.normalize();
 
     int iterations = 0;
-    uint32_t max_iteration = 128;
+    uint32_t max_iteration = 1280;
 
     xsimd::batch_bool<int> active = a_num_verts != 0;
     xsimd::batch_bool<float> active_total = bint_to_bfloat(active);
-    xsimd::batch_bool<float> distance_check = bint_to_bfloat(a_num_verts == -1);
 
     simd_vec2 ppoint_a;
     simd_vec2 ppoint_b;
@@ -911,8 +962,8 @@ std::vector<std::vector<Collision_data>> Physics_system::collision(std::vector<C
         
         int size = simplex.vertices.size();
 
-        simd_vec2 point_a = support_func(a_vertices, direction) - direction * skin * float(use_skin);
-        simd_vec2 point_b = support_func(b_vertices, -direction) + direction * skin * float(use_skin);
+        simd_vec2 point_a = support_func(a_vertices, a_radii, direction);
+        simd_vec2 point_b = support_func(b_vertices, b_radii, -direction);
         
         simd_vec2 point_m = point_a - point_b;
 
@@ -927,7 +978,6 @@ std::vector<std::vector<Collision_data>> Physics_system::collision(std::vector<C
             auto return_mask = diff < limit;
             return_mask = return_mask && bint_to_bfloat(is_active);
 
-            distance_check = distance_check || return_mask;
             active_total = active_total && !return_mask;
         }
 
@@ -997,7 +1047,7 @@ std::vector<std::vector<Collision_data>> Physics_system::collision(std::vector<C
 
         active = active && bfloat_to_bint(active_total);
 
-        if(iterations > 12) {
+        if(iterations > 256 && false) {
             active_total = active_total && bint_to_bfloat(!active);
             break;
         }
@@ -1011,36 +1061,13 @@ std::vector<std::vector<Collision_data>> Physics_system::collision(std::vector<C
     simd_vec2 normal;
     xsimd::batch_bool<float> finish = xsimd::broadcast(0.0f) != 0.0f;
 
-    if(any(distance_check) && use_skin) {
-        simd_preturn ret = find_closest_face(simplex);
-
-        simd_vec2 cp_a = ret.a.a * ret.weights.x + ret.b.a * ret.weights.y;
-        simd_vec2 cp_b = ret.a.b * ret.weights.x + ret.b.b * ret.weights.y;
-
-        simd_vec2 separation_vector = cp_b - cp_a;
-        simd_vec2 collision_normal = separation_vector.normalize2();
-        cp_a -= collision_normal * skin;
-        cp_b += collision_normal * skin;
-
-        simd_vec2 subtract = cp_a - cp_b;
-        auto dc = distance_check && (collision_normal.dot(subtract) < 0.0f) && abs(subtract.dot(simd_vec2{collision_normal.y, -collision_normal.x})) < 0.03f;
-
-        ppoint_a = cp_a;
-        ppoint_b = cp_b;
-
-        normal = collision_normal;
-        finish = dc;
-    }
-    
-    if(lp) profiler2.step("distance check");
-
     //
     
     struct array_N {
         alignas(32) float array[N];
     };
 
-    auto epa_check = bfloat_to_bint(active_total) && bfloat_to_bint(!distance_check);
+    auto epa_check = bfloat_to_bint(active_total);
 
     alignas(32) bool EPA_bools[N];
     epa_check.store_aligned(EPA_bools);
@@ -1074,7 +1101,7 @@ std::vector<std::vector<Collision_data>> Physics_system::collision(std::vector<C
     std::fill(std::begin(flip), std::end(flip), 0.0f);
     std::fill(std::begin(insert_normal), std::end(insert_normal), 0.0f);
 
-    while(any(epa_check) && iterations < 12) {
+    while(any(epa_check) && iterations < 256) {
         alignas(32) bool new_epa[N];
         alignas(32) float ndirx[N];
         alignas(32) float ndiry[N];
@@ -1111,8 +1138,8 @@ std::vector<std::vector<Collision_data>> Physics_system::collision(std::vector<C
         direction.x = xsimd::load_aligned(ndirx);
         direction.y = xsimd::load_aligned(ndiry);
 
-        simd_vec2 point_a = support_func(a_vertices, direction);
-        simd_vec2 point_b = support_func(b_vertices, -direction);
+        simd_vec2 point_a = support_func(a_vertices, a_radii, direction);
+        simd_vec2 point_b = support_func(b_vertices, b_radii, -direction);
 
         simd_vec2 point_m = point_a - point_b;
 
@@ -1182,11 +1209,11 @@ std::vector<std::vector<Collision_data>> Physics_system::collision(std::vector<C
     normal = select(add_normals, new_normals, normal);
 
     // clipping
-    simd_vec2 pa = support_func(a_vertices, -normal);
+    simd_vec2 pa = support_func(a_vertices, a_radii, -normal);
     batch da0 = xsimd::broadcast(FLT_MAX);
     batch da1 = xsimd::broadcast(-FLT_MAX);
     
-    simd_vec2 pb = support_func(b_vertices, normal);
+    simd_vec2 pb = support_func(b_vertices, b_radii, normal);
     batch db0 = xsimd::broadcast(FLT_MAX);
     batch db1 = xsimd::broadcast(-FLT_MAX);
 
@@ -1310,7 +1337,7 @@ bool Physics_system::collision_point(Collider& ca, vec2 point) {
         
         int size = simplex.vertices.size();
         if(size < 3) {
-            vec2 point_a = support_func(a_vertices, direction);
+            vec2 point_a = support_func(a_vertices, ca.radius, direction);
 
             for(Simplex_vertex& v : simplex.vertices) {
                 vec2 difference = point_a - v.m;
@@ -1407,10 +1434,10 @@ struct Hash_coord {
     }
 };
 
-std::vector<uint64_t> Physics_system::broad_phase(std::vector<uint32_t>& input) {
-    const std::size_t max_i = 1;
-    const float ratio = 2.0f;
-    const float start_size = 2.0f;
+std::vector<uint64_t> Physics_system::broad_phase(std::vector<input_data>& input) {
+    const std::size_t max_i = 4;
+    const float ratio = 4.0f;
+    const float start_size = 4.0f;
 
     std::unordered_set<uint64_t> set;
 
@@ -1445,21 +1472,15 @@ std::vector<uint64_t> Physics_system::broad_phase(std::vector<uint32_t>& input) 
         for(int y = mmin.y; y <= mmax.y; ++y) {
             for(int x = mmin.x; x <= mmax.x; ++x) {
                 ivec2 i = {x, y};
-                if(!spacial_scale->contains(i)) {
-                    spacial_scale->emplace(i, std::vector<spacial_data>{});
-                }
-                auto& bucket = spacial_scale->at(i);
+                auto& bucket = spacial_scale->operator[](i);
 
                 bucket.push_back(sd);
             }       
         }
     };
 
-    for(uint32_t v : collectors[0].entities) {
-        Collider& c = ecs.get_component<Collider>(v);
-        Transform& t = ecs.get_component<Transform>(v);
-
-        insert_into(c, t, v);
+    for(auto& ii : input) {
+        insert_into(*ii.collider, *ii.transform, ii.id);
     }
     profiler.step("broad phase: insert");
 
@@ -1510,17 +1531,14 @@ std::vector<uint64_t> Physics_system::broad_phase(std::vector<uint32_t>& input) 
                         }
                     }
                 }
-                //}
-
-                //vi.bb->flag = true;
             }
         }
         bucket_size *= ratio;
     }
     profiler.step("broad phase: sample");
 
-    for(int i = 0; i < max_i; ++i) std::cout << spacial[i].size() << " ";
-    std::cout << "\n";
+    //for(int i = 0; i < max_i; ++i) std::cout << spacial[i].size() << " ";
+    //std::cout << "\n";
 
     return std::vector<uint64_t>(set.begin(), set.end());
 }
@@ -1532,24 +1550,29 @@ void Physics_system::physics_loop() {
     render_system.marker_points.clear();
     render_system.normals.clear();
 
-    std::vector<uint32_t> input;
+    std::vector<input_data> input;
     for(uint32_t a : collectors[0].entities) {
         Collider& ac = ecs.get_component<Collider>(a);
         Transform& at = ecs.get_component<Transform>(a);
 
         Mesh& m = ecs.get_component<Mesh>(a);
-        m.color = vec3(0.0f);
+        //m.color = vec3(0.0f);
 
         vec4 bounding_box = calculate_bounding_box(ac, at);
         ac.bounding_box = bounding_box;
 
-        input.push_back(a);
+        input_data ii;
+        ii.collider = &ac;
+        ii.transform = &at;
+        ii.id = a;
+
+        input.push_back(ii);
         
         ac.colliding = false;
     }
 
     std::vector<uint64_t> collisions = broad_phase(input);
-    profiler.step("broad phase");
+    //profiler.step("broad phase");
 
     const uint32_t num_threads = 12;
     std::vector<std::thread> threads(num_threads);
@@ -1616,6 +1639,7 @@ void Physics_system::physics_loop() {
                             Mesh& am = ecs.get_component<Mesh>(ci.a);
                             Mesh& bm = ecs.get_component<Mesh>(ci.b);
                             
+                            /*
                             if(c.a == 1) {
                                 am.color.b += 1.0f;
                                 bm.color.b += 1.0f;
@@ -1623,6 +1647,7 @@ void Physics_system::physics_loop() {
                                 am.color.g += 1.0f;
                                 bm.color.g += 1.0f;
                             }
+                            */
 
                             ci.ca->colliding = true;
                             ci.cb->colliding = true;
@@ -1670,7 +1695,7 @@ void Physics_system::physics_loop() {
     for(int i = 0; i < num_threads; ++i) {
         threads[i].join();
     }
-    profiler.step("GJK");
+    profiler.step("narrow phase");
     
     for(auto& c : cdata) {
         for(Collision_data& collision_data : c) {
@@ -1754,6 +1779,7 @@ void Physics_system::physics_loop() {
 
     for(uint32_t a : collectors[0].entities) {
         Mesh& am = ecs.get_component<Mesh>(a);
+        /*
         vec3 color = am.color;
 
         vec2 m = max(vec2(0.0f), color.gb() - collision_threshold) / collision_threshold;
@@ -1772,6 +1798,7 @@ void Physics_system::physics_loop() {
         color = color * (1.0f - t) + t;
 
         am.color = {color.g, color.b, color.r};
+        */
     }
 
     if(input_system.debug_mode) {
@@ -1821,9 +1848,11 @@ void Physics_system::apply_position(Collider* c, Transform* t, vec2 delta, vec2 
 }
 
 void Physics_system::velocity_solve(std::vector<Collision_constraint>& collisions) {
-    int iterations = 4;
-    float spring = 0.5f;
-    float softness = 0.05f;
+    int iterations = 8;
+    float spring = 0.2f;
+    float softness = 0.03f;
+    float spring_constraint = 0.5f;
+    float softness_constraint = 0.03f;
 
     for(Constraint& data : constraints) {
         data.ca = &ecs.get_component<Collider>(data.a);
@@ -1879,7 +1908,7 @@ void Physics_system::velocity_solve(std::vector<Collision_constraint>& collision
             for(pos_constraint& c : data.pos) {
                 uint32_t i = 0;
                 for(vec2 v : c.vs) {
-                    float bg = c.baumgarte[i] * spring / physics_step;
+                    float bg = c.baumgarte[i] * spring_constraint / physics_step;
 
                     float inertia = c.inertia[i];
 
@@ -1888,7 +1917,7 @@ void Physics_system::velocity_solve(std::vector<Collision_constraint>& collision
                     if(data.b == 0xFFFFFFFF) {
                         float L = -dot(velocity, v) + bg;
                         L /= inertia;
-                        L -= softness * c.lambda[i];
+                        L -= softness_constraint * c.lambda[i];
                         float new_lambda = c.lambda[i] + L;
                         c.lambda[i] = new_lambda;
 
@@ -1900,7 +1929,7 @@ void Physics_system::velocity_solve(std::vector<Collision_constraint>& collision
 
                         float L = -dot(velocity, v) + bg;
                         L /= inertia;
-                        L -= softness * c.lambda[i];
+                        L -= softness_constraint * c.lambda[i];
                         float new_lambda = c.lambda[i] + L;
                         c.lambda[i] = new_lambda;
 
@@ -1918,13 +1947,13 @@ void Physics_system::velocity_solve(std::vector<Collision_constraint>& collision
                 float angular_delta = -c.baumgarte;
                 float inertia = c.inertia;
 
-                float bg = angular_delta * spring / physics_step;
+                float bg = angular_delta * spring_constraint / physics_step;
 
                 float angular_velocity = data.ca->angular_velocity - data.cb->angular_velocity;
 
                 float L = -angular_velocity + bg;
                 L /= inertia;
-                //L -= softness * data.lambda;
+                L -= softness_constraint * c.lambda;
                 float new_lambda = c.lambda + L;
                 c.lambda = new_lambda;
 
@@ -2040,67 +2069,6 @@ void Physics_system::velocity_solve(std::vector<Collision_constraint>& collision
         for(col_constraint& cc : c.constraints) {
             cc.d->prev_lambdaN = cc.lambdaN;
             cc.d->prev_lambdaT = cc.lambdaT;
-        }
-    }
-}
-
-void Physics_system::position_solve(std::vector<Collision_constraint>& collisions) {
-    int iterations = 1;
-    float spring = 0.2f;
-    float softness = 0.0f;
-
-    for(Collision_constraint& data : collisions) {
-        for(col_constraint& cc : data.constraints) {
-            cc.lambdaN = 0.0f;
-        }
-    }
-
-    for(int i = 0; i < iterations; ++i) {
-        for(Collision_constraint& data : collisions) {
-            for(col_constraint& cc : data.constraints) {
-                data.get_points();
-                data.get_value();
-
-                float inertia = cc.inertiaN;
-
-                vec2 difference = cc.pa - cc.pb;
-
-                if(cc.d->b == 0xFFFFFFFF) {
-                    float v = dot(difference, cc.d->normal) * spring;
-
-                    float L = -v; 
-                    L /= inertia;
-                    L -= softness * cc.lambdaN;
-                    
-                    vec2 limits = vec2(0.0f, FLT_MAX);
-
-                    float new_lambda = cc.lambdaN + L;
-                    new_lambda = clamp(new_lambda, limits.x, limits.y);
-                    L = new_lambda - cc.lambdaN;
-                    cc.lambdaN = new_lambda;
-
-                    vec2 delta = cc.d->normal * L;
-                    apply_position(data.ca, data.ta, delta, cc.pa - data.ta->position);
-                } else {
-                    float v = dot(difference, cc.normal) * spring;
-
-                    float L = -v;
-                    L /= inertia;
-                    L -= softness * cc.lambdaN;
-                    
-                    vec2 limits = vec2(0.0f, FLT_MAX);
-
-                    float new_lambda = cc.lambdaN + L;
-                    new_lambda = clamp(new_lambda, limits.x, limits.y);
-                    L = new_lambda - cc.lambdaN;
-                    cc.lambdaN = new_lambda;
-
-                    vec2 delta = cc.normal * L;
-
-                    apply_position(data.ca, data.ta, delta, cc.pa - data.ta->position);
-                    apply_position(data.cb, data.tb, -delta, cc.pb - data.tb->position);
-                }
-            }
         }
     }
 }

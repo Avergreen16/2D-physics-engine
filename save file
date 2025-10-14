@@ -73,3 +73,4 @@ void Physics_system::apply_position(Collider* c, Transform* t, vec2 delta, vec2 
     t->orientation = mat2(rotate(delta_rotation, vec3(0.0f, 0.0f, 1.0f))) * t->orientation;
 }
 
+cmake -G"Unix Makefiles" -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++

@@ -10,17 +10,17 @@ link_directories(lib)
 
 project(2D_Physics_Engine VERSION 0.0)
 
-add_executable(Simulation src/client_main.cpp)
+add_executable(Engine src/client_main.cpp)
 
 add_library(Glad src/glad.c)
 
-add_library(Simulation_files src/wrapper.cpp src/core.cpp src/random.cpp src/ecs.cpp src/render.cpp src/input.cpp src/physics.cpp src/gui.cpp)
+add_library(Engine_files src/wrapper.cpp src/core.cpp src/random.cpp src/ecs.cpp src/render.cpp src/input.cpp src/physics.cpp src/gui.cpp)
 
-target_link_libraries(Simulation Glad)
+target_link_libraries(Engine Glad)
 
-target_link_libraries(Simulation Simulation_files)
+target_link_libraries(Engine Engine_files)
 
-target_link_libraries(Simulation glfw3 gdi32 msvcrt user32 shell32 opengl32 assimp.dll ws2_32 wsock32 mingw32 mingwex msvcrt stdc++)
+target_link_libraries(Engine glfw3 gdi32 msvcrt user32 shell32 opengl32 assimp.dll ws2_32 wsock32 mingw32 mingwex msvcrt stdc++)
 
 set(CMAKE_BUILD_TYPE Release)
 

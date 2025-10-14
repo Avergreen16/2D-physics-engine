@@ -12,9 +12,9 @@ struct Input_system : System {
     bool click = false;
     bool translate = false;
 
+    int arrow_delta = 0;
     std::string char_delta;
     bool backspace = false;
-    int arrow_delta = 0;
 
     vec2 world_cursor_pos = vec2(0.0f);
 
