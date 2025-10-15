@@ -303,10 +303,10 @@ void Input_system::call() {
                     ecs.insert_component(base, c2);*/
                 } else {
                     ivec2 start_pos = world_cursor_pos;
-                    ivec2 shape_matrix = ivec2(1);
+                    ivec2 shape_matrix = ivec2(16);
                     float separation = 1.25f;
                     vec2 max_dim = vec2(1.0f);
-                    vec2 min_dim = vec2(0.25f);
+                    vec2 min_dim = vec2(1.0f);
 
                     if(key_map[GLFW_KEY_M]){
                         shape_matrix = ivec2(3);
@@ -323,7 +323,7 @@ void Input_system::call() {
                             
                             Transform t;
                             t.position = position;
-                            t.orientation = mat2(rotate(float(M_PI) * (core.random() * 1.0f), vec3(0.0f, 0.0f, 1.0f)));
+                            t.orientation = identity<mat2>();//mat2(rotate(float(M_PI) * (core.random() * 1.0f), vec3(0.0f, 0.0f, 1.0f)));
                             Collider c;
                             vec2 size = vec2(core.random() * 0.5f + 0.5f, core.random() * 0.5f + 0.5f) * (max_dim - min_dim) + min_dim;
                             //c.allow_gravity = false;
@@ -335,7 +335,7 @@ void Input_system::call() {
                                 vec2(-1, 1)
                             };
 
-                            if(core.random() < 0.0f && false) {
+                            if(core.random() < 0.0f || true) {
                                 c.vertices = square;
                                 for(vec2& v : c.vertices) v *= size * 0.5f;
                                 c.radius = vec2(0.0f);
@@ -347,7 +347,7 @@ void Input_system::call() {
                             }
 
                             vec2 shift = Physics_system::calculate_inertia(c);
-                            t.position += shift;
+                            //t.position += shift;
 
                             /*int num_sides = core.random.next() % 5 + 3;
                             float radius = abs(core.random());

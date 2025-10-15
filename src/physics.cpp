@@ -81,7 +81,7 @@ simd_vec2 Physics_system::support_func(std::vector<simd_vec2>& vertices, batch_i
 
         ++num;
     }
-
+    
     simd_mat2 matrix_transpose = matrices.transpose();
 
     direction = matrix_transpose * direction;
@@ -999,7 +999,7 @@ std::vector<std::vector<Collision_data>> Physics_system::collision(std::vector<C
     simd_vec2 ppoint_a;
     simd_vec2 ppoint_b;
     
-    std::cout << "start\n";
+    //std::cout << "start\n";
     
     while(!none(active)) {
         ++iterations;
@@ -1136,7 +1136,8 @@ std::vector<std::vector<Collision_data>> Physics_system::collision(std::vector<C
             //active_total = active_total && bint_to_bfloat(!active);
             //break;
         }
-
+        
+        /*
         if(iterations > 32) {
             for(int i = 0; i < N; ++i) {
                 if(active.get(i)) {
@@ -1151,10 +1152,10 @@ std::vector<std::vector<Collision_data>> Physics_system::collision(std::vector<C
                     }
                 }
             }
-        }
+        }*/
     }
 
-    std::cout << "GJK finished\n";
+    //std::cout << "GJK finished\n";
     
     if(lp) profiler2.step("GJK");
 
@@ -1325,6 +1326,7 @@ std::vector<std::vector<Collision_data>> Physics_system::collision(std::vector<C
             }
         }*/
 
+        /*
         if(iterations > 32 && iterations < 64) {
             for(int i = 0; i < N; ++i) {
                 if(epa_check.get(i)) {
@@ -1333,11 +1335,11 @@ std::vector<std::vector<Collision_data>> Physics_system::collision(std::vector<C
                     std::cout << "EPA num: " << polygons[i].vertices.size() << " " << iterations << " " << epa_check.get(i) << " " << EPA_bools[i] << "\n";
                 }
             }
-        }
+        }*/
 
         if(lp) profiler2.step("EPA update polygons");
     }
-    std::cout << "EPA finished\n";
+    //std::cout << "EPA finished\n";
 
     auto mask_m = xsimd::load_aligned(flip) != 0.0f;
     simd_vec2 ppa = {xsimd::load_aligned(_cp_a_x), xsimd::load_aligned(_cp_a_y)};
@@ -1446,7 +1448,7 @@ std::vector<std::vector<Collision_data>> Physics_system::collision(std::vector<C
         }
     }
     if(lp) profiler2.step("clipping");
-    std::cout << "exit\n";
+    //std::cout << "exit\n";
 
     return data;
 }
