@@ -315,6 +315,26 @@ struct simd_vec2 {
     }
 };
 
+struct simd_mat2 {
+    simd_vec2 x;
+    simd_vec2 y;
+
+    simd_vec2 operator*(const simd_vec2& v) {
+        batch bx = v.x * x.x + v.y * y.x;
+        batch by = v.x * x.y + v.y * y.y;
+
+        return {bx, by};
+    }
+
+    simd_mat2 transpose() {
+        simd_mat2 ret;
+        ret.x = {x.x, y.x};
+        ret.y = {x.y, y.y};
+
+        return ret;
+    }
+};
+
 simd_vec2 select(xsimd::batch_bool<float>& batch_bool, simd_vec2 a, simd_vec2 b);
 
 struct simd_ivec2 {
