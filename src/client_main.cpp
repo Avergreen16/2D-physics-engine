@@ -110,7 +110,7 @@ int main() {
     uint32_t entity = ecs.insert_entity();
 
     Transform t;
-    t.position = vec2(0.0f);
+    t.position = vec2(0.0f, -2.0f);
     t.orientation = identity<mat2>();
     //t.orientation = (mat2)rotate((float)M_PI * 0.15f, vec3(0, 0, 1));
     std::vector<vec2> square = {
@@ -173,7 +173,21 @@ int main() {
 
     Time time;
 
+    uint32_t fnum = 0;
+
     while(core.game_running) {
+        if(fnum < 10) {
+            std::cout << "frame: " << fnum << "\n";
+            std::size_t code = typeid(Transform).hash_code();
+            uint32_t i = ecs.component_manager.code_to_id[code];
+
+            Component_list<Transform>* ct = (Component_list<Transform>*)ecs.component_manager.component_lists[code].get();
+
+            for(auto [a, b] : ct->entity_to_component) {
+                std::cout << a << " " << b << "\n";
+            }
+        }
+        
         float t = time.get_elapsed_time(true);
         /*if(t < 0.016) {
             std::this_thread::yield();
@@ -188,7 +202,7 @@ int main() {
 
         double time = get_time();
 
-        for(std::string& name : ecs.system_manager.call_order) {
+        for(std::size_t& name : ecs.system_manager.call_order) {
             //sstd::cout << name;
             auto& system = ecs.system_manager.systems[name];
             system->call();
@@ -205,6 +219,7 @@ int main() {
         if(glfwWindowShouldClose(core.window.window)) {
             core.game_running = false;
         }
+        ++fnum;
     }
 
     glfwTerminate();

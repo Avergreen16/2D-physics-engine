@@ -1792,6 +1792,18 @@ void Physics_system::physics_loop() {
                 render_system.normals.push_back(-cc.normal);
             }
         }
+
+        for(uint32_t entity : collectors[0].entities) {
+            Transform& tf = ecs.get_component<Transform>(entity);
+            Collider& collider = ecs.get_component<Collider>(entity);
+
+            render_system.marker_points.push_back(tf.position);
+            if(!collider.is_static) {
+                render_system.normals.push_back(vec2(0.0f, 1.0f));
+            } else {
+                render_system.normals.push_back(vec2(0.0f, -1.0f));
+            }
+        }
     }
 }
 
