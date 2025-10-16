@@ -39,7 +39,6 @@ vec3 get_color(float a) {
 }
 
 void Input_system::call() {
-
     GUI_system& gui_system = ecs.get_system<GUI_system>();
 
     std::set<GLenum> pressed_buttons;
@@ -304,10 +303,10 @@ void Input_system::call() {
                     ecs.insert_component(base, c2);*/
                 } else {
                     ivec2 start_pos = world_cursor_pos;
-                    ivec2 shape_matrix = ivec2(64, 16);
-                    float separation = 2.0f;
-                    vec2 max_dim = vec2(2.0f);
-                    vec2 min_dim = vec2(0.25f);
+                    ivec2 shape_matrix = ivec2(8, 8);
+                    float separation = 1.25f;
+                    vec2 max_dim = vec2(1.0f);
+                    vec2 min_dim = vec2(0.5f);
 
                     if(key_map[GLFW_KEY_M]){
                         shape_matrix = ivec2(3);
@@ -316,14 +315,11 @@ void Input_system::call() {
                         min_dim *= 8.0f;
                     }
 
-                    std::vector<uint32_t> entities;
-
-                    for(int y = 0; y < shape_matrix.y; ++y) {
-                        for(int x = 0; x < shape_matrix.x; ++x) {
+                    for(int x = 0; x < shape_matrix.x; ++x) {
+                        for(int y = 0; y < shape_matrix.y; ++y) {
                             vec2 position = world_cursor_pos + (-(vec2(shape_matrix - 1) / 2.0f) + vec2(x, y)) * separation;
                             
                             uint32_t entity = ecs.insert_entity();
-                            entities.push_back(entity);
                             
                             Transform t;
                             t.position = position;
@@ -339,7 +335,7 @@ void Input_system::call() {
                                 vec2(-1, 1)
                             };
 
-                            if(core.random() < 0.0f) {
+                            if(core.random() < 0.0f  && false) {
                                 c.vertices = square;
                                 for(vec2& v : c.vertices) v *= size * 0.5f;
                                 c.radius = vec2(0.0f);
@@ -373,29 +369,10 @@ void Input_system::call() {
                             Mesh m;
                             m.color = get_color(abs(core.random())) * 0.7f + 0.3f;
                             create_mesh(m, c.vertices, c.radius);
+
                             
-                            if(ecs.has_component<Transform>(entity)) {
-                                Transform& transform = ecs.get_component<Transform>(entity);
-                                std::cout << "y " << entity << "\n";
-                            }
-
-                            {
-                                std::size_t code = typeid(Transform).hash_code();
-                                uint32_t i = ecs.component_manager.code_to_id[code];
-
-                                Component_list<Transform>* ct = (Component_list<Transform>*)ecs.component_manager.component_lists[code].get();
-
-                                if(ct->entity_to_component.contains(entity)) {
-                                    uint32_t a = ct->entity_to_component[entity];
-                                    uint32_t b = ct->component_to_entity[a];
-                                    uint32_t c = ct->entity_to_component[b];
-                                    
-                                    std::cout << "yy " << entity << " " << a << " " << b << " " << c << "\n";
-                                }
-                            }
-                            
-                            ecs.insert_component(entity, t);
                             ecs.insert_component(entity, m);
+                            ecs.insert_component(entity, t);
                             ecs.insert_component(entity, c);
                         }
                     }
@@ -517,6 +494,4 @@ void Input_system::call() {
 
         camera_transform.orientation = rot_mat * camera_transform.orientation;
     }
-
-    ++snum;
 }

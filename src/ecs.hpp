@@ -48,7 +48,7 @@ template<typename Type>
 struct Component_list : Clist {
     std::unordered_map<uint32_t, uint32_t> entity_to_component;
     std::unordered_map<uint32_t, uint32_t> component_to_entity;
-    std::vector<std::shared_ptr<Type>> components;
+    std::vector<Type> components;
     
     void insert_component(uint32_t entity, Type component) {
         if(entity_to_component.find(entity) == entity_to_component.end()) {
@@ -56,8 +56,8 @@ struct Component_list : Clist {
             
             entity_to_component.emplace(entity, i);
             component_to_entity.emplace(i, entity);
-            components.push_back(std::make_shared<Type>(component));
-        } else std::cout << "x " << entity << " " << (*entity_to_component.find(entity)).second << "\n";
+            components.push_back(component);
+        }
     }
 
     void insert_component_move(uint32_t entity, Type&& component) {
@@ -66,12 +66,12 @@ struct Component_list : Clist {
             
             entity_to_component.emplace(entity, i);
             component_to_entity.emplace(i, entity);
-            components.push_back(std::make_shared<Type>(std::move(component)));
+            components.emplace_back(std::move(component));
         }
     }
     
     // complicated part, needs to be simplified and commented
-    void remove_component(uint32_t entity) {
+    void remove_component(uint32_t entity) override {
         uint32_t i = entity_to_component[entity]; // component of entity being deleted
         
         entity_to_component.erase(entity);
@@ -88,42 +88,40 @@ struct Component_list : Clist {
             entity_to_component[k] = i;
             
             components[i] = std::move(components[j]);
-            components.erase(components.begin() + j);
         } else {
             component_to_entity.erase(i);
-            components.erase(components.begin() + i);
         }
         
-        //components.resize(j);
+        components.resize(j);
     }
     
     Type& get_component(uint32_t& entity) {
         uint32_t i = entity_to_component[entity];
         
-        return *components[i].get();
+        return components[i];
     }
 };
 
 struct Component_manager {
-    std::unordered_map<uint32_t, std::size_t> id_to_code;
-    std::unordered_map<std::size_t, uint32_t> code_to_id;
-    std::unordered_map<std::size_t, std::shared_ptr<Clist>> component_lists;
+    std::unordered_map<uint32_t, std::string> id_to_name;
+    std::unordered_map<std::string, uint32_t> name_to_id;
+    std::unordered_map<std::string, std::shared_ptr<Clist>> component_lists;
     
     template<typename Type>
     void register_component() {
-        std::size_t code = typeid(Type).hash_code();
-        uint32_t i = id_to_code.size();
+        std::string ti = typeid(Type).name();
+        uint32_t i = id_to_name.size();
         
-        id_to_code.emplace(i, code);
-        code_to_id.emplace(code, i);
+        id_to_name.emplace(i, ti);
+        name_to_id.emplace(ti, i);
         
-        component_lists.emplace(code, std::shared_ptr<Component_list<Type>>(new Component_list<Type>));
+        component_lists.emplace(ti, std::shared_ptr<Component_list<Type>>(new Component_list<Type>));
     }
     
     template<typename Type>
     Component_list<Type>& get_component_array() {
-        std::size_t ti = typeid(Type).hash_code();
-        return *(Component_list<Type>*)(component_lists[ti].get());
+        std::string i = typeid(Type).name();
+        return *(Component_list<Type>*)(component_lists[i].get());
     }
     
     void delete_components(uint32_t entity, Signature signature) {
@@ -132,8 +130,8 @@ struct Component_manager {
             std::bitset<MAX_COMPONENTS> b = signature;
             
             if((b & a) == a) {
-                std::size_t ti = id_to_code[i];
-                auto& list = component_lists[ti];
+                std::string name = id_to_name[i];
+                auto& list = component_lists[name];
                 
                 list->remove_component(entity);
             }
@@ -142,29 +140,30 @@ struct Component_manager {
     
     template<typename Type>
     void insert_component(uint32_t entity, Signature& signature, Type t) {
-        std::size_t code = typeid(Type).hash_code();
-        uint32_t i = code_to_id[code];
+        std::string name = typeid(Type).name();
+        uint32_t i = name_to_id[name];
 
         Signature s2 = Signature(1) << i;
         signature |= s2;
         
-        (*(Component_list<Type>*)(component_lists[code].get())).insert_component(entity, t);
+        (*(Component_list<Type>*)(component_lists[name].get())).insert_component(entity, t);
     }
 
     template<typename Type>
     void insert_component_move(uint32_t entity, Signature& signature, Type&& t) {
-        std::size_t code = typeid(Type).hash_code();
-        uint32_t i = code_to_id[code];
+        std::string name = typeid(Type).name();
+        uint32_t i = name_to_id[name];
 
         Signature s2 = Signature(1) << i;
         signature |= s2;
         
-        (*(Component_list<Type>*)(component_lists[code].get())).insert_component_move(entity, std::move(t));
+        (*(Component_list<Type>*)(component_lists[name].get())).insert_component_move(entity, std::move(t));
     }
     
     template<typename Type>
     Type& get_component(uint32_t entity) {
         auto& cl = get_component_array<Type>();
+        
         
         return cl.get_component(entity);
     }
@@ -183,16 +182,16 @@ struct System {
 };
 
 struct System_manager {
-    std::unordered_map<std::size_t, std::shared_ptr<System>> systems;
-    std::vector<std::size_t> call_order;
+    std::unordered_map<std::string, std::shared_ptr<System>> systems;
+    std::vector<std::string> call_order;
     
     template<typename Type>
     void register_system() {
-        std::size_t code = typeid(Type).hash_code();
+        std::string name = typeid(Type).name();
         
         std::shared_ptr<Type> ptr = std::shared_ptr<Type>(new Type);
-        systems.emplace(code, ptr);
-        call_order.push_back(code);
+        systems.emplace(name, ptr);
+        call_order.push_back(name);
     }
 };
 
@@ -217,14 +216,14 @@ struct Coordinator {
     
     template<typename Type>
     std::bitset<MAX_COMPONENTS> update_signature() {
-        std::size_t code = typeid(Type).hash_code();
-        return Signature(1) << component_manager.code_to_id[code];
+        std::string name = typeid(Type).name();
+        return Signature(1) << component_manager.name_to_id[name];
     }
     
     template<typename Type>
     void update_signature(std::bitset<MAX_COMPONENTS>& a) {
-        std::size_t code = typeid(Type).hash_code();
-        a |= Signature(1) << component_manager.code_to_id[code];
+        std::string name = typeid(Type).name();
+        a |= Signature(1) << component_manager.name_to_id[name];
     }
 
     template<typename Type>
@@ -314,11 +313,12 @@ struct Coordinator {
 
     template<typename Type> 
     Type& get_system() {
-        return *(Type*)system_manager.systems[typeid(Type).hash_code()].get();
+        return *(Type*)system_manager.systems[typeid(Type).name()].get();
     }
 };
 
 extern Coordinator ecs;
+
 
 struct Transform {
     vec2 position = vec3(0.0f);

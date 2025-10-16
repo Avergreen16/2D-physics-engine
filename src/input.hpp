@@ -16,8 +16,6 @@ struct Input_system : System {
     std::string char_delta;
     bool backspace = false;
 
-    uint32_t snum = 0;
-
     vec2 world_cursor_pos = vec2(0.0f);
 
     uint32_t tethered_object;
