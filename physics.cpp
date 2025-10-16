@@ -331,17 +331,17 @@ batch_int simplex_contains(simd_simplex& simplex) {
     batch_int ret = xsimd::broadcast(-1);
 
     get_normal(simplex.vertices[1].m, simplex.vertices[2].m, simplex.vertices[0].m, normal, centroid);
-    auto m = normal.dot(-centroid) < 0.0f; // if normal is *not* pointed towards zero, c and zero are on different sides of the line (so return c)
+    auto m = normal.dot(-centroid) < -0.001f; // if normal is *not* pointed towards zero, c and zero are on different sides of the line (so return c)
     auto int_m = bfloat_to_bint(m);
     ret = xsimd::select(int_m, xsimd::broadcast(0), ret);
 
     get_normal(simplex.vertices[0].m, simplex.vertices[2].m, simplex.vertices[1].m, normal, centroid);
-    m = normal.dot(-centroid) < 0.0f; 
+    m = normal.dot(-centroid) < -0.001f;
     int_m = bfloat_to_bint(m);
     ret = xsimd::select(int_m, xsimd::broadcast(1), ret);
     
     get_normal(simplex.vertices[0].m, simplex.vertices[1].m, simplex.vertices[2].m, normal, centroid);
-    m = normal.dot(-centroid) < 0.0f;
+    m = normal.dot(-centroid) < -0.001f;
     int_m = bfloat_to_bint(m);
     ret = xsimd::select(int_m, xsimd::broadcast(2), ret);
 
