@@ -137,8 +137,8 @@ void Input_system::call() {
         if(key_map[GLFW_MOUSE_BUTTON_LEFT]) camera_transform.position -= camera_transform.orientation * (vec2(cursor_delta.x, cursor_delta.y) * 2.0f / float(core.window.screen_size.x) / cc.scale);
         else translate = false;
     }
-    //tf.position = world_cursor_pos;
-    Transform& tf = ecs.get_component<Transform>(tethered_object);
+    
+    //Transform& tf = ecs.get_component<Transform>(tethered_object);
 
     for(GLenum key : pressed_buttons) {
         if(key == GLFW_KEY_F11) {
@@ -303,9 +303,9 @@ void Input_system::call() {
                     ecs.insert_component(base, c2);*/
                 } else {
                     ivec2 start_pos = world_cursor_pos;
-                    ivec2 shape_matrix = ivec2(8, 8);
-                    float separation = 1.25f;
-                    vec2 max_dim = vec2(1.0f);
+                    ivec2 shape_matrix = ivec2(64, 16);
+                    float separation = 2.0f;
+                    vec2 max_dim = vec2(2.0f);
                     vec2 min_dim = vec2(0.5f);
 
                     if(key_map[GLFW_KEY_M]){
@@ -315,8 +315,8 @@ void Input_system::call() {
                         min_dim *= 8.0f;
                     }
 
-                    for(int x = 0; x < shape_matrix.x; ++x) {
-                        for(int y = 0; y < shape_matrix.y; ++y) {
+                    for(int y = 0; y < shape_matrix.y; ++y) {
+                        for(int x = 0; x < shape_matrix.x; ++x) {
                             vec2 position = world_cursor_pos + (-(vec2(shape_matrix - 1) / 2.0f) + vec2(x, y)) * separation;
                             
                             uint32_t entity = ecs.insert_entity();
@@ -335,7 +335,7 @@ void Input_system::call() {
                                 vec2(-1, 1)
                             };
 
-                            if(core.random() < 0.0f  && false) {
+                            if(core.random() < 0.0f) {
                                 c.vertices = square;
                                 for(vec2& v : c.vertices) v *= size * 0.5f;
                                 c.radius = vec2(0.0f);
@@ -494,4 +494,6 @@ void Input_system::call() {
 
         camera_transform.orientation = rot_mat * camera_transform.orientation;
     }
+
+    ++snum;
 }

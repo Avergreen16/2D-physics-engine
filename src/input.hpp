@@ -30,6 +30,8 @@ struct Input_system : System {
     bool debug_physics = false;
     bool debug_mode = false;
 
+    uint32_t snum = 0;
+
     Input_system();
 
     void call();

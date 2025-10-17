@@ -13,6 +13,16 @@ using namespace std::chrono;
 #include "stb_image.h"
 #include "stb_image_write.h"
 
+void check_component() {
+    std::size_t code = typeid(Transform).hash_code();
+    
+    Component_list<Transform>* cc = (Component_list<Transform>*)ecs.component_manager.component_lists[code].get();
+
+    for(auto [a, b] : cc->entity_to_component) {
+        std::cout << a << " " << b << "\n";
+    }
+}
+
 std::array<glm::vec2, 49> random_pts;
 
 void Core::init() {
@@ -188,7 +198,7 @@ int main() {
 
         double time = get_time();
 
-        for(std::string& name : ecs.system_manager.call_order) {
+        for(std::size_t& name : ecs.system_manager.call_order) {
             //sstd::cout << name;
             auto& system = ecs.system_manager.systems[name];
             system->call();
