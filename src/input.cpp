@@ -122,22 +122,24 @@ void Input_system::call() {
 
     // scroll
 
-    vec2 difference = camera_transform.position - world_cursor_pos;
+    if(scroll_delta != 0.0f) {
+        vec2 difference = camera_transform.position - world_cursor_pos;
 
-    float factor = pow(1.25f, scroll_delta);
+        float factor = pow(1.25f, scroll_delta);
 
-    difference /= factor;
+        difference /= factor;
 
-    camera_transform.position = world_cursor_pos + difference;
+        camera_transform.position = world_cursor_pos + difference;
 
-    cc.scale = cc.scale * factor;
+        cc.scale = cc.scale * factor;
+    }
 
     // translate
     if(translate) {
         if(key_map[GLFW_MOUSE_BUTTON_LEFT]) camera_transform.position -= camera_transform.orientation * (vec2(cursor_delta.x, cursor_delta.y) * 2.0f / float(core.window.screen_size.x) / cc.scale);
         else translate = false;
     }
-    
+
     //Transform& tf = ecs.get_component<Transform>(tethered_object);
 
     for(GLenum key : pressed_buttons) {
@@ -303,8 +305,8 @@ void Input_system::call() {
                     ecs.insert_component(base, c2);*/
                 } else {
                     ivec2 start_pos = world_cursor_pos;
-                    ivec2 shape_matrix = ivec2(64, 16);
-                    float separation = 2.0f;
+                    ivec2 shape_matrix = ivec2(8, 8);
+                    float separation = 1.5f;
                     vec2 max_dim = vec2(2.0f);
                     vec2 min_dim = vec2(0.5f);
 
@@ -325,7 +327,7 @@ void Input_system::call() {
                             t.position = position;
                             t.orientation = mat2(rotate(float(M_PI) * (core.random() * 1.0f), vec3(0.0f, 0.0f, 1.0f)));
                             Collider c;
-                            vec2 size = vec2(core.random() * 0.5f + 0.5f, core.random() * 0.5f + 0.5f) * (max_dim - min_dim) + min_dim;
+                            vec2 size = vec2(1, 1);//vec2(core.random() * 0.5f + 0.5f, core.random() * 0.5f + 0.5f) * (max_dim - min_dim) + min_dim;
                             //c.allow_gravity = false;
 
                             std::vector<vec2> square = {
@@ -335,7 +337,7 @@ void Input_system::call() {
                                 vec2(-1, 1)
                             };
 
-                            if(core.random() < 0.0f) {
+                            if(core.random() < 1.0f) {
                                 c.vertices = square;
                                 for(vec2& v : c.vertices) v *= size * 0.5f;
                                 c.radius = vec2(0.0f);

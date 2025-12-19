@@ -21,6 +21,8 @@ struct Collider {
     float angular_velocity = 0.0f;
 
     vec4 bounding_box;
+
+    bool flag = false;
 };
 
 struct Collision_data {
@@ -53,8 +55,10 @@ struct col_constraint {
     float inertiaN;
     float inertiaT;
 
-    float baumgarte;
+    float inertiaNa = 0.0f;
+    float inertiaNb = 0.0f;
 
+    float baumgarte;
 };
 
 struct Collision_constraint {
@@ -70,6 +74,8 @@ struct Collision_constraint {
 
     void get_points();
     void get_value();
+
+    void refresh(col_constraint& c);
 };
 
 struct pos_constraint {
@@ -172,6 +178,7 @@ struct Physics_system : System {
     void insert_collision(Collision_data c);
 
     void velocity_solve(std::vector<Collision_constraint>& constraints);
+    void position_solve(std::vector<Collision_constraint>& constraints);
 
     static vec2 calculate_inertia(Collider& c);
 
@@ -213,3 +220,4 @@ struct Profiler {
 
 extern Profiler profiler;
 extern Profiler profiler2;
+extern float slop;

@@ -1709,6 +1709,8 @@ void Physics_system::physics_loop() {
     }
     profiler.step("load constraint buffer");
 
+    position_solve(collision_constraints);
+    profiler.step("solve positions");
     velocity_solve(collision_constraints);
     profiler.step("solve velocity");
 
@@ -1733,8 +1735,6 @@ void Physics_system::physics_loop() {
     }
     profiler.step("add velocities");
     
-    //position_solve(collision_constraints);
-    //profiler.step("solve positions");
 
     for(Collision_constraint& c : collision_constraints) {
         for(col_constraint& cc : c.constraints) {
@@ -1823,9 +1823,13 @@ void Physics_system::apply_impulse(Collider* c, vec2 impulse, vec2 point) {
 }
 
 void Physics_system::apply_position(Collider* c, Transform* t, vec2 delta, vec2 point) {
-    t->position += delta / c->mass;
+    vec2 d = delta / c->mass;
+    std::cout << d.x << " " << d.y << "\n";
+    t->position += d;
     float delta_rotation = cross(vec3(point, 0.0f), vec3(delta, 0.0f)).z / c->inertia;
     t->orientation = mat2(rotate(delta_rotation, vec3(0.0f, 0.0f, 1.0f))) * t->orientation;
+
+    c->flag = true;
 }
 
 void Physics_system::velocity_solve(std::vector<Collision_constraint>& collisions) {
@@ -1859,6 +1863,8 @@ void Physics_system::velocity_solve(std::vector<Collision_constraint>& collision
         data.get_value();
 
         for(col_constraint& c : data.constraints) {
+            c.baumgarte = min(c.baumgarte, slop);
+
             c.lambdaN = c.d->prev_lambdaN;
             c.lambdaT = c.d->prev_lambdaT;
 
@@ -2054,6 +2060,74 @@ void Physics_system::velocity_solve(std::vector<Collision_constraint>& collision
     }
 }
 
+void Physics_system::position_solve(std::vector<Collision_constraint>& collisions) {
+    int iterations = 8;
+    float spring = 0.2f;
+    float softness = 0.03f;
+    float spring_constraint = 0.5f;
+    float softness_constraint = 0.03f;
+    float fraction = 0.5f;
+
+    for(Collision_constraint& data : collisions) {
+        data.ca = &ecs.get_component<Collider>(data.a);
+        data.ta = &ecs.get_component<Transform>(data.a);
+        if(data.b != 0xFFFFFFFF) {
+            data.cb = &ecs.get_component<Collider>(data.b);
+            data.tb = &ecs.get_component<Transform>(data.b);
+        }
+
+        data.get_points();
+        data.get_value();
+    }
+
+    for(int i = 0; i < iterations; ++i) {
+        for(Collision_constraint& data : collisions) {
+            for(col_constraint& cc : data.constraints) {
+                data.refresh(cc);
+
+                if(cc.baumgarte > slop) {
+                    float inertia = cc.inertiaN;
+
+                    if(cc.d->b == 0xFFFFFFFF) {
+                        float d = -cc.baumgarte * fraction;
+
+                        float L = d; 
+                        L /= inertia;
+                        
+                        vec2 limits = vec2(0.0f, FLT_MAX);
+
+                        float new_lambda = cc.lambdaN + L;
+                        new_lambda = clamp(new_lambda, limits.x, limits.y);
+                        L = new_lambda - cc.lambdaN;
+                        cc.lambdaN = new_lambda;
+
+                        vec2 delta = cc.d->normal * L;
+
+                        apply_position(data.ca, data.ta, delta, cc.pa - data.ta->position);
+                    } else {
+                        float d = -cc.baumgarte * fraction;
+
+                        float L = d; 
+                        L /= inertia;
+                        
+                        vec2 limits = vec2(0.0f, FLT_MAX);
+
+                        float new_lambda = cc.lambdaN + L;
+                        new_lambda = clamp(new_lambda, limits.x, limits.y);
+                        L = new_lambda - cc.lambdaN;
+                        cc.lambdaN = new_lambda;
+
+                        vec2 delta = cc.d->normal * L;
+
+                        apply_position(data.ca, data.ta, delta, cc.pa - data.ta->position);
+                        apply_position(data.cb, data.tb, -delta, cc.pb - data.tb->position);   
+                    }
+                }
+            }
+        }
+    }
+}
+
 vec2 Physics_system::calculate_inertia(Collider& c) {
     ivec2 num_points = ivec2(16);
 
@@ -2180,13 +2254,49 @@ void Collision_constraint::get_value() {
         c.tangent = vec2(c.d->normal.y, -c.d->normal.x);
         c.normal = c.d->normal;
 
-        c.inertiaN = Physics_system::calculate_inverse_mass(ca, ta, c.normal, c.pa - ta->position);
+        c.inertiaNa = Physics_system::calculate_inverse_mass(ca, ta, c.normal, c.pa - ta->position);
+
+        c.inertiaN = c.inertiaNa;
         c.inertiaT = Physics_system::calculate_inverse_mass(ca, ta, c.tangent, c.pa - ta->position);
+        ca->flag = false;
         
         if(b != 0xFFFFFFFF) {
-            c.inertiaN += Physics_system::calculate_inverse_mass(cb, tb, c.normal, c.pb - tb->position);
+            c.inertiaNb = Physics_system::calculate_inverse_mass(cb, tb, c.normal, c.pb - tb->position);
+            c.inertiaN += c.inertiaNb;
+            cb->flag = false;
+
             c.inertiaT += Physics_system::calculate_inverse_mass(cb, tb, c.tangent, c.pb - tb->position);
         }
+    }
+}
+
+void Collision_constraint::refresh(col_constraint& c) {
+    if(ca->flag) {
+        vec2 point_a = ta->orientation * c.d->pa + ta->position;
+        c.pa = point_a;
+
+        c.inertiaNa = Physics_system::calculate_inverse_mass(ca, ta, c.normal, c.pa - ta->position);
+    }
+
+    if(c.d->b == 0xFFFFFFFF) {
+        c.pb = c.d->pb;
+    } else {
+        if(cb->flag) {
+            vec2 point_b = tb->orientation * c.d->pb + tb->position;
+            c.pb = point_b;
+            c.inertiaNb = Physics_system::calculate_inverse_mass(cb, tb, c.normal, c.pb - tb->position);
+        }
+    }
+
+    if((c.d->b == 0xFFFFFFFF) ? ca->flag : (ca->flag || cb->flag)) {
+        vec2 diff = c.pa - c.pb;
+        float dd = -dot(diff, c.d->normal);
+        c.baumgarte = -dd;
+
+        c.inertiaN = c.inertiaNa + c.inertiaNb;
+
+        ca->flag = false;
+        cb->flag = false;
     }
 }
 
@@ -2313,3 +2423,5 @@ void Profiler::output() {
 
 Profiler profiler;
 Profiler profiler2;
+
+float slop = 0.1f;

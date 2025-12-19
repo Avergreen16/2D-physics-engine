@@ -133,7 +133,7 @@ int main() {
     Collider c;
     c.radius = vec2(0.0f);
     c.vertices = square;
-    for(vec2& v : c.vertices) v *= vec2(512, 1);
+    for(vec2& v : c.vertices) v *= vec2(512, 64);
     /*c.radius = planet_radius;
     c.vertices = {
         vec2(0.0f)
