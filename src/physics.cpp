@@ -40,6 +40,32 @@ vec2 Physics_system::support_func(std::vector<vec2>& vertices, vec2 radius, vec2
     return return_vertex;
 }
 
+vec2 Physics_system::support_func(std::vector<vec2>& vertices, vec2 radius, vec2 direction, mat2 matrix) {
+    float max_dot = -FLT_MAX;
+    vec2 return_vertex;
+
+    for(vec2 v : vertices) {
+        float dot_v = dot(direction, v);
+
+        if(dot_v > max_dot) {
+            max_dot = dot_v;
+            return_vertex = v;
+        }
+    }
+    
+    direction = transpose(matrix) * direction;
+    
+    float s = sqrt(radius.x * radius.x * direction.x * direction.x + radius.y * radius.y * direction.y * direction.y);
+    if(s > 0.0f) {
+        vec2 ellipsoid = vec2(radius.x * radius.x * direction.x, radius.y * radius.y * direction.y) / s;
+        ellipsoid = matrix * ellipsoid;
+
+        return_vertex += ellipsoid;
+    }
+
+    return return_vertex;
+}
+
 simd_vec2 Physics_system::support_func(std::vector<simd_vec2>& vertices, batch_int& num_vertices, simd_mat2& matrices, simd_vec2& radius, simd_vec2 direction) {
     batch max_dot = xsimd::broadcast(-FLT_MAX);
     simd_vec2 vv;
@@ -91,7 +117,7 @@ glm::vec2 segment_project(glm::vec2 a, glm::vec2 b, glm::vec2 c, vec2& p) {
 
     vec2 normal = vec2(line_axis.y, -line_axis.x);
 
-    vec2 cc = c - a;
+    vec2 cc = -a;
     cc = cc - normal * dot(normal, cc);
     cc += a;
 
@@ -100,12 +126,22 @@ glm::vec2 segment_project(glm::vec2 a, glm::vec2 b, glm::vec2 c, vec2& p) {
 
     float dist_a = length(da);
     float dist_b = length(db);
+    
+    dist_a *= dist_c;
+    dist_b *= dist_c;
+
+    if(dist_a > dist_b && dist_a > 1.0f) {
+        dist_a = 1.0f;
+        dist_b = 0.0f;
+    } else if(dist_b > dist_a && dist_b > 1.0f) {
+        dist_a = 0.0f;
+        dist_b = 1.0f;
+    }
 
     p = cc;
 
-    return vec2(dist_b * dist_c, dist_a * dist_c);
+    return {dist_b, dist_a};
 }
-
 
 void get_normal(vec2 a, vec2 b, vec2 r, vec2& normal, vec2& center) {
     vec2 v = a - b;
@@ -471,7 +507,6 @@ struct Polygon {
                 edge_i = i;
             }
         }
-        //std::cout << "edge: " << edge_i << "\n";
 
         if(edge_i != -1) {
             Polygon_edge& edge = edges[edge_i];
@@ -482,8 +517,6 @@ struct Polygon {
             Simplex_vertex vb = vertices[b];
 
             vec2 center;
-
-            //std::cout << va.m.x << " " << va.m.y << " "  << vb.m.x << " "  << vb.m.y << "\n";
 
             vec2 w = segment_project(va.m, vb.m, vec2(0.0f), center);
 
@@ -566,18 +599,7 @@ Polygon from_simplex(Simplex& s) {
         uint32_t a = i;
         uint32_t b = (i + 1) % 3;
 
-        vec2 pa = p.vertices[a].m;
-        vec2 pb = p.vertices[b].m;
-
-        vec2 normal;
-        vec2 center;
-        get_normal(pa, pb, p.sum / 3.0f, normal, center);
-
-        Polygon_edge e;
-        e.vertices = {a, b};
-        e.normal = normal;
-
-        p.edges.push_back(e);
+        p.insert_edge(a, b);
     }
 
     return p;
@@ -621,7 +643,6 @@ std::vector<Polygon> from_simplex(simd_simplex& v, bool* bools) {
             p[j].vertices[i].a = {v.vertices[a].a.x.get(j), v.vertices[a].a.y.get(j)};
             p[j].vertices[i].b = {v.vertices[a].b.x.get(j), v.vertices[a].b.y.get(j)};
             p[j].vertices[i].m = vm;
-            //std::cout << (std::to_string(i) + ": " + std::to_string(p[j].vertices[i].m.x) + "\n");
             
             Polygon_edge e;
             e.vertices = {a, b};
@@ -633,10 +654,221 @@ std::vector<Polygon> from_simplex(simd_simplex& v, bool* bools) {
     
     for(int j : active_lanes) {
         p[j].sum = {sum.x.get(j), sum.y.get(j)};
-        //std::cout << ("sum: " + std::to_string(p[j].sum.x) + "\n");
     }
 
     return p;
+}
+
+
+std::vector<Collision_data> Physics_system::collision(Collision_input& input, bool profiler) {
+    std::vector<Collision_data> data;
+
+    std::vector<vec2> a_vertices;
+    std::vector<vec2> b_vertices;
+
+    float limit = 0.01;
+
+    transform_vertices(*input.ta, *input.ca, a_vertices, input.ta->position);
+    transform_vertices(*input.tb, *input.cb, b_vertices, input.ta->position);
+
+    Simplex simplex;
+
+    vec2 direction = glm::normalize(b_vertices[0] - a_vertices[0]);
+    vec2 dd = direction;
+    
+    vec2 offset = vec2(direction.y, -direction.x);
+
+    if(glm::dot(offset, direction) > 0.99) {
+        offset = vec2(direction.x, -direction.y);
+    }
+
+    direction = glm::normalize(direction + offset * 0.1f);
+
+    int iterations = 0;
+
+    bool loop = true;
+
+    while(loop) {
+        ++iterations;
+        if(iterations > 100) return {};
+
+        if(isnan(direction.x)) direction = vec2(0, 1);
+        
+        int size = simplex.vertices.size();
+        if(size < 3) {
+            vec2 point_a = support_func(a_vertices, input.ca->radius, direction, input.ta->orientation);
+            vec2 point_b = support_func(b_vertices, input.cb->radius, -direction, input.tb->orientation);
+
+            vec2 point_m = point_a - point_b;
+
+            for(Simplex_vertex& v : simplex.vertices) {
+                vec2 difference = point_m - v.m;
+
+                if(glm::length(difference) < limit) return {};
+            }
+
+            if(glm::dot(point_m, direction) < limit) return {};
+
+            simplex.vertices.push_back(Simplex_vertex{point_m, point_a, point_b});
+
+            if(size == 0) {
+                direction = -glm::normalize(point_m);
+            } else if(size == 1) {
+                vec2 line_direction = glm::normalize(simplex.vertices[0].m - simplex.vertices[1].m);
+                vec2 rel_origin_pos = -simplex.vertices[1].m;
+
+                vec2 closest_point = line_direction * glm::dot(rel_origin_pos, line_direction) + simplex.vertices[1].m;
+                direction = glm::normalize(-closest_point);
+            }
+        } else {
+            int n = simplex_contains(vec2(0, 0), simplex.vertices);
+            if(n == -1) {
+                Polygon p = from_simplex(simplex);
+
+                iterations = 0;
+
+                while(true) {
+                    ++iterations;
+                    if(iterations > 100) {
+                        std::cout << "ERROR: ITERATION\n";
+                        return {};
+                    }
+                    Polygon_return r = p.find_closest_face();
+
+                    if(r.vertices.size() == 0) {
+                        std::cout << "ERROR: ZERO\n";
+                        std::cout << p.edges.size() << "\n";
+                        return {};
+                    }
+
+                    direction = r.normal;
+                    
+                    vec2 point_a = support_func(a_vertices, input.ca->radius, direction, input.ta->orientation);
+                    vec2 point_b = support_func(b_vertices, input.cb->radius, -direction, input.tb->orientation);
+
+                    vec2 point_m = point_a - point_b;
+
+                    float dist = dot(point_m, r.normal);
+
+                    if(abs(dist - dot(r.vertices[0].m, r.normal)) < limit) {
+                        vec2 cp_a = r.vertices[0].a * r.weights.x + r.vertices[1].a * r.weights.y;
+                        vec2 cp_b = r.vertices[0].b * r.weights.x + r.vertices[1].b * r.weights.y;
+                        
+                        //vec2 separation_vector = cp_b - cp_a;
+                        //vec2 collision_normal = normalize(separation_vector);
+                        vec2 collision_normal;
+
+                        vec2 main_dir = input.ta->position - input.tb->position;
+
+                        if(r.vertices[0].a != r.vertices[1].a) {
+                            vec2 sv = r.vertices[0].a - r.vertices[1].a;
+                            collision_normal = normalize(vec2(sv.y, -sv.x));
+
+                            if(dot(collision_normal, main_dir) < 0.0f) collision_normal = -collision_normal;
+                        } else {
+                            vec2 sv = r.vertices[0].b - r.vertices[1].b;
+                            collision_normal = normalize(vec2(sv.y, -sv.x));
+                            
+                            if(dot(collision_normal, main_dir) < 0.0f) collision_normal = -collision_normal;
+                        }
+
+                        if(isnan(collision_normal.x)) {
+                            std::cout << "ERROR: ISNAN\n";
+                            return {};
+                        }
+
+                        // clipping
+
+                        vec2 pa = support_func(a_vertices, input.ca->radius, -collision_normal, input.ta->orientation);
+                        float da0 = FLT_MAX;
+                        float da1 = -FLT_MAX;
+                        
+                        vec2 pb = support_func(b_vertices, input.cb->radius, collision_normal, input.tb->orientation);
+                        float db0 = FLT_MAX;
+                        float db1 = -FLT_MAX;
+
+                        vec2 sideways = {collision_normal.y, -collision_normal.x};
+
+                        float margin = 0.01f;
+
+                        for(int i = 0; i < a_vertices.size(); ++i) {
+                            vec2& v = a_vertices[i];
+                            float d = dot(v, sideways);
+
+                            bool c = dot(v - pa, -collision_normal) > -margin;
+
+                            if(c) {
+                                if(d < da0) da0 = d;
+                                if(d > da1) da1 = d;
+                            }
+                        }
+
+                        for(int i = 0; i < b_vertices.size(); ++i) {
+                            vec2& v = b_vertices[i];
+                            float d = dot(v, sideways);
+
+                            bool c = dot(v - pb, collision_normal) > -margin;
+
+                            if(c) {
+                                if(d < db0) db0 = d;
+                                if(d > db1) db1 = d;
+                            }
+                        }
+
+                        float c0 = max(da0, db0);
+                        float c1 = min(da1, db1);
+
+                        vec2 a2 = pa + sideways * (c0 - dot(pa, sideways));
+                        vec2 a3 = pa + sideways * (c1 - dot(pa, sideways));
+
+                        vec2 b2 = pb + sideways * (c0 - dot(pb, sideways));
+                        vec2 b3 = pb + sideways * (c1 - dot(pb, sideways));
+
+                        if(da0 <= db1 && db0 <= da1) {
+                            Collision_data collision_data;
+                            collision_data.collide = true;
+                            collision_data.a = 0;
+                            collision_data.b = 0;
+                            collision_data.pa = a2;
+                            collision_data.pb = b2;
+                            collision_data.normal = collision_normal;
+
+                            data.push_back(collision_data);
+                            
+                            collision_data.pa = a3;
+                            collision_data.pb = b3;
+
+                            data.push_back(collision_data);
+                        } else {
+                            Collision_data collision_data;
+                            collision_data.collide = true;
+                            collision_data.a = 0;
+                            collision_data.b = 0;
+                            collision_data.pa = cp_a;
+                            collision_data.pb = cp_b;
+                            collision_data.normal = collision_normal;
+
+                            data.push_back(collision_data);
+                        }
+
+                        return data;
+                    } else {
+                        p.expand({point_m, point_a, point_b});
+                    }
+                }
+
+                return {};
+            } else {
+                simplex.vertices.erase(simplex.vertices.begin() + n);
+                
+                vec2 line_direction = glm::normalize(simplex.vertices[0].m - simplex.vertices[1].m);
+                vec2 rel_origin_pos = -simplex.vertices[1].m;
+
+                vec2 closest_point = line_direction * glm::dot(rel_origin_pos, line_direction) + simplex.vertices[1].m;
+                direction = glm::normalize(-closest_point);
+            }
+        }
+    }
 }
 
 std::vector<std::vector<Collision_data>> Physics_system::collision(std::vector<Collision_input>& input, bool lp) {
@@ -825,8 +1057,6 @@ std::vector<std::vector<Collision_data>> Physics_system::collision(std::vector<C
 
     simd_vec2 ppoint_a;
     simd_vec2 ppoint_b;
-    
-    //std::cout << "start\n";
     
     while(!none(active)) {
         ++iterations;
@@ -1369,7 +1599,7 @@ void Physics_system::insert_collision(Collision_data c) {
         vec2 diff_a = d.pa - c.pa;
         vec2 diff_b = d.pb - c.pb;
 
-        if(length(diff_a) < 0.05f || length(diff_b) < 0.05f) return;
+        if(length(diff_a) < 0.25f || length(diff_b) < 0.25f) return;
     }
 
     v.push_back(c);
@@ -1537,7 +1767,7 @@ void Physics_system::physics_loop() {
         Transform& at = ecs.get_component<Transform>(a);
 
         Mesh& m = ecs.get_component<Mesh>(a);
-        //m.color = vec3(0.0f);
+        m.color = vec3(0.35f);
 
         vec4 bounding_box = calculate_bounding_box(ac, at);
         ac.bounding_box = bounding_box;
@@ -1609,16 +1839,18 @@ void Physics_system::physics_loop() {
                 }
                 if(t == 0) profiler2.step("load inputs");
 
-                std::vector<std::vector<Collision_data>> cc = collision(inputs, t == 0);
-
                 for(int j = 0; j < inputs.size(); ++j) {
-                    std::vector<Collision_data>& cv = cc[j];
+                    std::vector<Collision_data> cv = collision(inputs[j], t == 0);
+
                     if(cv.size()) {
                         for(Collision_data& c : cv) {
                             Collision_input& ci = inputs[j];
 
                             Mesh& am = ecs.get_component<Mesh>(ci.a);
                             Mesh& bm = ecs.get_component<Mesh>(ci.b);
+
+                            am.color = vec3(1.0f, 1.0f, 0.35f);
+                            bm.color = vec3(1.0f, 1.0f, 0.35f);
                             
                             /*
                             if(c.a == 1) {
@@ -1709,8 +1941,8 @@ void Physics_system::physics_loop() {
     }
     profiler.step("load constraint buffer");
 
-    position_solve(collision_constraints);
-    profiler.step("solve positions");
+    //position_solve(collision_constraints);
+    //profiler.step("solve positions");
     velocity_solve(collision_constraints);
     profiler.step("solve velocity");
 
@@ -1760,6 +1992,13 @@ void Physics_system::physics_loop() {
 
     for(uint32_t a : collectors[0].entities) {
         Mesh& am = ecs.get_component<Mesh>(a);
+        Collider& ca = ecs.get_component<Collider>(a);
+
+        if(ca.flag2) {
+            am.color = vec3(1.0f, 0.35f, 0.35f);
+        }
+        
+        ca.flag2 = false;
         /*
         vec3 color = am.color;
 
@@ -1824,17 +2063,17 @@ void Physics_system::apply_impulse(Collider* c, vec2 impulse, vec2 point) {
 
 void Physics_system::apply_position(Collider* c, Transform* t, vec2 delta, vec2 point) {
     vec2 d = delta / c->mass;
-    std::cout << d.x << " " << d.y << "\n";
     t->position += d;
     float delta_rotation = cross(vec3(point, 0.0f), vec3(delta, 0.0f)).z / c->inertia;
     t->orientation = mat2(rotate(delta_rotation, vec3(0.0f, 0.0f, 1.0f))) * t->orientation;
 
     c->flag = true;
+    c->flag2 = true;
 }
 
 void Physics_system::velocity_solve(std::vector<Collision_constraint>& collisions) {
     int iterations = 8;
-    float spring = 0.2f;
+    float spring = 0.3f;
     float softness = 0.03f;
     float spring_constraint = 0.5f;
     float softness_constraint = 0.03f;
@@ -1862,8 +2101,10 @@ void Physics_system::velocity_solve(std::vector<Collision_constraint>& collision
         data.get_points();
         data.get_value();
 
+        float baumgarte_max = 1.0f;
+
         for(col_constraint& c : data.constraints) {
-            c.baumgarte = min(c.baumgarte, slop);
+            c.baumgarte = max(c.baumgarte, -baumgarte_max);
 
             c.lambdaN = c.d->prev_lambdaN;
             c.lambdaT = c.d->prev_lambdaT;
@@ -2061,18 +2302,20 @@ void Physics_system::velocity_solve(std::vector<Collision_constraint>& collision
 }
 
 void Physics_system::position_solve(std::vector<Collision_constraint>& collisions) {
-    int iterations = 8;
+    int iterations = 6;
     float spring = 0.2f;
-    float softness = 0.03f;
+    float softness = 0.3f;
     float spring_constraint = 0.5f;
     float softness_constraint = 0.03f;
-    float fraction = 0.5f;
+    float fraction = 0.2f;
 
     for(Collision_constraint& data : collisions) {
         data.ca = &ecs.get_component<Collider>(data.a);
+        data.ca->flag = true;
         data.ta = &ecs.get_component<Transform>(data.a);
         if(data.b != 0xFFFFFFFF) {
             data.cb = &ecs.get_component<Collider>(data.b);
+            data.cb->flag = true;
             data.tb = &ecs.get_component<Transform>(data.b);
         }
 
@@ -2084,15 +2327,18 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
         for(Collision_constraint& data : collisions) {
             for(col_constraint& cc : data.constraints) {
                 data.refresh(cc);
+                //std::cout << "y" << cc.baumgarte << "\n";
 
-                if(cc.baumgarte > slop) {
+                if(-cc.baumgarte > slop) {
                     float inertia = cc.inertiaN;
+                    cc.baumgarte += slop;
 
                     if(cc.d->b == 0xFFFFFFFF) {
                         float d = -cc.baumgarte * fraction;
 
                         float L = d; 
                         L /= inertia;
+                        L -= softness * cc.lambdaN;
                         
                         vec2 limits = vec2(0.0f, FLT_MAX);
 
@@ -2109,6 +2355,7 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
 
                         float L = d; 
                         L /= inertia;
+                        L -= softness * cc.lambdaN;
                         
                         vec2 limits = vec2(0.0f, FLT_MAX);
 
@@ -2248,8 +2495,8 @@ void Collision_constraint::get_points() {
 void Collision_constraint::get_value() {
     for(col_constraint& c : constraints) {
         vec2 diff = c.pa - c.pb;
-        float dd = -dot(diff, c.d->normal);
-        c.baumgarte = -dd;
+        float dd = dot(diff, c.d->normal);
+        c.baumgarte = dd;
         
         c.tangent = vec2(c.d->normal.y, -c.d->normal.x);
         c.normal = c.d->normal;
@@ -2258,12 +2505,10 @@ void Collision_constraint::get_value() {
 
         c.inertiaN = c.inertiaNa;
         c.inertiaT = Physics_system::calculate_inverse_mass(ca, ta, c.tangent, c.pa - ta->position);
-        ca->flag = false;
         
         if(b != 0xFFFFFFFF) {
             c.inertiaNb = Physics_system::calculate_inverse_mass(cb, tb, c.normal, c.pb - tb->position);
             c.inertiaN += c.inertiaNb;
-            cb->flag = false;
 
             c.inertiaT += Physics_system::calculate_inverse_mass(cb, tb, c.tangent, c.pb - tb->position);
         }
@@ -2290,13 +2535,13 @@ void Collision_constraint::refresh(col_constraint& c) {
 
     if((c.d->b == 0xFFFFFFFF) ? ca->flag : (ca->flag || cb->flag)) {
         vec2 diff = c.pa - c.pb;
-        float dd = -dot(diff, c.d->normal);
-        c.baumgarte = -dd;
+        float dd = dot(diff, c.d->normal);
+        c.baumgarte = dd;
 
         c.inertiaN = c.inertiaNa + c.inertiaNb;
 
         ca->flag = false;
-        cb->flag = false;
+        if(c.d->b != 0xFFFFFFFF) cb->flag = false;
     }
 }
 
@@ -2424,4 +2669,4 @@ void Profiler::output() {
 Profiler profiler;
 Profiler profiler2;
 
-float slop = 0.1f;
+float slop = 0.0625f;

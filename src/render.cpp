@@ -12,8 +12,11 @@ struct Object_vertex {
 };
 
 void create_mesh(Mesh& m, std::vector<vec2> v, vec2 radius) {
-    m.vertices = std::shared_ptr<Vertices>(new Vertices);
-    m.vertices->init();
+    m.v_tris = std::shared_ptr<Vertices>(new Vertices);
+    m.v_tris->init();
+    
+    m.v_lines = std::shared_ptr<Vertices>(new Vertices);
+    m.v_lines->init();
     
     float sphere_segments = max(64, int32_t(8 * max(radius.x, radius.y)));
 
@@ -133,8 +136,24 @@ void create_mesh(Mesh& m, std::vector<vec2> v, vec2 radius) {
         vvv.push_back(ov);
     }
 
-    m.vertices->vertex_buffer_data(vvv.data(), vvv.size(), sizeof(Object_vertex), GL_STATIC_DRAW);
-    m.vertices->add_vertex_attribute(0, 3, GL_FLOAT, false, sizeof(float) * 3, 0);
+    m.v_lines->vertex_buffer_data(vvv.data(), vvv.size(), sizeof(Object_vertex), GL_STATIC_DRAW);
+    m.v_lines->add_vertex_attribute(0, 3, GL_FLOAT, false, sizeof(float) * 3, 0);
+
+    vvv.clear();
+    for(int i = 0; i < vv.size(); ++i) {
+        Object_vertex ov;
+        ov.v = vec3(vv[i], 0.5f);
+        vvv.push_back(ov);
+
+        ov.v = vec3(vv[(i + 1) % vv.size()], 0.5f);
+        vvv.push_back(ov);
+
+        ov.v = vec3(0.0f, 0.0f, 0.5f);
+        vvv.push_back(ov);
+    }
+    
+    m.v_tris->vertex_buffer_data(vvv.data(), vvv.size(), sizeof(Object_vertex), GL_STATIC_DRAW);
+    m.v_tris->add_vertex_attribute(0, 3, GL_FLOAT, false, sizeof(float) * 3, 0);
 }
 
 
@@ -201,8 +220,21 @@ void Render_system::render_object(uint32_t object, uint32_t camera) {
     }*/
 
     core.shaders["color_shader"]->use();
+    
+    color.w = 0.2f;
+    
+    om.v_tris->bind();
 
-    om.vertices->bind();
+    glUniformMatrix4fv(0, 1, false, &view[0][0]);
+    glUniformMatrix4fv(1, 1, false, &proj[0][0]);
+    glUniformMatrix4fv(2, 1, false, &model[0][0]);
+    glUniform4fv(3, 1, &color[0]);
+
+    om.v_tris->draw_vertices(GL_TRIANGLES);
+
+    color.w = 1.0f;
+
+    om.v_lines->bind();
 
     glUniformMatrix4fv(0, 1, false, &view[0][0]);
     glUniformMatrix4fv(1, 1, false, &proj[0][0]);
@@ -210,7 +242,8 @@ void Render_system::render_object(uint32_t object, uint32_t camera) {
     glUniform4fv(3, 1, &color[0]);
 
     glLineWidth(1);
-    om.vertices->draw_vertices(GL_LINES);
+    om.v_lines->draw_vertices(GL_LINES);
+
 }
 
 void Render_system::render_marker(vec2 pos, vec2 normal, uint32_t camera) {

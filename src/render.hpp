@@ -8,9 +8,10 @@ struct Mesh {
     std::vector<vec2> v;
     std::vector<uint32_t> i;
 
-    vec3 color = vec3(1.0f, 0.3f, 0.3f);
+    vec3 color = vec3(0.35f);
 
-    std::shared_ptr<Vertices> vertices;
+    std::shared_ptr<Vertices> v_lines;
+    std::shared_ptr<Vertices> v_tris;
 };
 
 struct Texture_vertex {

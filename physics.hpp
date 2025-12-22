@@ -213,3 +213,191 @@ struct Profiler {
 
 extern Profiler profiler;
 extern Profiler profiler2;
+
+
+std::vector<Collision_data> Physics_system::collision(Collision_input& input, bool profiler) {
+    std::vector<Collision_data> data;
+
+    std::vector<vec2> a_vertices;
+    std::vector<vec2> b_vertices;
+
+    float limit = 0.01;
+
+    transform_vertices(*input.ta, *input.ca, a_vertices, input.ta->position);
+    transform_vertices(*input.tb, *input.cb, b_vertices, input.ta->position);
+
+    ////std::cout << "collision started\n";
+
+    Simplex simplex;
+
+    vec2 direction = glm::normalize(b_vertices[0] - a_vertices[0]);
+    
+    vec2 offset = vec2(direction.y, -direction.x);
+
+    if(glm::dot(offset, direction) > 0.99) {
+        offset = vec2(direction.x, -direction.y);
+    }
+
+    direction = glm::normalize(direction + offset * 0.1f);
+
+    int iterations = 0;
+
+    bool loop = true;
+
+    while(loop) {
+        ++iterations;
+        if(iterations > 100) return {};
+
+        if(isnan(direction.x)) direction = vec2(0, 1);
+        
+        int size = simplex.vertices.size();
+        if(size < 3) {
+            vec2 point_a = support_func(a_vertices, input.ca->radius, direction, input.ta->orientation);
+            vec2 point_b = support_func(b_vertices, input.cb->radius, -direction, input.tb->orientation);
+
+            vec2 point_m = point_a - point_b;
+
+            for(Simplex_vertex& v : simplex.vertices) {
+                vec2 difference = point_m - v.m;
+
+                if(glm::length(difference) < limit) return {};
+            }
+
+            if(glm::dot(point_m, direction) < limit) return {};
+
+            simplex.vertices.push_back(Simplex_vertex{point_m, point_a, point_b});
+
+            if(size == 0) {
+                direction = -glm::normalize(point_m);
+            } else if(size == 1) {
+                vec2 line_direction = glm::normalize(simplex.vertices[0].m - simplex.vertices[1].m);
+                vec2 rel_origin_pos = -simplex.vertices[1].m;
+
+                vec2 closest_point = line_direction * glm::dot(rel_origin_pos, line_direction) + simplex.vertices[1].m;
+                direction = glm::normalize(-closest_point);
+            }
+        } else {
+            int n = simplex_contains(vec2(0, 0), simplex.vertices);
+            if(n == -1) {
+                Polygon p = from_simplex(simplex);
+
+                iterations = 0;
+
+                while(true) {
+                    ++iterations;
+                    if(iterations > 100) return {};
+                    Polygon_return r = p.find_closest_face();
+
+                    if(r.vertices.size() == 0) return {};
+
+                    direction = r.normal;
+                    
+                    vec2 point_a = support_func(a_vertices, input.ca->radius, direction, input.ta->orientation);
+                    vec2 point_b = support_func(b_vertices, input.cb->radius, -direction, input.tb->orientation);
+
+                    vec2 point_m = point_a - point_b;
+
+                    float dist = dot(point_m, r.normal);
+
+                    if(abs(dist - dot(r.vertices[0].m, r.normal)) < limit) {
+                        vec2 cp_a = r.vertices[0].a * r.weights.x + r.vertices[1].a * r.weights.y;
+                        vec2 cp_b = r.vertices[0].b * r.weights.x + r.vertices[1].b * r.weights.y;
+                        
+                        vec2 separation_vector = cp_b - cp_a;
+
+                        vec2 collision_normal = normalize(separation_vector);
+                        if(isnan(collision_normal.x)) return {};
+
+                        // clipping
+
+                        vec2 pa = support_func(a_vertices, input.ca->radius, -collision_normal, input.ta->orientation);
+                        float da0 = FLT_MAX;
+                        float da1 = -FLT_MAX;
+                        
+                        vec2 pb = support_func(b_vertices, input.cb->radius, collision_normal, input.tb->orientation);
+                        float db0 = FLT_MAX;
+                        float db1 = -FLT_MAX;
+
+                        vec2 sideways = {collision_normal.y, -collision_normal.x};
+
+                        float margin = 0.01f;
+
+                        for(int i = 0; i < a_vertices.size(); ++i) {
+                            vec2& v = a_vertices[i];
+                            float d = dot(v, sideways);
+
+                            bool c = dot(v - pa, -collision_normal) > -margin;
+
+                            if(c) {
+                                if(d < da0) da0 = d;
+                                if(d > da1) da1 = d;
+                            }
+                        }
+
+                        for(int i = 0; i < b_vertices.size(); ++i) {
+                            vec2& v = b_vertices[i];
+                            float d = dot(v, sideways);
+
+                            bool c = dot(v - pb, collision_normal) > -margin;
+
+                            if(c) {
+                                if(d < db0) db0 = d;
+                                if(d > db1) db1 = d;
+                            }
+                        }
+
+                        float c0 = max(da0, db0);
+                        float c1 = min(da1, db1);
+
+                        vec2 a2 = pa + sideways * (c0 - dot(pa, sideways));
+                        vec2 a3 = pa + sideways * (c1 - dot(pa, sideways));
+
+                        vec2 b2 = pb + sideways * (c0 - dot(pb, sideways));
+                        vec2 b3 = pb + sideways * (c1 - dot(pb, sideways));
+
+                        if(da0 <= db1 && db0 <= da1 && false) {
+                            Collision_data collision_data;
+                            collision_data.collide = true;
+                            collision_data.a = 0;
+                            collision_data.b = 0;
+                            collision_data.pa = a2;
+                            collision_data.pb = b2;
+                            collision_data.normal = collision_normal;
+
+                            data.push_back(collision_data);
+                            
+                            collision_data.pa = a3;
+                            collision_data.pb = b3;
+
+                            data.push_back(collision_data);
+                        } else {
+                            Collision_data collision_data;
+                            collision_data.collide = true;
+                            collision_data.a = 0;
+                            collision_data.b = 0;
+                            collision_data.pa = cp_a;
+                            collision_data.pb = cp_b;
+                            collision_data.normal = collision_normal;
+
+                            data.push_back(collision_data);
+                        }
+
+                        return data;
+                    } else {
+                        p.expand({point_m, point_a, point_b});
+                    }
+                }
+
+                return {};
+            } else {
+                simplex.vertices.erase(simplex.vertices.begin() + n);
+                
+                vec2 line_direction = glm::normalize(simplex.vertices[0].m - simplex.vertices[1].m);
+                vec2 rel_origin_pos = -simplex.vertices[1].m;
+
+                vec2 closest_point = line_direction * glm::dot(rel_origin_pos, line_direction) + simplex.vertices[1].m;
+                direction = glm::normalize(-closest_point);
+            }
+        }
+    }
+}

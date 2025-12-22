@@ -304,78 +304,101 @@ void Input_system::call() {
                     ecs.insert_component(base, t);
                     ecs.insert_component(base, c2);*/
                 } else {
-                    ivec2 start_pos = world_cursor_pos;
-                    ivec2 shape_matrix = ivec2(8, 8);
-                    float separation = 1.5f;
-                    vec2 max_dim = vec2(2.0f);
-                    vec2 min_dim = vec2(0.5f);
 
-                    if(key_map[GLFW_KEY_M]){
-                        shape_matrix = ivec2(3);
-                        separation *= 8.0f;
-                        max_dim *= 8.0f;
-                        min_dim *= 8.0f;
-                    }
+                    auto insert_square = [&](vec2 pos, vec2 size, mat2 ori) {
+                        uint32_t entity = ecs.insert_entity();
 
-                    for(int y = 0; y < shape_matrix.y; ++y) {
-                        for(int x = 0; x < shape_matrix.x; ++x) {
-                            vec2 position = world_cursor_pos + (-(vec2(shape_matrix - 1) / 2.0f) + vec2(x, y)) * separation;
-                            
-                            uint32_t entity = ecs.insert_entity();
-                            
-                            Transform t;
-                            t.position = position;
-                            t.orientation = mat2(rotate(float(M_PI) * (core.random() * 1.0f), vec3(0.0f, 0.0f, 1.0f)));
-                            Collider c;
-                            vec2 size = vec2(1, 1);//vec2(core.random() * 0.5f + 0.5f, core.random() * 0.5f + 0.5f) * (max_dim - min_dim) + min_dim;
-                            //c.allow_gravity = false;
+                        Transform t;
+                        t.position = pos;
+                        t.orientation = ori;
 
-                            std::vector<vec2> square = {
-                                vec2(-1, -1),
-                                vec2(1, -1),
-                                vec2(1, 1),
-                                vec2(-1, 1)
-                            };
+                        
+                        Collider c;
+                        c.vertices = {
+                            vec2(-1, -1),
+                            vec2(1, -1),
+                            vec2(1, 1),
+                            vec2(-1, 1)
+                        };
+                        for(vec2& v : c.vertices) v *= size * 0.5f;
+                        c.radius = vec2(0.0f);
+                        c.mass = size.x * size.y * 25.0f;
 
-                            if(core.random() < 1.0f) {
-                                c.vertices = square;
-                                for(vec2& v : c.vertices) v *= size * 0.5f;
-                                c.radius = vec2(0.0f);
-                                c.mass = size.x * size.y * 25.0f;
-                            } else {
-                                c.vertices = {vec2(0.0f)};
-                                c.radius = size * 0.5f;
-                                c.mass = size.x * size.y * 25.0f;
+                        vec2 shift = Physics_system::calculate_inertia(c);
+                        t.position += shift;
+
+                        Mesh m;
+                        m.color = vec3(0.35f);//get_color(abs(core.random())) * 0.7f + 0.3f;
+                        create_mesh(m, c.vertices, c.radius);
+                        
+                        ecs.insert_component(entity, m);
+                        ecs.insert_component(entity, t);
+                        ecs.insert_component(entity, c);
+                    };
+
+                    auto insert_ellipse = [&](vec2 pos, vec2 size, mat2 ori) {
+                        uint32_t entity = ecs.insert_entity();
+
+                        Transform t;
+                        t.position = pos;
+                        t.orientation = ori;
+
+                        
+                        Collider c;
+                        c.vertices = {
+                            vec2(0.0f)
+                        };
+                        c.radius = size * 0.5f;
+                        c.mass = size.x * size.y * 25.0f;
+
+                        vec2 shift = Physics_system::calculate_inertia(c);
+                        t.position += shift;
+
+                        Mesh m;
+                        m.color = vec3(0.35f);//get_color(abs(core.random())) * 0.7f + 0.3f;
+                        create_mesh(m, c.vertices, c.radius);
+                        
+                        ecs.insert_component(entity, m);
+                        ecs.insert_component(entity, t);
+                        ecs.insert_component(entity, c);
+                    };
+                    
+                    if(key_map[GLFW_KEY_LEFT_ALT]) {
+                        mat2 orientation = identity<mat2>();
+                        float floor = 64;
+                        vec2 size = vec2(1.0f, 1.0f);
+
+                        float elev = 0;
+                        uint32_t stack_size = 64;
+
+                        for(int y = stack_size; y >= 1; --y) {
+                            for(int x = 0; x < y; ++x) {
+                                float width = size.x * (y + 1);
+
+                                float side = -width * 0.5f;
+
+                                vec2 pos = vec2((x + 0.5f) * size.x + side, ((stack_size - y) + 0.5f) * size.y);
+                                pos.y += floor;
+
+                                insert_square(pos, size, orientation);
                             }
+                        }
+                    } else {
+                        vec2 origin = world_cursor_pos;
 
-                            vec2 shift = Physics_system::calculate_inertia(c);
-                            t.position += shift;
+                        mat2 orientation = rotate(core.random(), vec3(0.0f, 0.0f, 1.0f));
 
-                            /*int num_sides = core.random.next() % 5 + 3;
-                            float radius = abs(core.random());
-                            radius = radius * 0.3f + 0.2f;
-                            if(key_map[GLFW_KEY_LEFT_CONTROL]) radius *= 10.0f;
-                            float jitter = (2.0f * M_PI) / num_sides * 0.4f;
+                        uint32_t square_size = 8;
+                        float separation = 0.25f;
+                        vec2 size = vec2(1.0f, 1.0f);
 
-                            c.radius = 0.0f;//(core.random() * 0.5f + 0.5f) * radius * 0.4f;
-                            
-                            for(int i = 0; i < num_sides; ++i) {
-                                float angle = float(i) / num_sides * (2 * M_PI) + jitter * core.random();
-                                vec2 vertex = vec2(cos(angle), sin(angle)) * radius;
-                                c.vertices.push_back(vertex);
+                        for(int y = 0; y < square_size; ++y) {
+                            for(int x = 0; x < square_size; ++x) {
+                                vec2 width = float(square_size) * size + (square_size - 1) * separation;
+                                vec2 pos = vec2(-width.x * 0.5f + size.x * (x + 0.5f) + separation * x, -width.y * 0.5f + size.y * (y + 0.5f) + separation * y);
+
+                                insert_square(orientation * pos + origin, size, orientation);
                             }
-                            c.mass = pow(radius * 2, 2);
-                            vec2 shift = Physics_system::calculate_inertia(c);
-                            t.position += shift;*/
-
-                            Mesh m;
-                            m.color = get_color(abs(core.random())) * 0.7f + 0.3f;
-                            create_mesh(m, c.vertices, c.radius);
-
-                            
-                            ecs.insert_component(entity, m);
-                            ecs.insert_component(entity, t);
-                            ecs.insert_component(entity, c);
                         }
                     }
                 }

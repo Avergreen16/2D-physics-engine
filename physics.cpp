@@ -639,6 +639,7 @@ std::vector<Polygon> from_simplex(simd_simplex& v, bool* bools) {
     return p;
 }
 
+
 std::vector<std::vector<Collision_data>> Physics_system::collision(std::vector<Collision_input>& input, bool lp) {
     Render_system& render_system = ecs.get_system<Render_system>();
 
