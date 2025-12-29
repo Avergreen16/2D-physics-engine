@@ -7,6 +7,7 @@
 struct Collider {
     std::vector<vec2> vertices;
     vec2 radius = vec2(0.0f);
+    std::set<uint32_t> non_colliding;
 
     bool colliding = false;
 

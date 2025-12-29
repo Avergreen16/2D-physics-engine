@@ -162,15 +162,16 @@ void Input_system::call() {
         } else if(key == GLFW_MOUSE_BUTTON_RIGHT) {
             if(!gui_system.cursor_captured) {
                 if(key_map[GLFW_KEY_LEFT_SHIFT]) {
+                    std::set<uint32_t> non_colliding;
                     Physics_system& ps = ecs.get_system<Physics_system>();
 
-                    uint32_t iter_base = 3;
-                    uint32_t iter_degree = 3;
+                    uint32_t iter_base = 2;
+                    uint32_t iter_degree = 6;
 
-                    uint32_t num_links = 30;
+                    uint32_t num_links = 24;
 
                     float sep = 0.025f;
-                    vec2 size = vec2(0.125f, 2.0f);
+                    vec2 size = vec2(0.333f, 1.0f);
 
                     Transform t;
                     t.position = world_cursor_pos;
@@ -182,7 +183,7 @@ void Input_system::call() {
                     c.vertices = {vec2(0, -(size.y - size.x) * 0.5f), vec2(0.0f, (size.y - size.x) * 0.5f)};
                     //c.vertices = {vec2(0.0f)};
                     c.radius = vec2(size.x * 0.5f);
-                    c.mass = 100;
+                    c.mass = 0x40;
                     vec2 shift = Physics_system::calculate_inertia(c);
                     t.position += t.orientation * shift;
                     t.position += t.orientation * vec2(0, 1.0f);
@@ -197,6 +198,7 @@ void Input_system::call() {
 
                     for(int i = 0; i < num_links; ++i) {    
                         uint32_t capsule = ecs.insert_entity();
+                        non_colliding.emplace(capsule);
 
                         ecs.insert_component(capsule, m);
                         ecs.insert_component(capsule, t);
@@ -230,7 +232,7 @@ void Input_system::call() {
 
                             constraint.pos.push_back(pc);
 
-                            ps.constraints.push_back(constraint);
+                            //ps.constraints.push_back(constraint);
 
                             first_entity = capsule;
 
@@ -266,6 +268,11 @@ void Input_system::call() {
                         t.position += t.orientation * vec2(0, (size.y + sep));
 
                         prev_entity = capsule;
+                    }
+
+                    for(uint32_t link : non_colliding) {
+                        Collider& c = ecs.get_component<Collider>(link);
+                        c.non_colliding = non_colliding;
                     }
 
                     /*
@@ -310,7 +317,7 @@ void Input_system::call() {
                     Collider c2;
                     c2.vertices = {vec3(0.0f)};//{vec2(0, -1.5f), vec2(0, 1.5f)};
                     c2.radius = vec2(weight_size * 0.5f);
-                    c2.mass = 1000;
+                    c2.mass = 0x100;
                     shift = Physics_system::calculate_inertia(c2);
                     t.position += t.orientation * shift;
                     t.position += t.orientation * vec2(0, (weight_size - (size.y + sep)) * 0.5f);

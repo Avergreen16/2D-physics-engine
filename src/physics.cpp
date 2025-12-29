@@ -805,6 +805,9 @@ void Physics_system::physics_loop() {
 
                         Collider& cb = ecs.get_component<Collider>(b);
                         Transform& tb = ecs.get_component<Transform>(b);
+
+                        if(ca.non_colliding.size() && ca.non_colliding.contains(b)) continue;
+                        if(cb.non_colliding.size() && cb.non_colliding.contains(a)) continue;
                         
                         Collision_input ci;
                         ci.a = a;
@@ -1190,7 +1193,7 @@ void Physics_system::velocity_solve(std::vector<Collision_constraint>& collision
     for(int i = 0; i < iterations; ++i) {
         for(Constraint& data : constraints) {
             float max_grab = FLT_MAX;
-            if(data.is_grab) max_grab = 25.0f;
+            if(data.is_grab) max_grab = 0x80;
 
             for(pos_constraint& c : data.pos) {
                 uint32_t i = 0;
