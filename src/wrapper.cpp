@@ -3,6 +3,11 @@
 #include "stb_image.h"
 #include "stb_image_write.h"
 
+std::ostream& operator<<(std::ostream& c, glm::vec3 v) {
+    c << v.x << " " << v.y << " " << v.z;
+    return c;
+}
+
 std::string get_text_from_file(std::string path) {
     std::ifstream file;
     file.open(path);
@@ -122,7 +127,10 @@ Vertices::~Vertices() {
 }
 
 void Storage_buffer::init() {
-    glGenBuffers(1, &id);
+    if(!initialized) {
+        glGenBuffers(1, &id);
+        initialized = true;
+    }
 }
 
 void Storage_buffer::buffer_data(void* data, uint32_t size_bytes, GLenum usage) {
@@ -149,7 +157,10 @@ Storage_buffer::~Storage_buffer() {
 }
 
 void Uniform_buffer::init() {
-    glGenBuffers(1, &id);
+    if(!initialized) {
+        glGenBuffers(1, &id);
+        initialized = true;
+    }
 }
 
 void Uniform_buffer::buffer_data(void* data, uint32_t size_bytes, GLenum usage) {
@@ -231,6 +242,7 @@ bool Shader::compile(std::string vspath, std::string fspath) {
         std::vector<char> error_log(log_size);
         glGetShaderInfoLog(vertex_shader, log_size, &log_size, &error_log[0]);
         std::cout << "ERROR: Vertex shader failed to compile:\n" << error_log.data() << "\n";
+        std::cout << "Filepath: " << vspath << "\n";
 
         return false;
     }
@@ -248,6 +260,7 @@ bool Shader::compile(std::string vspath, std::string fspath) {
         std::vector<char> error_log(log_size);
         glGetShaderInfoLog(fragment_shader, log_size, &log_size, &error_log[0]);
         std::cout << "ERROR: Fragment shader failed to compile:\n" << error_log.data() << "\n";
+        std::cout << "Filepath: " << fspath << "\n";
 
         glDeleteShader(vertex_shader);
         return false;
@@ -267,6 +280,8 @@ bool Shader::compile(std::string vspath, std::string fspath) {
         std::vector<char> error_log(log_size);
         glGetShaderInfoLog(id, log_size, &log_size, &error_log[0]);
         std::cout << "ERROR: Program failed to link:\n" << error_log.data() << "\n";
+        std::cout << "Filepath: " << fspath << "\n";
+        std::cout << "Filepath: " << vspath << "\n";
 
         glDeleteShader(id);
         return false;
@@ -296,6 +311,7 @@ bool Shader::compile(std::string cspath) {
         std::vector<char> error_log(log_size);
         glGetShaderInfoLog(compute_shader, log_size, &log_size, &error_log[0]);
         std::cout << "ERROR: Compute shader failed to compile:\n" << error_log.data() << "\n";
+        std::cout << "Filepath: " << cspath << "\n";
 
         return false;
     }
@@ -313,6 +329,7 @@ bool Shader::compile(std::string cspath) {
         std::vector<char> error_log(log_size);
         glGetShaderInfoLog(id, log_size, &log_size, &error_log[0]);
         std::cout << "ERROR: Program failed to link:\n" << error_log.data() << "\n";
+        std::cout << "Filepath: " << cspath << "\n";
 
         glDeleteShader(id);
         return false;
@@ -347,6 +364,7 @@ bool Shader::compile(std::string vspath, std::string gspath, std::string fspath)
         std::vector<char> error_log(log_size);
         glGetShaderInfoLog(vertex_shader, log_size, &log_size, &error_log[0]);
         std::cout << "ERROR: Vertex shader failed to compile:\n" << error_log.data() << "\n";
+        std::cout << "Filepath: " << vspath << "\n";
 
         return false;
     }
@@ -364,6 +382,7 @@ bool Shader::compile(std::string vspath, std::string gspath, std::string fspath)
         std::vector<char> error_log(log_size);
         glGetShaderInfoLog(geometry_shader, log_size, &log_size, &error_log[0]);
         std::cout << "ERROR: Geometry shader failed to compile:\n" << error_log.data() << "\n";
+        std::cout << "Filepath: " << gspath << "\n";
 
         glDeleteShader(geometry_shader);
         return false;
@@ -382,6 +401,7 @@ bool Shader::compile(std::string vspath, std::string gspath, std::string fspath)
         std::vector<char> error_log(log_size);
         glGetShaderInfoLog(fragment_shader, log_size, &log_size, &error_log[0]);
         std::cout << "ERROR: Fragment shader failed to compile:\n" << error_log.data() << "\n";
+        std::cout << "Filepath: " << fspath << "\n";
 
         glDeleteShader(vertex_shader);
         return false;
@@ -429,6 +449,7 @@ bool Shader::compile(std::string vspath, std::string tcspath, std::string tespat
         std::vector<char> error_log(log_size);
         glGetShaderInfoLog(vertex_shader, log_size, &log_size, &error_log[0]);
         std::cout << "ERROR: Vertex shader failed to compile:\n" << error_log.data() << "\n";
+        std::cout << "Filepath: " << vspath << "\n";
 
         return false;
     }
@@ -446,6 +467,7 @@ bool Shader::compile(std::string vspath, std::string tcspath, std::string tespat
         std::vector<char> error_log(log_size);
         glGetShaderInfoLog(tess_ctrl_shader, log_size, &log_size, &error_log[0]);
         std::cout << "ERROR: Tesselation control shader failed to compile:\n" << error_log.data() << "\n";
+        std::cout << "Filepath: " << tcspath << "\n";
 
         glDeleteShader(tess_ctrl_shader);
         return false;
@@ -464,6 +486,7 @@ bool Shader::compile(std::string vspath, std::string tcspath, std::string tespat
         std::vector<char> error_log(log_size);
         glGetShaderInfoLog(tess_eval_shader, log_size, &log_size, &error_log[0]);
         std::cout << "ERROR: Tesselation evaluation shader failed to compile:\n" << error_log.data() << "\n";
+        std::cout << "Filepath: " << tespath << "\n";
 
         glDeleteShader(tess_eval_shader);
         return false;
@@ -483,6 +506,7 @@ bool Shader::compile(std::string vspath, std::string tcspath, std::string tespat
         std::vector<char> error_log(log_size);
         glGetShaderInfoLog(geometry_shader, log_size, &log_size, &error_log[0]);
         std::cout << "ERROR: Geometry shader failed to compile:\n" << error_log.data() << "\n";
+        std::cout << "Filepath: " << gspath << "\n";
 
         glDeleteShader(geometry_shader);
         return false;
@@ -501,6 +525,7 @@ bool Shader::compile(std::string vspath, std::string tcspath, std::string tespat
         std::vector<char> error_log(log_size);
         glGetShaderInfoLog(fragment_shader, log_size, &log_size, &error_log[0]);
         std::cout << "ERROR: Fragment shader failed to compile:\n" << error_log.data() << "\n";
+        std::cout << "Filepath: " << fspath << "\n";
 
         glDeleteShader(vertex_shader);
         return false;
@@ -624,7 +649,7 @@ bool Texture::load(glm::uvec3 size, Format format) {
     return true;
 }
 
-Texture::Texture(uint8_t* data, glm::uvec3 size_, GLenum type_, Format format) {
+Texture::Texture(uint8_t* data, glm::uvec3 size_, GLenum type_, Format format, int mip_levels) {
     type = type_;
     size = size_;
     this->format = format;
@@ -638,20 +663,45 @@ Texture::Texture(uint8_t* data, glm::uvec3 size_, GLenum type_, Format format) {
     } else {
 
         if(this->type == GL_TEXTURE_2D) {
-            glTexStorage2D(GL_TEXTURE_2D, 1, format.format_bits, size.x, size.y);
+            glTexStorage2D(GL_TEXTURE_2D, mip_levels + 1, format.format_bits, size.x, size.y);
             glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, size.x, size.y, format.format, format.bits, data);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+            if(mip_levels > 0) {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, mip_levels);
+                glGenerateMipmap(GL_TEXTURE_2D);
+            } else {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+            }
         } else if(this->type == GL_TEXTURE_3D) {
-            glTexStorage3D(GL_TEXTURE_3D, 1, format.format_bits, size.x, size.y, size.z);
-            glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, size.x, size.y, size.z, format.format, format.bits, data);
-            glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_REPEAT);
+
+            if(mip_levels == 0) {
+                glTexStorage3D(GL_TEXTURE_3D, mip_levels + 1, format.format_bits, size.x, size.y, size.z);
+                glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, size.x, size.y, size.z, format.format, format.bits, data);
+
+                glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+                glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+                glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_REPEAT);
+            } else {
+                glTexStorage3D(GL_TEXTURE_3D, mip_levels, format.format_bits, size.x, size.y, size.z);
+                glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, size.x, size.y, size.z, format.format, format.bits, data);
+
+                if(mip_levels == 1) glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                else glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+
+                glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+                glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+                glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_REPEAT);
+            }
         }
 
         return;
@@ -673,12 +723,17 @@ Texture::Texture(glm::uvec3 size, GLenum type, Format format) {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     } else if(type == GL_TEXTURE_3D) {
-        glTexStorage3D(GL_TEXTURE_3D, 1, format.format_bits, size.x, size.y, size.z);
-        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexStorage3D(GL_TEXTURE_3D, 4, format.format_bits, size.x, size.y, size.z);
         glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_REPEAT);
+    } else if(this->type == GL_TEXTURE_2D_ARRAY) {
+        glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, format.format_bits, size.x, size.y, size.z);
+        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_REPEAT);
     }
 }
 
@@ -740,17 +795,31 @@ Framebuffer::Framebuffer(glm::ivec2 size_, std::vector<Fb_tex_params>&& tp, GLen
 
         glm::ivec2 s = size;
 
-        glGenTextures(1, &t.id);
-        glBindTexture(GL_TEXTURE_2D, t.id);
-        glTexStorage2D(GL_TEXTURE_2D, 1, p.format.format_bits, size.x, size.y);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        if(p.layers > 1) {
+            glGenTextures(1, &t.id);
+            glBindTexture(GL_TEXTURE_2D_ARRAY, t.id);
+            glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, p.format.format_bits, size.x, size.y, p.layers);
+            glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, filter);
+            glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, filter);
+            glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-        t.size = glm::ivec3(size, 1);
-        t.format = p.format;
-        t.type = GL_TEXTURE_2D;
+            t.size = glm::ivec3(size, p.layers);
+            t.format = p.format;
+            t.type = GL_TEXTURE_2D_ARRAY;
+        } else {
+            glGenTextures(1, &t.id);
+            glBindTexture(GL_TEXTURE_2D, t.id);
+            glTexStorage2D(GL_TEXTURE_2D, 1, p.format.format_bits, size.x, size.y);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+            t.size = glm::ivec3(size, 1);
+            t.format = p.format;
+            t.type = GL_TEXTURE_2D;
+        }
 
         glFramebufferTexture(GL_FRAMEBUFFER, p.attachment, t.id, 0);
 
@@ -766,6 +835,9 @@ Framebuffer::Framebuffer(glm::ivec2 size_, std::vector<Fb_tex_params>&& tp, GLen
             draw_buffers[p.binding] = p.attachment;
         }
     }
+
+    GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    if(status != GL_FRAMEBUFFER_COMPLETE) std::cerr << "FBO incomplete: " << status << std::endl;
 }
 
 Framebuffer::Framebuffer(Framebuffer&& a) noexcept {
@@ -797,12 +869,13 @@ void Framebuffer::resize(glm::ivec2 new_size) {
         t.delete_texture();
 
         glGenTextures(1, &t.id);
-        glBindTexture(GL_TEXTURE_2D, t.id);
-        glTexStorage2D(GL_TEXTURE_2D, 1, p.format.format_bits, size.x, size.y);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glBindTexture(t.type, t.id);
+        if(t.type == GL_TEXTURE_2D_ARRAY) glTexStorage3D(t.type, 1, p.format.format_bits, size.x, size.y, t.size.z);
+        else glTexStorage2D(t.type, 1, p.format.format_bits, size.x, size.y);
+        glTexParameteri(t.type, GL_TEXTURE_MAG_FILTER, filter);
+        glTexParameteri(t.type, GL_TEXTURE_MIN_FILTER, filter);
+        glTexParameteri(t.type, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(t.type, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
         glFramebufferTexture(GL_FRAMEBUFFER, p.attachment, t.id, 0);
 

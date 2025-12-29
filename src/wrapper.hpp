@@ -40,6 +40,8 @@ using namespace glm;
 using lvec3 = vec<3, int64_t>;
 using ulvec3 = vec<3, uint64_t>;
 
+std::ostream& operator<<(std::ostream& c, glm::vec3 v);
+
 std::string get_text_from_file(std::string path);
 
 struct Vertices {
@@ -82,6 +84,7 @@ struct Vertices {
 
 struct Storage_buffer {
     uint32_t id;
+    bool initialized = false;
 
     void init();
 
@@ -98,6 +101,7 @@ struct Storage_buffer {
 
 struct Uniform_buffer {
     uint32_t id;
+    bool initialized = false;
 
     void init();
 
@@ -168,7 +172,7 @@ struct Texture {
 
     Texture(std::string path, Format format, int mip_levels = 0);
 
-    Texture(uint8_t* data, glm::uvec3 size, GLenum type, Format format);
+    Texture(uint8_t* data, glm::uvec3 size, GLenum type, Format format, int mip_levels = 0);
     
     Texture(glm::uvec3 size, GLenum type, Format format);
 
@@ -201,6 +205,7 @@ struct Fb_tex_params {
     Format format;
     GLenum attachment;
     int32_t binding = -1;
+    int32_t layers = 1;
 };
 
 struct Framebuffer {

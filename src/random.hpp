@@ -1,8 +1,19 @@
 #pragma once;
-#include "wrapper.hpp"
 
 #include <array>
 #include <vector>
+#include <experimental/simd>
+
+#define GLM_FORCE_SWIZZLE
+#define GLM_FORCE_RADIANS
+#include "glm\glm.hpp"
+#include "glm\gtx\matrix_transform_2d.hpp"
+#include "glm\gtx\transform.hpp"
+#include "glm\gtx\quaternion.hpp"
+#include "glm\gtx\orthonormalize.hpp"
+
+using namespace glm;
+namespace stdx = std::experimental;
 
 #include <xsimd/xsimd.hpp>
 
@@ -526,6 +537,489 @@ xsimd::batch_bool<int> bfloat_to_bint(xsimd::batch_bool<float> f);
 
 xsimd::batch_bool<float> bint_to_bfloat(xsimd::batch_bool<int> f);
 
+vec3 hex_color(uint32_t color);
+vec3 hsv_color(float hue, float saturation, float value);
+
+batch_int hash_coords(batch_int x, batch_int y, batch_int z);
+int hash_coord(ivec3 v);
+int hash_coord(ivec2 v);
+
+struct Hash_coord {
+    std::size_t operator()(const ivec3& v) const;
+    std::size_t operator()(const ivec2& v) const;
+};
+
+struct simd_vec3 {
+    batch x;
+    batch y;
+    batch z;
+
+    simd_vec3 operator+(const simd_vec3& a) {
+        simd_vec3 ret_v;
+        ret_v.x = x + a.x;
+        ret_v.y = y + a.y;
+        ret_v.z = z + a.z;
+        return ret_v;
+    }
+
+    simd_vec3 operator-(const simd_vec3& a) {
+        simd_vec3 ret_v;
+        ret_v.x = x - a.x;
+        ret_v.y = y - a.y;
+        ret_v.z = z - a.z;
+        return ret_v;
+    }
+
+    simd_vec3 operator*(const simd_vec3& a) {
+        simd_vec3 ret_v;
+        ret_v.x = x * a.x;
+        ret_v.y = y * a.y;
+        ret_v.z = z * a.z;
+        return ret_v;
+    }
+
+    simd_vec3 operator/(const simd_vec3& a) {
+        simd_vec3 ret_v;
+        ret_v.x = x / a.x;
+        ret_v.y = y / a.y;
+        ret_v.z = z / a.z;
+        return ret_v;
+    }
+
+    simd_vec3 operator+=(const simd_vec3& a) {
+        x = x + a.x;
+        y = y + a.y;
+        z = z + a.z;
+
+        return *this;
+    }
+
+    simd_vec3 operator-=(const simd_vec3& a) {
+        x = x - a.x;
+        y = y - a.y;
+        z = z - a.z;
+
+        return *this;
+    }
+
+    simd_vec3 operator*=(const simd_vec3& a) {
+        x = x * a.x;
+        y = y * a.y;
+        z = z * a.z;
+
+        return *this;
+    }
+
+    simd_vec3 operator/=(const simd_vec3& a) {
+        x = x / a.x;
+        y = y / a.y;
+        z = z / a.z;
+
+        return *this;
+    }
+
+    simd_vec3 operator=(const simd_vec3& a) {
+        x = a.x;
+        y = a.y;
+        z = a.z;
+
+        return *this;
+    }
+
+    simd_vec3 operator+=(const batch& a) {
+        x = x + a;
+        y = y + a;
+        z = z + a;
+
+        return *this;
+    }
+
+    simd_vec3 operator-=(const batch& a) {
+        x = x - a;
+        y = y - a;
+        z = z - a;
+
+        return *this;
+    }
+
+    simd_vec3 operator+(const vec3& a) {
+        simd_vec3 ret_v;
+        ret_v.x = x + a.x;
+        ret_v.y = y + a.y;
+        ret_v.z = z + a.z;
+        return ret_v;
+    }
+
+    simd_vec3 operator-(const vec3& a) {
+        simd_vec3 ret_v;
+        ret_v.x = x - a.x;
+        ret_v.y = y - a.y;
+        ret_v.z = z - a.z;
+        return ret_v;
+    }
+
+    simd_vec3 operator*(const vec3& a) {
+        simd_vec3 ret_v;
+        ret_v.x = x * a.x;
+        ret_v.y = y * a.y;
+        ret_v.z = z * a.z;
+        return ret_v;
+    }
+
+    simd_vec3 operator/(const vec3& a) {
+        simd_vec3 ret_v;
+        ret_v.x = x / a.x;
+        ret_v.y = y / a.y;
+        ret_v.z = z / a.z;
+        return ret_v;
+    }
+
+    simd_vec3 operator+=(const vec3& a) {
+        x = x + a.x;
+        y = y + a.y;
+        z = z + a.z;
+
+        return *this;
+    }
+
+    simd_vec3 operator-=(const vec3& a) {
+        x = x - a.x;
+        y = y - a.y;
+        z = z - a.z;
+
+        return *this;
+    }
+
+    simd_vec3 operator*=(const vec3& a) {
+        x = x * a.x;
+        y = y * a.y;
+        z = z * a.z;
+
+        return *this;
+    }
+
+    simd_vec3 operator/=(const vec3& a) {
+        x = x / a.x;
+        y = y / a.y;
+        z = z / a.z;
+
+        return *this;
+    }
+
+    simd_vec3 operator+(const float& a) {
+        simd_vec3 ret_v;
+        ret_v.x = x + a;
+        ret_v.y = y + a;
+        ret_v.z = z + a;
+        return ret_v;
+    }
+
+    simd_vec3 operator-(const float& a) {
+        simd_vec3 ret_v;
+        ret_v.x = x - a;
+        ret_v.y = y - a;
+        ret_v.z = z - a;
+        return ret_v;
+    }
+
+    simd_vec3 operator*(const float& a) {
+        simd_vec3 ret_v;
+        ret_v.x = x * a;
+        ret_v.y = y * a;
+        ret_v.z = z * a;
+        return ret_v;
+    }
+
+    simd_vec3 operator/(const float& a) {
+        simd_vec3 ret_v;
+        ret_v.x = x / a;
+        ret_v.y = y / a;
+        ret_v.z = z / a;
+        return ret_v;
+    }
+
+    simd_vec3 operator+=(const float& a) {
+        x = x + a;
+        y = y + a;
+        z = z + a;
+
+        return *this;
+    }
+
+    simd_vec3 operator-=(const float& a) {
+        x = x - a;
+        y = y - a;
+        z = z - a;
+
+        return *this;
+    }
+
+    simd_vec3 operator*=(const float& a) {
+        x = x * a;
+        y = y * a;
+        z = z * a;
+
+        return *this;
+    }
+
+    simd_vec3 operator/=(const float& a) {
+        x = x / a;
+        y = y / a;
+        z = z / a;
+
+        return *this;
+    }
+    
+    batch dot(const simd_vec3& a) {
+        return x * a.x + y * a.y + z * a.z;
+    }
+
+    void lambda(std::function<vec3(int)> func) {
+        alignas(32) float temp_x[N];
+        alignas(32) float temp_y[N];
+        alignas(32) float temp_z[N];
+
+        for(int j = 0; j < N; ++j) {
+            vec3 v = func(j);
+
+            temp_x[j] = v.x;
+            temp_y[j] = v.y;
+            temp_z[j] = v.z;
+        }
+
+        x = batch::load_aligned(temp_x);
+        y = batch::load_aligned(temp_y);
+        z = batch::load_aligned(temp_z);
+    }
+
+    simd_vec3 floor() {
+        simd_vec3 v;
+
+        v.x = xsimd::floor(x);
+        v.y = xsimd::floor(y);
+        v.z = xsimd::floor(z);
+
+        return v;
+    }
+};
+
+struct simd_ivec3 {
+    batch_int x;
+    batch_int y;
+    batch_int z;
+
+    simd_ivec3 operator+(const simd_ivec3& a) {
+        simd_ivec3 ret_v;
+        ret_v.x = x + a.x;
+        ret_v.y = y + a.y;
+        ret_v.z = z + a.z;
+        return ret_v;
+    }
+
+    simd_ivec3 operator-(const simd_ivec3& a) {
+        simd_ivec3 ret_v;
+        ret_v.x = x - a.x;
+        ret_v.y = y - a.y;
+        ret_v.z = z - a.z;
+        return ret_v;
+    }
+
+    simd_ivec3 operator*(const simd_ivec3& a) {
+        simd_ivec3 ret_v;
+        ret_v.x = x * a.x;
+        ret_v.y = y * a.y;
+        ret_v.z = z * a.z;
+        return ret_v;
+    }
+
+    simd_ivec3 operator/(const simd_ivec3& a) {
+        simd_ivec3 ret_v;
+        ret_v.x = x / a.x;
+        ret_v.y = y / a.y;
+        ret_v.z = z / a.z;
+        return ret_v;
+    }
+
+    simd_ivec3 operator+=(const simd_ivec3& a) {
+        x = x + a.x;
+        y = y + a.y;
+        z = z + a.z;
+
+        return *this;
+    }
+
+    simd_ivec3 operator-=(const simd_ivec3& a) {
+        x = x - a.x;
+        y = y - a.y;
+        z = z - a.z;
+
+        return *this;
+    }
+
+    simd_ivec3 operator*=(const simd_ivec3& a) {
+        x = x * a.x;
+        y = y * a.y;
+        z = z * a.z;
+
+        return *this;
+    }
+
+    simd_ivec3 operator/=(const simd_ivec3& a) {
+        x = x / a.x;
+        y = y / a.y;
+        z = z / a.z;
+
+        return *this;
+    }
+
+    simd_ivec3 operator=(const simd_ivec3& a) {
+        x = a.x;
+        y = a.y;
+        z = a.z;
+
+        return *this;
+    }
+
+    simd_ivec3 operator+(const ivec3& a) {
+        simd_ivec3 ret_v;
+        ret_v.x = x + a.x;
+        ret_v.y = y + a.y;
+        ret_v.z = z + a.z;
+        return ret_v;
+    }
+
+    simd_ivec3 operator-(const ivec3& a) {
+        simd_ivec3 ret_v;
+        ret_v.x = x - a.x;
+        ret_v.y = y - a.y;
+        ret_v.z = z - a.z;
+        return ret_v;
+    }
+
+    simd_ivec3 operator*(const ivec3& a) {
+        simd_ivec3 ret_v;
+        ret_v.x = x * a.x;
+        ret_v.y = y * a.y;
+        ret_v.z = z * a.z;
+        return ret_v;
+    }
+
+    simd_ivec3 operator/(const ivec3& a) {
+        simd_ivec3 ret_v;
+        ret_v.x = x / a.x;
+        ret_v.y = y / a.y;
+        ret_v.z = z / a.z;
+        return ret_v;
+    }
+
+    simd_ivec3 operator+=(const ivec3& a) {
+        x = x + a.x;
+        y = y + a.y;
+        z = z + a.z;
+
+        return *this;
+    }
+
+    simd_ivec3 operator-=(const ivec3& a) {
+        x = x - a.x;
+        y = y - a.y;
+        z = z - a.z;
+
+        return *this;
+    }
+
+    simd_ivec3 operator*=(const ivec3& a) {
+        x = x * a.x;
+        y = y * a.y;
+        z = z * a.z;
+
+        return *this;
+    }
+
+    simd_ivec3 operator/=(const ivec3& a) {
+        x = x / a.x;
+        y = y / a.y;
+        z = z / a.z;
+
+        return *this;
+    }
+
+    simd_ivec3 operator+(const int& a) {
+        simd_ivec3 ret_v;
+        ret_v.x = x + a;
+        ret_v.y = y + a;
+        ret_v.z = z + a;
+        return ret_v;
+    }
+
+    simd_ivec3 operator-(const int& a) {
+        simd_ivec3 ret_v;
+        ret_v.x = x - a;
+        ret_v.y = y - a;
+        ret_v.z = z - a;
+        return ret_v;
+    }
+
+    simd_ivec3 operator*(const int& a) {
+        simd_ivec3 ret_v;
+        ret_v.x = x * a;
+        ret_v.y = y * a;
+        ret_v.z = z * a;
+        return ret_v;
+    }
+
+    simd_ivec3 operator/(const float& a) {
+        simd_ivec3 ret_v;
+        ret_v.x = x / a;
+        ret_v.y = y / a;
+        ret_v.z = z / a;
+        return ret_v;
+    }
+
+    simd_ivec3 operator+=(const int& a) {
+        x = x + a;
+        y = y + a;
+        z = z + a;
+
+        return *this;
+    }
+
+    simd_ivec3 operator-=(const int& a) {
+        x = x - a;
+        y = y - a;
+        z = z - a;
+
+        return *this;
+    }
+
+    simd_ivec3 operator*=(const int& a) {
+        x = x * a;
+        y = y * a;
+        z = z * a;
+
+        return *this;
+    }
+
+    simd_ivec3 operator/=(const int& a) {
+        x = x / a;
+        y = y / a;
+        z = z / a;
+
+        return *this;
+    }
+
+    void from_float(simd_vec3 v) {
+        x = xsimd::batch_cast<int>(v.x);
+        y = xsimd::batch_cast<int>(v.y);
+        z = xsimd::batch_cast<int>(v.z);
+    }
+};
+
+simd_ivec3 max(simd_ivec3 a, simd_ivec3 b);
+simd_ivec3 min(simd_ivec3 a, simd_ivec3 b);
+
+batch lerp(batch a, batch b, batch x);
+
 uint32_t hash(uint32_t x);
 
 uint32_t hash(glm::uvec2 v);
@@ -586,3 +1080,36 @@ struct Random32 {
     vec3 unit_vector(uvec3 i);
     vec3 cube_vector(uvec3 i);
 };
+
+std::array<vec3, 256> gen_voronoi_vectors();
+
+struct Noise_gen {
+    static std::array<int, 256> hash_table;
+    static std::array<vec3, 16> perlin_vectors;
+    static std::array<vec3, 256> voronoi_vectors;
+
+    static uint8_t hash_with_table(uvec3 i);
+
+    static float voronoi_noise(glm::vec3 position, float period, uint32_t seed);
+
+    static float perlin_noise(glm::vec3 position, float period, uint32_t octaves, uint32_t seed, float persistance = 0.5f);
+
+    static float ridged_perlin_noise(glm::vec3 position, float period, uint32_t octaves, uint32_t seed, float persistance = 0.5f);
+    
+    static float simplex_noise(glm::vec3 position, float period, uint32_t octaves, uint32_t seed, float persistance = 0.5f);
+
+    static void perlin_noise(float* dst, vec3 pos, float period, uint32_t octaves, uint32_t seed, ivec3 size, float diff, ivec3 cycle = ivec3(0x7FFFFFFF), float persistance = 0.5f);
+    static void voronoi_noise(float* dst, vec3 pos, float period, uint32_t octaves, uint32_t seed, ivec3 size, float diff, ivec3 cycle = ivec3(0x7FFFFFFF), float persistance = 0.5f);
+
+    static void simplex_noise(float* dst, vec3 pos, float period, uint32_t octaves, uint32_t seed, ivec3 size, float diff, float persistance = 0.5f);
+    
+    static std::vector<float> ridged_perlin_noise(vec3 pos, float period, uint32_t octaves, uint32_t seed, ivec3 size, float diff, float persistance = 0.5f);
+    
+    static std::vector<float> perlin_noise_normalized(vec3 pos, float period, uint32_t octaves, uint32_t seed, ivec3 size, float diff, float persistance = 0.5f);
+    
+    static std::vector<float> ridged_perlin_noise_normalized(vec3 pos, float period, uint32_t octaves, uint32_t seed, ivec3 size, float diff, float persistance = 0.5f);
+    
+    void generate_noise(glm::ivec4 index, float* ptr);
+};
+
+extern std::array<vec3, 16> perlin_vectors;

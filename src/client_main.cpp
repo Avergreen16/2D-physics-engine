@@ -40,11 +40,45 @@ void Core::init() {
     stbi_set_flip_vertically_on_load(true);
 
     shaders.emplace("color_shader", std::make_shared<Shader>(Shader("src/shaders/color.vert", "src/shaders/color.frag")));
+    shaders.emplace("cloud_shader", std::make_shared<Shader>(Shader("src/shaders/cloud.vert", "src/shaders/cloud.frag")));
     shaders.emplace("texture_shader", std::make_shared<Shader>(Shader("src/shaders/texture.vert", "src/shaders/texture.frag")));
     shaders.emplace("screen_shader", std::make_shared<Shader>(Shader("src/shaders/screen.vert", "src/shaders/screen.frag")));
     shaders.emplace("gui_shader", std::make_shared<Shader>(Shader("src/shaders/ui.vert", "src/shaders/ui.frag")));
     textures.emplace("gui_texture", std::make_shared<Texture>(Texture("res/textures/gui.png", {GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE}, 4)));
     textures.emplace("text_texture", std::make_shared<Texture>(Texture("res/textures/text.png", {GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE}, 4)));
+
+    // create 3d noise map
+
+    uint32_t size = 64;
+
+    std::vector<float> r(size * size * size);
+    std::vector<float> g(size * size * size);
+    std::vector<float> b(size * size * size);
+    std::vector<float> a(size * size * size);
+
+    Noise_gen::perlin_noise(r.data(), vec3(0.0f), 0.125f, 1, 0xE1, ivec3(size), 1.0f / size, ivec3(8));
+    Noise_gen::voronoi_noise(g.data(), vec3(0.0f), 0.125f, 1, 0xE1, ivec3(size), 1.0f / size, ivec3(8));
+    std::fill(b.begin(), b.end(), 0.0f);
+    std::fill(a.begin(), a.end(), 0.0f);
+
+    std::vector<uint16_t> texture_data(size * size * size * 4);
+
+    for(int i = 0; i < size * size * size; ++i) {
+        uint32_t i2 = i * 4;
+
+        vec4 v = vec4(r[i], g[i], b[i], a[i]);
+
+        v = v * 0.5f + 0.5f;
+        v = clamp(v, 0.0f, 1.0f);
+        v *= 0xFFFF;
+
+        texture_data[i2] = v.r;
+        texture_data[i2 + 1] = v.g;
+        texture_data[i2 + 2] = v.b;
+        texture_data[i2 + 3] = v.a;
+    }
+
+    textures.emplace("noise_map", std::make_shared<Texture>(Texture((uint8_t*)texture_data.data(), {size, size, size}, GL_TEXTURE_3D, {GL_RGBA16, GL_RGBA, GL_UNSIGNED_SHORT}, 1)));
 }
 
 struct Time {

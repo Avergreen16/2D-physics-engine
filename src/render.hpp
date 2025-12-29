@@ -43,6 +43,8 @@ struct Render_system : System {
     
     void render_marker(vec2 pos, vec2 normal, uint32_t camera);
 
+    void render_cloud(uint32_t camera);
+
     void render_cursor();
 
     void call();

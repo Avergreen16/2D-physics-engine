@@ -209,12 +209,10 @@ struct Physics_system : System {
 
     static vec2 support_func(std::vector<vec2>& vertices, vec2 radius, vec2 direction);
     static vec2 support_func(std::vector<vec2>& vertices, vec2 radius, vec2 direction, mat2 matrix);
-    static simd_vec2 support_func(std::vector<simd_vec2>& vertices, batch_int& num_vertices, simd_mat2& matrices, simd_vec2& radius, simd_vec2 direction);
 
     void insert_collision(Collision_data c);
 
     void velocity_solve(std::vector<Collision_constraint>& constraints);
-    void position_solve(std::vector<Collision_constraint>& constraints);
 
     static vec2 calculate_inertia(Collider& c);
 

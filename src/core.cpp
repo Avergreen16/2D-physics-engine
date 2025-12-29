@@ -82,12 +82,6 @@ bool Core::time_step(double step) {
     return floor(d_prev) != floor(d_current);
 }
 
-std::ostream& operator<<(std::ostream& c, glm::vec3 v) {
-    c << v.x << " " << v.y << " " << v.z;
-
-    return c;
-}
-
 Core::Core(int num_threads) {};
 
 Core core(10);

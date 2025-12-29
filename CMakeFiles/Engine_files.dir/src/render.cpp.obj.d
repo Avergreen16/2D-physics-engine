@@ -584,56 +584,36 @@ CMakeFiles/Engine_files.dir/src/render.cpp.obj: \
   C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/glm/gtx/../geometric.hpp \
   C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/glm/gtx/orthonormalize.inl \
   C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/random.hpp \
-  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/xsimd.hpp \
-  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/config/xsimd_config.hpp \
-  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/config/xsimd_inline.hpp \
-  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/arch/xsimd_scalar.hpp \
-  C:/msys64/ucrt64/include/c++/15.1.0/complex \
+  C:/msys64/ucrt64/include/c++/15.1.0/experimental/simd \
+  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_detail.h \
+  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd.h \
+  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/numeric_traits.h \
   C:/msys64/ucrt64/include/c++/15.1.0/cstring \
   C:/msys64/ucrt64/include/string.h \
   C:/msys64/ucrt64/include/sec_api/string_s.h \
-  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/xsimd_aligned_allocator.hpp \
+  C:/msys64/ucrt64/include/c++/15.1.0/utility \
+  C:/msys64/ucrt64/include/c++/15.1.0/bits/stl_relops.h \
   C:/msys64/ucrt64/include/c++/15.1.0/algorithm \
   C:/msys64/ucrt64/include/c++/15.1.0/bits/ranges_algo.h \
   C:/msys64/ucrt64/include/c++/15.1.0/pstl/glue_algorithm_defs.h \
-  C:/msys64/ucrt64/include/c++/15.1.0/utility \
-  C:/msys64/ucrt64/include/c++/15.1.0/bits/stl_relops.h \
-  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/xsimd_arch.hpp \
-  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/xsimd_all_registers.hpp \
-  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/xsimd_fma3_sse_register.hpp \
-  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/./xsimd_sse4_2_register.hpp \
-  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/././xsimd_sse4_1_register.hpp \
-  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/./././xsimd_ssse3_register.hpp \
-  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/././././xsimd_sse3_register.hpp \
-  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/./././././xsimd_sse2_register.hpp \
-  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/././././././xsimd_common_arch.hpp \
-  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/././././././../config/xsimd_config.hpp \
-  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/././././././xsimd_register.hpp \
-  C:/msys64/ucrt64/lib/clang/20/include/emmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/xmmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/mmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/pmmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/tmmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/smmintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/popcntintrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/crc32intrin.h \
-  C:/msys64/ucrt64/lib/clang/20/include/nmmintrin.h \
-  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/xsimd_fma4_register.hpp \
-  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/xsimd_sse2_register.hpp \
-  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/xsimd_sse3_register.hpp \
-  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/xsimd_sse4_1_register.hpp \
-  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/xsimd_sse4_2_register.hpp \
-  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/xsimd_avx2_register.hpp \
-  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/./xsimd_avx_register.hpp \
-  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/././xsimd_common_arch.hpp \
+  C:/msys64/ucrt64/lib/clang/20/include/x86intrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/ia32intrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/immintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/x86gprintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/hresetintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/uintrintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/usermsrintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/crc32intrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/prfchiintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/raointintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/cmpccxaddintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/mmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/xmmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/emmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/pmmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/tmmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/smmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/popcntintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/wmmintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/__wmmintrin_aes.h \
   C:/msys64/ucrt64/lib/clang/20/include/__wmmintrin_pclmul.h \
@@ -738,6 +718,48 @@ CMakeFiles/Engine_files.dir/src/render.cpp.obj: \
   C:/msys64/ucrt64/lib/clang/20/include/enqcmdintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/serializeintrin.h \
   C:/msys64/ucrt64/lib/clang/20/include/tsxldtrkintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/prfchwintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/ammintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/fma4intrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/xopintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/tbmintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/lwpintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/mwaitxintrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/clzerointrin.h \
+  C:/msys64/ucrt64/lib/clang/20/include/rdpruintrin.h \
+  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_fixed_size.h \
+  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_scalar.h \
+  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_builtin.h \
+  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_converter.h \
+  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_x86.h \
+  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_x86_conversions.h \
+  C:/msys64/ucrt64/include/c++/15.1.0/experimental/bits/simd_math.h \
+  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/xsimd.hpp \
+  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/config/xsimd_config.hpp \
+  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/config/xsimd_inline.hpp \
+  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/arch/xsimd_scalar.hpp \
+  C:/msys64/ucrt64/include/c++/15.1.0/complex \
+  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/xsimd_aligned_allocator.hpp \
+  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/xsimd_arch.hpp \
+  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/xsimd_all_registers.hpp \
+  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/xsimd_fma3_sse_register.hpp \
+  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/./xsimd_sse4_2_register.hpp \
+  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/././xsimd_sse4_1_register.hpp \
+  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/./././xsimd_ssse3_register.hpp \
+  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/././././xsimd_sse3_register.hpp \
+  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/./././././xsimd_sse2_register.hpp \
+  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/././././././xsimd_common_arch.hpp \
+  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/././././././../config/xsimd_config.hpp \
+  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/././././././xsimd_register.hpp \
+  C:/msys64/ucrt64/lib/clang/20/include/nmmintrin.h \
+  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/xsimd_fma4_register.hpp \
+  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/xsimd_sse2_register.hpp \
+  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/xsimd_sse3_register.hpp \
+  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/xsimd_sse4_1_register.hpp \
+  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/xsimd_sse4_2_register.hpp \
+  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/xsimd_avx2_register.hpp \
+  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/./xsimd_avx_register.hpp \
+  C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/././xsimd_common_arch.hpp \
   C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/xsimd_avx_register.hpp \
   C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/xsimd_avxvnni_register.hpp \
   C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/include/xsimd/memory/../config/../types/./xsimd_avx2_register.hpp \
