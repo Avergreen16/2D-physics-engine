@@ -91,11 +91,39 @@ struct pos_constraint {
     vec2 pos_a;
     vec2 pos_b;
 
+    float tolerance = 0.0f;
+
+    vec2 target_dir;
+
     std::vector<vec2> vs;
 
     std::vector<float> baumgarte;
     std::vector<float> inertia;
     std::vector<float> lambda;
+};
+
+struct Constraint_distance {
+    uint32_t a = NULL_ENTITY;
+    uint32_t b = NULL_ENTITY;
+
+    vec2 pa;
+    vec2 pb;
+
+    vec2 pos_a;
+    vec2 pos_b;
+    
+    Collider* ca;
+    Transform* ta;
+    Collider* cb;
+    Transform* tb;
+
+    vec2 jacobian;
+    float lambda;
+    float inertia;
+    float baumgarte;
+    
+    void get_points();
+    void get_values();
 };
 
 struct rot_constraint {
@@ -109,17 +137,19 @@ struct rot_constraint {
 
     float baumgarte;
     float inertia;
-    float lambda;
+    float lambda = 0.0f;
 };
 
 struct Constraint {
-    uint32_t a = 0xFFFFFFFF;
-    uint32_t b = 0xFFFFFFFF;
+    uint32_t a = NULL_ENTITY;
+    uint32_t b = NULL_ENTITY;
     
     Collider* ca;
     Transform* ta;
     Collider* cb;
     Transform* tb;
+
+    bool is_grab = false;
 
     std::vector<pos_constraint> pos;
     std::vector<rot_constraint> rot;
@@ -155,11 +185,12 @@ struct Physics_system : System {
     float physics_step = 0.02f;
     float physics_time = 0.0f;
     uint32_t max_frames = 1;
-    uint32_t temporal_iterations = 1;
+    uint32_t temporal_iterations = 4;
 
     std::unordered_map<uint64_t, std::vector<Collision_data>> collision_table;
 
     std::vector<Constraint> constraints;
+    std::vector<Constraint_distance> constraints_distance;
 
     vec2 gravity_aspect = vec2(1.0f, 1.0f);
 

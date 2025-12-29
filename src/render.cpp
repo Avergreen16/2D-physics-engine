@@ -11,7 +11,7 @@ struct Object_vertex {
     vec3 v;
 };
 
-void create_mesh(Mesh& m, std::vector<vec2> v, vec2 radius) {
+void create_mesh(Mesh& m, std::vector<vec2> v, vec2 radius, bool create_interior) {
     m.v_tris = std::shared_ptr<Vertices>(new Vertices);
     m.v_tris->init();
     
@@ -140,16 +140,30 @@ void create_mesh(Mesh& m, std::vector<vec2> v, vec2 radius) {
     m.v_lines->add_vertex_attribute(0, 3, GL_FLOAT, false, sizeof(float) * 3, 0);
 
     vvv.clear();
-    for(int i = 0; i < vv.size(); ++i) {
-        Object_vertex ov;
-        ov.v = vec3(vv[i], 0.5f);
-        vvv.push_back(ov);
 
-        ov.v = vec3(vv[(i + 1) % vv.size()], 0.5f);
-        vvv.push_back(ov);
+    if(create_interior) {
+        for(int i = 0; i < vv.size(); ++i) {
+            vec3 v0 = vec3(vv[i], 0.5f);
+            vec3 v1 = vec3(vv[(i + 1) % vv.size()], 0.5f);
+            vec3 v2 = vec3(0.0f, 0.0f, 0.5f);
 
-        ov.v = vec3(0.0f, 0.0f, 0.5f);
-        vvv.push_back(ov);
+            vec3 vc = cross(v0 - v2, v1 - v2);
+            if(vc.z < 0.0f) {
+                vec3 temp = v1;
+                v1 = v2;
+                v2 = temp;
+            }
+
+            Object_vertex ov;
+            ov.v = v0;
+            vvv.push_back(ov);
+
+            ov.v = v1;
+            vvv.push_back(ov);
+
+            ov.v = v2;
+            vvv.push_back(ov);
+        }
     }
     
     m.v_tris->vertex_buffer_data(vvv.data(), vvv.size(), sizeof(Object_vertex), GL_STATIC_DRAW);

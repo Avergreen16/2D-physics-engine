@@ -14,6 +14,7 @@
 const uint32_t MAX_COMPONENTS = 256;
 const uint32_t MAX_ENTITIES = 65536;
 using Signature = std::bitset<MAX_COMPONENTS>;
+const uint32_t NULL_ENTITY = 0xFFFFFFFF;
 
 struct Entity {
     uint32_t id;

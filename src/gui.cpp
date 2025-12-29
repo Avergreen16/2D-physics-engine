@@ -431,7 +431,7 @@ void GUI_system::recursive_position(uint32_t entity, ivec4 window) {
     ivec2 size = widget.size;
     ivec2 pos = widget.position;
     
-    if(widget.parent != 0xFFFFFFFF) {
+    if(widget.parent != NULL_ENTITY) {
         widget.func_a(widget);
         widget.window = window;
     }
@@ -443,7 +443,7 @@ void GUI_system::recursive_position(uint32_t entity, ivec4 window) {
         recursive_position(child, new_window);
     }
     
-    if(widget.parent != 0xFFFFFFFF) {
+    if(widget.parent != NULL_ENTITY) {
         widget.func_b(widget);
     }
 
@@ -489,9 +489,9 @@ void GUI_system::call() {
     cursor_captured = false;
 
     if(!input_system.cursor_disabled) {
-        uint32_t hovered_widget = 0xFFFFFFFF;
+        uint32_t hovered_widget = NULL_ENTITY;
 
-        if(selected_widget == 0xFFFFFFFF) {
+        if(selected_widget == NULL_ENTITY) {
             cursor_mode = CURSOR_CLICK;
 
             for(uint32_t entity : collectors[3].entities) {
@@ -559,7 +559,7 @@ void GUI_system::call() {
             }
         }
 
-        if(selected_widget != 0xFFFFFFFF) {
+        if(selected_widget != NULL_ENTITY) {
             if(ecs.has_component<Window_widget>(selected_widget)) {
                 Window_widget& w = ecs.get_component<Window_widget>(selected_widget); 
                 Widget& widget = ecs.get_component<Widget>(selected_widget); 
@@ -628,7 +628,7 @@ void GUI_system::call() {
                         }
                     }
                 } else {
-                    if(hovered_widget != 0xFFFFFFFF) {
+                    if(hovered_widget != NULL_ENTITY) {
                         selected_widget = hovered_widget;
                         selected = true;
                         resize = true;
@@ -653,10 +653,10 @@ void GUI_system::call() {
             }
 
             if(!selected) {
-                selected_widget = 0xFFFFFFFF;
+                selected_widget = NULL_ENTITY;
             }
 
-            uint32_t switch_tab_parent = 0xFFFFFFFF;
+            uint32_t switch_tab_parent = NULL_ENTITY;
             uint32_t switch_tab = 0;
 
             for(uint32_t entity : collectors[5].entities) {
@@ -672,7 +672,7 @@ void GUI_system::call() {
 
             // toggle tabs
 
-            if(switch_tab_parent != 0xFFFFFFFF) {
+            if(switch_tab_parent != NULL_ENTITY) {
                 Widget& w = ecs.get_component<Widget>(switch_tab_parent);
 
                 for(uint32_t child : w.children) {
@@ -692,9 +692,9 @@ void GUI_system::call() {
                 }
             }
         } else if(!input_system.key_map[GLFW_MOUSE_BUTTON_LEFT]) {
-            selected_widget = 0xFFFFFFFF;
+            selected_widget = NULL_ENTITY;
         }
-    } else selected_widget = 0xFFFFFFFF;
+    } else selected_widget = NULL_ENTITY;
 
     for(uint32_t entity : collectors[7].entities) {
         if(entity == selected_widget) {
@@ -815,7 +815,7 @@ void GUI_system::call() {
         }
     }
 
-    if(text_input_widget != 0xFFFFFFFF) {
+    if(text_input_widget != NULL_ENTITY) {
         uint32_t entity = text_input_widget;
 
         Widget& w = ecs.get_component<Widget>(entity);
@@ -892,7 +892,7 @@ void GUI_system::call() {
     for(uint32_t entity : collectors[1].entities) {
         Widget& w = ecs.get_component<Widget>(entity);
 
-        if(w.parent == 0xFFFFFFFF) {
+        if(w.parent == NULL_ENTITY) {
             roots.push_back(entity);
         }
     }
@@ -1319,7 +1319,7 @@ void GUI_system::widget_return(int32_t v) {
         while(true) {
             Widget& w = ecs.get_component<Widget>(current_entity);
 
-            if(w.parent == 0xFFFFFFFF) break;
+            if(w.parent == NULL_ENTITY) break;
             current_entity = w.parent;
         }
     } else if(v == 0) {
@@ -1327,7 +1327,7 @@ void GUI_system::widget_return(int32_t v) {
             Widget& w = ecs.get_component<Widget>(current_entity);
 
             current_entity = w.parent;
-            if(current_entity == 0xFFFFFFFF) break;
+            if(current_entity == NULL_ENTITY) break;
         }
     } else {
         uint32_t vv = v;
@@ -1335,7 +1335,7 @@ void GUI_system::widget_return(int32_t v) {
         while(vv != 0) {
             Widget& w = ecs.get_component<Widget>(current_entity);
 
-            if(w.parent == 0xFFFFFFFF) break;
+            if(w.parent == NULL_ENTITY) break;
             current_entity = w.parent;
             --vv;
         }

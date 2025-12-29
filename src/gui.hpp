@@ -97,7 +97,7 @@ void empty_func(Widget&);
 int get_scroll_func(Widget&);
 
 struct Widget {
-    uint32_t parent = 0xFFFFFFFF;
+    uint32_t parent = NULL_ENTITY;
     std::vector<uint32_t> children;
     std::function<void(Widget&)> func_a = default_func_a;
     std::function<void(Widget&)> func_b = empty_func;
@@ -124,7 +124,7 @@ struct Widget {
     Widget& get_prev_sibling(bool& has_prev_sibling) {
         Widget& parent = get_parent();
 
-        uint32_t prev_sibling = 0xFFFFFFFF;
+        uint32_t prev_sibling = NULL_ENTITY;
         for(uint32_t sibling : parent.children) {
             Widget& sibling_widget = ecs.get_component<Widget>(sibling);
             if(&sibling_widget == this) {
@@ -133,7 +133,7 @@ struct Widget {
             prev_sibling = sibling;
         }
 
-        if(prev_sibling == 0xFFFFFFFF) {
+        if(prev_sibling == NULL_ENTITY) {
             has_prev_sibling = false;
             return parent;
         } else {
@@ -208,8 +208,8 @@ struct GUI_system : System {
     Font font; 
     
     bool remesh = true;
-    uint32_t selected_widget = 0xFFFFFFFF;
-    uint32_t text_input_widget = 0xFFFFFFFF;
+    uint32_t selected_widget = NULL_ENTITY;
+    uint32_t text_input_widget = NULL_ENTITY;
     bool selected = false;
     bool resize = false;
     bool cursor_captured = false;
@@ -219,7 +219,7 @@ struct GUI_system : System {
     std::shared_ptr<Vertices> vertices = std::shared_ptr<Vertices>(new Vertices);
 
     // input settings;
-    uint32_t current_entity = 0xFFFFFFFF;
+    uint32_t current_entity = NULL_ENTITY;
 
     GUI_system() {
         font.init("res/other resources/pixelfont.atxt");

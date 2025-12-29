@@ -22,9 +22,9 @@ struct Input_system : System {
 
     uint32_t pic = 0;
 
-    uint32_t id = 0xFFFFFFFF;
+    uint32_t id = NULL_ENTITY;
 
-    uint32_t held_object = 0xFFFFFFFF;
+    uint32_t held_object = NULL_ENTITY;
     uint32_t held_constraint;
 
     bool debug_physics = false;
