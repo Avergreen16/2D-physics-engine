@@ -25,8 +25,6 @@ struct Collider {
 
     bool flag = false;
     bool flag2 = false;
-
-    //uint32_t num_
 };
 
 struct Collision_data {
@@ -157,6 +155,8 @@ struct Constraint {
 
     void get_points();
     void get_values();
+
+    float weight = 1.0f;
 };
 
 struct Sap_point {

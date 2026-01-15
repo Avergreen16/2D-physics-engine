@@ -193,6 +193,7 @@ void Input_system::call() {
                     create_mesh(m, c.vertices, c.radius);
 
                     std::vector<uint32_t> chain_iter(iter_degree);
+                    std::vector<std::vector<Constraint>> constraints(iter_degree + 1);
                     uint32_t prev_entity = NULL_ENTITY;
                     uint32_t first_entity = NULL_ENTITY;
 
@@ -219,7 +220,9 @@ void Input_system::call() {
 
                             constraint.pos.push_back(pc);
 
-                            ps.constraints.push_back(constraint);
+                            constraints[0].push_back(constraint);
+
+                            //ps.constraints.push_back(constraint);
                         } else {
                             Constraint constraint;
                             constraint.a = capsule;
@@ -256,9 +259,12 @@ void Input_system::call() {
                                     pc.vs = {vec2(1, 0), vec2(0, 1)};
                                     pc.tolerance = (size.y + sep) * (k - 1);
 
+                                    //constraint.weight = (j + 1.0f) * 0.75f + 1.0f;
+
                                     constraint.pos.push_back(pc);
 
-                                    ps.constraints.push_back(constraint);
+                                    constraints[j + 1].push_back(constraint);
+                                    //ps.constraints.push_back(constraint);
 
                                     prev_chain = capsule;
                                 }
@@ -273,6 +279,12 @@ void Input_system::call() {
                     for(uint32_t link : non_colliding) {
                         Collider& c = ecs.get_component<Collider>(link);
                         c.non_colliding = non_colliding;
+                    }
+
+                    for(auto it = constraints.begin(); it != constraints.end(); ++it) {
+                        for(auto& v : *it) {
+                            ps.constraints.push_back(v);
+                        }
                     }
 
                     /*

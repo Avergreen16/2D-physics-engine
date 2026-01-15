@@ -1089,7 +1089,7 @@ void Physics_system::velocity_solve(std::vector<Collision_constraint>& collision
     float spring = 0.45f;
     float softness = 0.025f;
     float spring_constraint = 0.75f;
-    float softness_constraint = 0.025f;
+    float softness_constraint = 0.0f;
 
     float factor = 1.0f / (physics_step);
     float factor_constraint = 1.0f / (physics_step);
@@ -1193,12 +1193,12 @@ void Physics_system::velocity_solve(std::vector<Collision_constraint>& collision
     for(int i = 0; i < iterations; ++i) {
         for(Constraint& data : constraints) {
             float max_grab = FLT_MAX;
-            if(data.is_grab) max_grab = 0x80;
+            if(data.is_grab) max_grab = 0x1000;
 
             for(pos_constraint& c : data.pos) {
                 uint32_t i = 0;
                 for(vec2 v : c.vs) {
-                    float bg = c.baumgarte[i] * spring_constraint * factor_constraint;
+                    float bg = c.baumgarte[i] * spring_constraint * factor_constraint * data.weight;
 
                     float inertia = c.inertia[i];
 
@@ -1240,7 +1240,7 @@ void Physics_system::velocity_solve(std::vector<Collision_constraint>& collision
 
                         float L = -dot(vel, v) + bg;
                         L /= inertia;
-                        L -= softness_constraint * c.lambda[i];
+                        L -= (softness_constraint / data.weight) * c.lambda[i];
                         
                         if(abs(bg) > 0.01f) {
                             if(c.tolerance != 0.0f) {
