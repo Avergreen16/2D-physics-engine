@@ -925,8 +925,8 @@ void Physics_system::physics_loop() {
     profiler.step("load constraint buffer");
 
     for(int i = 0; i < temporal_iterations; ++i) {
-        //position_solve(collision_constraints);
-        //profiler.step("solve positions");
+        position_solve(collision_constraints);
+        profiler.step("solve positions");
         velocity_solve(collision_constraints);
         profiler.step("solve velocity");
 
@@ -1081,6 +1081,80 @@ void Constraint_distance::get_values() {
     // baumgarte
 
     baumgarte = -len;
+}
+
+void Physics_system::position_solve(std::vector<Collision_constraint>& collisions) {
+    int iterations = 6;
+    float spring = 0.2f;
+    float softness = 0.3f;
+    float spring_constraint = 0.5f;
+    float softness_constraint = 0.03f;
+    float fraction = 0.2f;
+
+    for(Collision_constraint& data : collisions) {
+        data.ca = &ecs.get_component<Collider>(data.a);
+        data.ca->flag = true;
+        data.ta = &ecs.get_component<Transform>(data.a);
+        if(data.b != 0xFFFFFFFF) {
+            data.cb = &ecs.get_component<Collider>(data.b);
+            data.cb->flag = true;
+            data.tb = &ecs.get_component<Transform>(data.b);
+        }
+
+        data.get_points();
+        data.get_value();
+    }
+
+    for(int i = 0; i < iterations; ++i) {
+        for(Collision_constraint& data : collisions) {
+            for(col_constraint& cc : data.constraints) {
+                data.refresh(cc);
+                //std::cout << "y" << cc.baumgarte << "\n";
+
+                if(-cc.baumgarte > slop) {
+                    float inertia = cc.inertiaN;
+                    cc.baumgarte += slop;
+
+                    if(cc.d->b == 0xFFFFFFFF) {
+                        float d = -cc.baumgarte * fraction;
+
+                        float L = d; 
+                        L /= inertia;
+                        L -= softness * cc.lambdaN;
+                        
+                        vec2 limits = vec2(0.0f, FLT_MAX);
+
+                        float new_lambda = cc.lambdaN + L;
+                        new_lambda = clamp(new_lambda, limits.x, limits.y);
+                        L = new_lambda - cc.lambdaN;
+                        cc.lambdaN = new_lambda;
+
+                        vec2 delta = cc.d->normal * L;
+
+                        apply_position(data.ca, data.ta, delta, cc.pa - data.ta->position);
+                    } else {
+                        float d = -cc.baumgarte * fraction;
+
+                        float L = d; 
+                        L /= inertia;
+                        L -= softness * cc.lambdaN;
+                        
+                        vec2 limits = vec2(0.0f, FLT_MAX);
+
+                        float new_lambda = cc.lambdaN + L;
+                        new_lambda = clamp(new_lambda, limits.x, limits.y);
+                        L = new_lambda - cc.lambdaN;
+                        cc.lambdaN = new_lambda;
+
+                        vec2 delta = cc.d->normal * L;
+
+                        apply_position(data.ca, data.ta, delta, cc.pa - data.ta->position);
+                        apply_position(data.cb, data.tb, -delta, cc.pb - data.tb->position);   
+                    }
+                }
+            }
+        }
+    }
 }
 
 void Physics_system::velocity_solve(std::vector<Collision_constraint>& collisions) {

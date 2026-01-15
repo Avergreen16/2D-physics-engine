@@ -532,9 +532,9 @@ void Input_system::call() {
                         mat2 orientation = rotate(core.random(), vec3(0.0f, 0.0f, 1.0f));
 
                         uint32_t square_size = 8;
-                        float separation = 0.25f;
+                        float separation = 0.0625f;
                         vec2 max_size = vec2(1.0f, 1.0f);
-                        vec2 min_size = vec2(0.5f, 0.5f);
+                        vec2 min_size = vec2(0.75f, 0.75f);
 
                         for(int y = 0; y < square_size; ++y) {
                             for(int x = 0; x < square_size; ++x) {

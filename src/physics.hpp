@@ -186,7 +186,7 @@ struct Physics_system : System {
     float physics_step = 0.02f;
     float physics_time = 0.0f;
     uint32_t max_frames = 1;
-    uint32_t temporal_iterations = 4;
+    uint32_t temporal_iterations = 1;
 
     std::unordered_map<uint64_t, std::vector<Collision_data>> collision_table;
 
@@ -214,6 +214,7 @@ struct Physics_system : System {
     void insert_collision(Collision_data c);
 
     void velocity_solve(std::vector<Collision_constraint>& constraints);
+    void position_solve(std::vector<Collision_constraint>& constraints);
 
     static vec2 calculate_inertia(Collider& c);
 
