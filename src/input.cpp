@@ -165,23 +165,18 @@ void Input_system::call() {
                     std::set<uint32_t> non_colliding;
                     Physics_system& ps = ecs.get_system<Physics_system>();
 
-                    uint32_t iter_base = 2;
-                    uint32_t iter_degree = 0;
-
-                    uint32_t num_links = 2;
+                    uint32_t num_links = 10;
 
                     float sep = 0.025f;
                     vec2 size = vec2(0.333f, 1.0f);
 
                     Transform t;
                     t.position = world_cursor_pos;
-                    //t.orientation = identity<mat2>();
-                    vec2 up = normalize(t.position);
+                    vec2 up = vec2(1.0f, 0.0f);
                     t.orientation = {up, vec2(-up.y, up.x)};
                     
                     Collider c;
                     c.vertices = {vec2(0, -(size.y - size.x) * 0.5f), vec2(0.0f, (size.y - size.x) * 0.5f)};
-                    //c.vertices = {vec2(0.0f)};
                     c.radius = vec2(size.x * 0.5f);
                     c.mass = 0x40;
                     vec2 shift = Physics_system::calculate_inertia(c);
@@ -192,10 +187,9 @@ void Input_system::call() {
                     m.color = vec3(0.9f, 0.9f, 0.9f);
                     create_mesh(m, c.vertices, c.radius);
 
-                    std::vector<uint32_t> chain_iter(iter_degree);
-                    std::vector<std::vector<Constraint>> constraints(iter_degree + 1);
                     uint32_t prev_entity = NULL_ENTITY;
-                    uint32_t first_entity = NULL_ENTITY;
+
+                    Featherstone_constraint fc;
 
                     for(int i = 0; i < num_links; ++i) {    
                         uint32_t capsule = ecs.insert_entity();
@@ -206,72 +200,17 @@ void Input_system::call() {
                         ecs.insert_component(capsule, c);
                         
                         if(prev_entity != NULL_ENTITY) {
-                            Transform& tf = ecs.get_component<Transform>(capsule);
-                            Collider& c = ecs.get_component<Collider>(capsule);
-
-                            Constraint constraint;
-                            constraint.a = prev_entity;
-                            constraint.b = capsule;
-                            
                             pos_constraint pc;
                             pc.a = vec2(0, (size.y + sep) * 0.5f);
                             pc.b = vec2(0, -(size.y + sep) * 0.5f);
                             pc.vs = {vec2(1, 0), vec2(0, 1)};
 
-                            constraint.pos.push_back(pc);
-
-                            constraints[0].push_back(constraint);
-
-                            //ps.constraints.push_back(constraint);
-                        } else {
-                            Constraint constraint;
-                            constraint.a = capsule;
-                            constraint.b = NULL_ENTITY;
-                            
-                            pos_constraint pc;
-                            pc.a = vec2(0, -(size.y + sep) * 0.5f);
-                            pc.b = world_cursor_pos;
-                            pc.vs = {vec2(1, 0), vec2(0, 1)};
-
-                            constraint.pos.push_back(pc);
-
-                            //ps.constraints.push_back(constraint);
-
-                            first_entity = capsule;
-
-                            std::fill(chain_iter.begin(), chain_iter.end(), first_entity);
-                        }
-
-                        if(i > 0) {
-                            for(int j = 0; j < iter_degree; ++j) {
-                                uint32_t k = pow(iter_base, j + 1);
-
-                                if(i % k == 0) {
-                                    uint32_t& prev_chain = chain_iter[j];
-
-                                    Constraint constraint;
-                                    constraint.a = prev_chain;
-                                    constraint.b = capsule;
-                                    
-                                    pos_constraint pc;
-                                    pc.a = vec2(0, (size.y + sep) * 0.5f);
-                                    pc.b = vec2(0.0f, -(size.y + sep) * 0.5f);
-                                    pc.vs = {vec2(1, 0), vec2(0, 1)};
-                                    pc.tolerance = (size.y + sep) * (k - 1);
-
-                                    //constraint.weight = (j + 1.0f) * 0.75f + 1.0f;
-
-                                    constraint.pos.push_back(pc);
-
-                                    constraints[j + 1].push_back(constraint);
-                                    //ps.constraints.push_back(constraint);
-
-                                    prev_chain = capsule;
-                                }
-                            }
+                            fc.constraints.push_back(pc);
                         }
 
                         t.position += t.orientation * vec2(0, (size.y + sep));
+
+                        fc.entities.push_back(capsule);
 
                         prev_entity = capsule;
                     }
@@ -280,12 +219,8 @@ void Input_system::call() {
                         Collider& c = ecs.get_component<Collider>(link);
                         c.non_colliding = non_colliding;
                     }
-
-                    for(auto it = constraints.begin(); it != constraints.end(); ++it) {
-                        for(auto& v : *it) {
-                            ps.constraints.push_back(v);
-                        }
-                    }
+                    
+                    ps.constraints_featherstone.push_back(fc);
 
                     /*
                     Constraint constraint;

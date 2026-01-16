@@ -53,8 +53,9 @@ vec2 Physics_system::support_func(std::vector<vec2>& vertices, vec2 radius, vec2
         }
     }
     
-    direction = transpose(matrix) * direction;
+    //direction = transpose(matrix) * direction;
     
+    /*
     float s = sqrt(radius.x * radius.x * direction.x * direction.x + radius.y * radius.y * direction.y * direction.y);
     if(s > 0.0f) {
         vec2 ellipsoid = vec2(radius.x * radius.x * direction.x, radius.y * radius.y * direction.y) / s;
@@ -62,6 +63,8 @@ vec2 Physics_system::support_func(std::vector<vec2>& vertices, vec2 radius, vec2
 
         return_vertex += ellipsoid;
     }
+    */
+    return_vertex += direction * radius.x;
 
     return return_vertex;
 }
@@ -339,7 +342,10 @@ std::vector<Collision_data> Physics_system::collision(Collision_input& input, bo
             for(Simplex_vertex& v : simplex.vertices) {
                 vec2 difference = point_m - v.m;
 
-                if(glm::length(difference) < limit) return {};
+                if(glm::dot(difference, direction) < limit) {
+                    //std::cout << "ERROR: difference " << direction.x << " " << direction.y << " " << difference.x << " " << difference.y << " " << size << "\n";
+                    return {};
+                }
             }
 
             if(glm::dot(point_m, direction) < limit) return {};
@@ -389,7 +395,9 @@ std::vector<Collision_data> Physics_system::collision(Collision_input& input, bo
                         vec2 cp_a = r.vertices[0].a * r.weights.x + r.vertices[1].a * r.weights.y;
                         vec2 cp_b = r.vertices[0].b * r.weights.x + r.vertices[1].b * r.weights.y;
                         
-                        //vec2 separation_vector = cp_b - cp_a;
+                        vec2 separation_vector = cp_b - cp_a;
+
+                        //if(length(separation_vector) == 0.0f) return {}
                         //vec2 collision_normal = normalize(separation_vector);
                         vec2 collision_normal;
 

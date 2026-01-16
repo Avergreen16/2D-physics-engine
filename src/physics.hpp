@@ -164,6 +164,11 @@ struct Constraint {
     float weight = 1.0f;
 };
 
+struct Featherstone_constraint {
+    std::vector<uint32_t> entities;
+    std::vector<pos_constraint> constraints;
+};
+
 struct Sap_point {
     vec2 start;
     vec2 end;
@@ -197,6 +202,7 @@ struct Physics_system : System {
 
     std::vector<Constraint> constraints;
     std::vector<Constraint_distance> constraints_distance;
+    std::vector<Featherstone_constraint> constraints_featherstone;
 
     vec2 gravity_aspect = vec2(1.0f, 1.0f);
 
