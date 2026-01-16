@@ -222,7 +222,7 @@ struct GUI_system : System {
     uint32_t current_entity = NULL_ENTITY;
 
     GUI_system() {
-        font.init("res/other resources/pixelfont.atxt");
+        font.init("res/other resources/alter_mono.afont");
 
         Signature s = ecs.update_signature<Camera>();
         ecs.update_signature<Transform>(s);

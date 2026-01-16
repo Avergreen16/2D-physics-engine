@@ -166,9 +166,9 @@ void Input_system::call() {
                     Physics_system& ps = ecs.get_system<Physics_system>();
 
                     uint32_t iter_base = 2;
-                    uint32_t iter_degree = 6;
+                    uint32_t iter_degree = 0;
 
-                    uint32_t num_links = 24;
+                    uint32_t num_links = 2;
 
                     float sep = 0.025f;
                     vec2 size = vec2(0.333f, 1.0f);
@@ -318,10 +318,8 @@ void Input_system::call() {
                     ps.constraints.push_back(constraint);
                     */
 
+                    /*
                     //ball on the end:
-
-                    /**/
-
                     float weight_size = 2.0f;
 
                     uint32_t entity = ecs.insert_entity();

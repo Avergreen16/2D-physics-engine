@@ -96,6 +96,9 @@ struct pos_constraint {
 
     std::vector<vec2> vs;
 
+    std::vector<float> inertia_a;
+    std::vector<float> inertia_b;
+
     std::vector<float> baumgarte;
     std::vector<float> inertia;
     std::vector<float> lambda;
@@ -155,6 +158,8 @@ struct Constraint {
 
     void get_points();
     void get_values();
+
+    void refresh(pos_constraint& c);
 
     float weight = 1.0f;
 };

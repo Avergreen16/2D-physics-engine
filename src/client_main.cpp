@@ -6,6 +6,7 @@
 
 #include <chrono>
 #include <windows.h>
+#include <fstream>
 using namespace std::chrono;
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -24,6 +25,94 @@ void check_component() {
 }
 
 std::array<glm::vec2, 49> random_pts;
+
+void create_text_file() {
+    std::ofstream file("res/alter_mono.afont", std::ios::out | std::ios::binary);
+    if (file.is_open()) {
+        std::vector<uint8_t> values;
+        values.push_back(0x0D);
+        values.push_back(0x01);
+        values.push_back(0x00);
+
+        values.push_back(0x20);
+        values.push_back(0x06);
+        
+        uint16_t num_glyphs = (0x7E - 0x20) + (0x85 - 0x80);
+        uint8_t* ptr = (uint8_t*)&num_glyphs;
+        values.push_back(ptr[0]);
+        values.push_back(ptr[1]);
+
+        uint8_t start = 0x21;
+        uint8_t end = 0x7E;
+        uint16_t tex_pos = 0x0000;
+        for(uint8_t i = start; i <= end; ++i) {
+            uint8_t id = i;
+            uint8_t stride = 0x06;
+            uint8_t px_x = 0x05;
+            uint8_t px_y = 0x0D;
+            uint16_t tex_x = tex_pos;
+            uint16_t tex_y = 0x0000;
+            uint8_t gpos_x = 0x00;
+            uint8_t gpos_y = 0x00;
+
+            values.push_back(id);
+            values.push_back(stride);
+            values.push_back(px_x);
+            values.push_back(px_y);
+
+            ptr = (uint8_t*)&tex_x;
+            values.push_back(ptr[0]);
+            values.push_back(ptr[1]);
+            
+            ptr = (uint8_t*)&tex_y;
+            values.push_back(ptr[0]);
+            values.push_back(ptr[1]);
+            
+            values.push_back(gpos_x);
+            values.push_back(gpos_y);
+
+            tex_pos += 0x06;
+        }
+
+        start = 0x80;
+        end = 0x85;
+        for(uint8_t i = start; i <= end; ++i) {
+            uint8_t id = i;
+            uint8_t stride = 0x06;
+            uint8_t px_x = 0x05;
+            uint8_t px_y = 0x0D;
+            uint16_t tex_x = tex_pos;
+            uint16_t tex_y = 0x0000;
+            uint8_t gpos_x = 0x00;
+            uint8_t gpos_y = 0x00;
+
+            values.push_back(id);
+            values.push_back(stride);
+            values.push_back(px_x);
+            values.push_back(px_y);
+
+            ptr = (uint8_t*)&tex_x;
+            values.push_back(ptr[0]);
+            values.push_back(ptr[1]);
+            
+            ptr = (uint8_t*)&tex_y;
+            values.push_back(ptr[0]);
+            values.push_back(ptr[1]);
+            
+            values.push_back(gpos_x);
+            values.push_back(gpos_y);
+
+            tex_pos += 0x06;
+        }
+
+        file.write((const char*)values.data(), values.size());
+
+        file.close();
+        std::cout << "File created successfully.\n";
+    } else {
+        std::cout << "Error creating file.\n";
+    }
+}
 
 void Core::init() {
     start_time = get_time();
@@ -45,7 +134,7 @@ void Core::init() {
     shaders.emplace("screen_shader", std::make_shared<Shader>(Shader("src/shaders/screen.vert", "src/shaders/screen.frag")));
     shaders.emplace("gui_shader", std::make_shared<Shader>(Shader("src/shaders/ui.vert", "src/shaders/ui.frag")));
     textures.emplace("gui_texture", std::make_shared<Texture>(Texture("res/textures/gui.png", {GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE}, 4)));
-    textures.emplace("text_texture", std::make_shared<Texture>(Texture("res/textures/text.png", {GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE}, 4)));
+    textures.emplace("text_texture", std::make_shared<Texture>(Texture("res/textures/text_mono.png", {GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE}, 4)));
 
     // create 3d noise map
 
@@ -105,6 +194,8 @@ struct Time {
 };
 
 int main() {
+    //create_text_file();
+    
     if(glfwInit() == GLFW_FALSE) {
         std::cout << "ERROR: GLFW failed to load.\n";
         exit(-1);
