@@ -3,6 +3,17 @@
 #include "input.hpp"
 #include "core.hpp"
 
+/*
+KEY:
+white -> static
+grey -> kinematic (no effects)
+
+kinematic effects:
+yellow -> colliding
+cyan -> held by cursor
+
+*/
+
 Physics_system::Physics_system() {
     Signature s = ecs.update_signature<Collider>();
     ecs.update_signature<Transform>(s);
@@ -814,8 +825,7 @@ void Physics_system::physics_loop() {
                         Collider& cb = ecs.get_component<Collider>(b);
                         Transform& tb = ecs.get_component<Transform>(b);
 
-                        if(ca.non_colliding.size() && ca.non_colliding.contains(b)) continue;
-                        if(cb.non_colliding.size() && cb.non_colliding.contains(a)) continue;
+                        if(ca.non_colliding.contains(b) || cb.non_colliding.contains(a)) continue;
                         
                         Collision_input ci;
                         ci.a = a;
@@ -982,12 +992,32 @@ void Physics_system::physics_loop() {
 
     vec2 collision_threshold = vec2(0.5f, 2);
 
+    for(auto a : constraints) {
+        if(a.a != NULL_ENTITY) {
+            Collider& collider = ecs.get_component<Collider>(a.a);
+            if(!collider.is_static) {
+                Mesh& mesh = ecs.get_component<Mesh>(a.a);
+                mesh.color = vec3(0.35f, 1.0f, 1.0f); 
+            }
+        }
+        if(a.b != NULL_ENTITY) {
+            Collider& collider = ecs.get_component<Collider>(a.b);
+            if(!collider.is_static) {
+                Mesh& mesh = ecs.get_component<Mesh>(a.b);
+                mesh.color = vec3(0.35f, 1.0f, 1.0f); 
+            }
+        }
+    }
+
     for(uint32_t a : collectors[0].entities) {
         Mesh& am = ecs.get_component<Mesh>(a);
         Collider& ca = ecs.get_component<Collider>(a);
 
         if(ca.flag2) {
             am.color = vec3(1.0f, 0.35f, 0.35f);
+        }
+        if(ca.is_static) {
+            am.color = vec3(1.0f, 1.0f, 1.0f);
         }
         
         ca.flag2 = false;
@@ -1564,6 +1594,132 @@ void Physics_system::velocity_solve(std::vector<Collision_constraint>& collision
         for(col_constraint& cc : c.constraints) {
             cc.d->prev_lambdaN = cc.lambdaN;
             cc.d->prev_lambdaT = cc.lambdaT;
+        }
+    }
+
+    for(Featherstone_constraint& c : constraints_featherstone) {
+        c.solve();
+    }
+}
+
+vec2 angular_to_linear(vec2 pos, float angular_velocity) {
+    return vec2(pos.y, -pos.x) * angular_velocity;
+}
+
+void Featherstone_constraint::solve() {
+    std::vector<vec3> sums(entities.size());
+    
+    for(int i = 0; i < entities.size() - 1; ++i) {
+        if(i == 0) {
+            uint32_t a = entities[i];
+            uint32_t b = entities[i + 1];
+            pos_constraint& constraint = constraints[0];
+            
+            Collider& ca = ecs.get_component<Collider>(a);
+            Transform& ta = ecs.get_component<Transform>(a);
+            Collider& cb = ecs.get_component<Collider>(b);
+            Transform& tb = ecs.get_component<Transform>(b);
+
+            // compute relative positions
+            constraint.pa = ta.orientation * constraint.a;
+            constraint.pb = tb.orientation * constraint.b;
+            constraint.pos_a = constraint.pa + ta.position;
+            constraint.pos_b = constraint.pb + tb.position;
+
+            vec2 rel_point_pos = constraint.pa;
+
+            vec3 c = vec3(1, 0, 0);
+
+            vec3 vel = vec3(ca.velocity, ca.angular_velocity);
+
+            vec3 sum = vec3(0.0f);
+
+            mat3 X_matrix = {
+                {1, 0, rel_point_pos.y},
+                {0, 1, -rel_point_pos.x},
+                {0, 0, 1}
+            };
+
+            sum += (X_matrix * vel);
+
+            sums[0] = sum;
+        } else {
+            uint32_t a = entities[i];
+            uint32_t b = entities[i + 1];
+            pos_constraint& constraint = constraints[i];
+
+            Collider& ca = ecs.get_component<Collider>(a);
+            Transform& ta = ecs.get_component<Transform>(a);
+            Collider& cb = ecs.get_component<Collider>(b);
+            Transform& tb = ecs.get_component<Transform>(b);
+
+            // compute relative positions
+            constraint.pa = ta.orientation * constraint.a;
+            constraint.pb = tb.orientation * constraint.b;
+            constraint.pos_a = constraint.pa + ta.position;
+            constraint.pos_b = constraint.pb + tb.position;
+
+            // forward pass
+            // a is the parent, b is the child
+
+            mat3 inertia_a = identity<mat3>();
+            inertia_a[0][0] = ca.mass;
+            inertia_a[1][1] = ca.mass;
+            inertia_a[2][2] = ca.inertia;
+            
+            mat3 inertia_b = identity<mat3>();
+            inertia_b[0][0] = cb.mass;
+            inertia_b[1][1] = cb.mass;
+            inertia_b[2][2] = cb.inertia;
+
+            vec3 c = vec3(1, 0, 0);
+
+            mat2 rot_a_to_b = transpose(ta.orientation) * tb.orientation;
+            mat2 rot_b_to_a = transpose(rot_a_to_b);
+            vec2 pos_a_to_b = tb.position - ta.position;
+            vec2 pos_b_to_a = -pos_a_to_b;
+
+            vec2 rel_point_pos_a = constraint.pos_b - ta.position;
+            vec2 rel_point_pos_b = constraint.pb;
+
+            // find the velocity of the hinge in the frame of the child (in a matrix)
+            //float angular_velocity = cb.angular_velocity;
+            //vec2 linear_velocity = cb.velocity + cross(vec3(pos_b_to_a, 0), vec3(0, 0, angular_velocity)).xy();
+
+            vec3 s = vec3(1, 0, 0);
+
+            vec3 child_vel = vec3(cb.velocity, cb.angular_velocity);
+
+            vec3 sum = vec3(0.0f);
+
+            mat3 X_matrix_child = {
+                {1, 0, rel_point_pos_b.y},
+                {0, 1, -rel_point_pos_b.x},
+                {0, 0, 1}
+            };
+
+            sum += (X_matrix_child * child_vel);
+
+            // parent propagation
+            pos_constraint& prev_constraint = constraints[i - 1];
+
+            vec2 prev_point_pos = prev_constraint.pos_b;
+            vec2 offset = constraint.pos_b - prev_point_pos;
+
+            mat3 X_matrix_parent = {
+                {1, 0, offset.y},
+                {0, 1, -offset.x},
+                {0, 0, 1}
+            };
+
+            sum += X_matrix_parent * sums[i - 1];
+
+            sums[i] = sum;
+
+            sum = transpose(X_matrix_child) * sum;
+
+            ca.velocity = sum.xy();
+            ca.angular_velocity = sum.z;
         }
     }
 }

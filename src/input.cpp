@@ -510,6 +510,8 @@ void Input_system::call() {
                             constraint.pos.push_back(pc);
 
                             ps.constraints.push_back(constraint);
+
+                            break;
                         }
                     }
                 } else {

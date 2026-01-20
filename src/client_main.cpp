@@ -193,7 +193,316 @@ struct Time {
     }
 };
 
+template<std::size_t columns, std::size_t rows>
+struct avie_matrix {
+    double values[columns][rows];
+
+    double* operator[](std::size_t column) {
+        return values[column];
+    }
+
+    double& operator()(std::size_t column, std::size_t row) {
+        return values[column][row];
+    }
+};
+
+template<std::size_t columns, std::size_t rows>
+avie_matrix<columns, rows> empty() {
+    avie_matrix<columns, rows> matrix;
+
+    for(int c = 0; c < columns; ++c) {
+        for(int r = 0; r < rows; ++r) {
+            matrix[c][r] = 0.0f;
+        }
+    }
+
+    return matrix;
+}
+
+template<std::size_t columns, std::size_t rows>
+avie_matrix<columns, rows> identity() {
+    avie_matrix<columns, rows> matrix;
+
+    for(int c = 0; c < columns; ++c) {
+        for(int r = 0; r < rows; ++r) {
+            if(c == r) matrix[c][r] = 1.0f;
+            else matrix[c][r] = 0.0f;
+        }
+    }
+
+    return matrix;
+}
+
+template<std::size_t columns, std::size_t rows>
+avie_matrix<rows, columns> transpose(avie_matrix<columns, rows>& input) {
+    avie_matrix<rows, columns> result = empty<rows, columns>();
+
+    for(int c = 0; c < columns; ++c) {
+        for(int r = 0; r < rows; ++r) {
+            result(r, c) = input(c, r);
+        }
+    }
+
+    return result;
+}
+
+template<std::size_t c0, std::size_t r0, std::size_t c1, std::size_t r1>
+avie_matrix<c1, r0> operator*(avie_matrix<c0, r0> a, avie_matrix<c1, r1> b) {
+    avie_matrix<c1, r0> result = empty<c1, r0>();
+
+    for(int ra = 0; ra < r0; ++ra) {
+        for(int cb = 0; cb < c1; ++cb) {
+            for(int v = 0; v < r1; ++v) {
+                double vv = a(v, ra) * b(cb, v);
+                result(cb, ra) += vv;
+            }
+        }
+    }
+
+    return result;
+}
+
+template<std::size_t columns, std::size_t rows>
+void write(avie_matrix<columns, rows>& matrix) {
+    std::string write_string;
+
+    for(int r = 0; r < rows; ++r) {
+        for(int c = 0; c < columns; ++c) {
+            write_string += std::to_string(matrix(c, r));
+            if(c != columns - 1) write_string += " ";
+        }
+        if(r != rows - 1) write_string += "\n";
+    }
+
+    std::cout << write_string;
+}
+
+void write(mat4& matrix) {
+    std::string write_string;
+
+    for(int r = 0; r < 4; ++r) {
+        for(int c = 0; c < 4; ++c) {
+            write_string += std::to_string(matrix[c][r]);
+            if(c != 3) write_string += " ";
+        }
+        if(r != 3) write_string += "\n";
+    }
+
+    std::cout << write_string;
+}
+
+/*
+*/
+
+void LDLT() {
+    struct node {
+        uint32_t id;
+        uint32_t parent;
+        std::vector<uint32_t> children;
+
+        bool is_body = true;
+
+        uint32_t matrix_index;
+    };
+    
+    std::vector<node> nodes(11);
+    nodes[0] = node(0, NULL_ENTITY, {1, 2}, true);
+    nodes[1] = node(1, NULL_ENTITY, {3}, false);
+    nodes[2] = node(2, NULL_ENTITY, {4}, false);
+    nodes[3] = node(3, NULL_ENTITY, {5, 6}, true);
+    nodes[4] = node(4, NULL_ENTITY, {}, true);
+    nodes[5] = node(5, NULL_ENTITY, {7}, false);
+    nodes[6] = node(6, NULL_ENTITY, {8}, false);
+    nodes[7] = node(7, NULL_ENTITY, {}, true);
+    nodes[8] = node(8, NULL_ENTITY, {9}, true);
+    nodes[9] = node(9, NULL_ENTITY, {10}, false);
+    nodes[10] = node(10, NULL_ENTITY, {}, true);
+
+    std::vector<uint32_t> bodies;
+    std::vector<uint32_t> constraints;
+
+    for(node& n : nodes) {
+        if(n.is_body) {
+            n.matrix_index = bodies.size();
+            bodies.push_back(n.id);
+        } else {
+            n.matrix_index = constraints.size();
+            constraints.push_back(n.id);
+        }
+
+        for(uint32_t c : n.children) {
+            nodes[c].parent = n.id;
+        }
+    }
+    
+    std::vector<std::vector<float>> jacobians;
+    ivec2 jsize = {constraints.size(), bodies.size()};
+
+    jacobians.resize(jsize.x);
+    std::fill(jacobians.begin(), jacobians.end(), std::vector<float>(jsize.y, 0));
+    
+    for(node& n : nodes) {
+        if(!n.is_body) {
+            jacobians[n.matrix_index][n.children[0]] = core.random();
+            if(n.parent != NULL_ENTITY) jacobians[n.matrix_index][n.parent] = core.random();
+        } 
+    }
+    
+    std::map<uint32_t, uint32_t> forward_to; // every value comes BEFORE its parents
+    std::map<uint32_t, uint32_t> forward_from;
+
+    // compute forward
+    node* current_node = &nodes[0];
+    int depth = 0;
+    std::vector<uint32_t> path = {0};
+    while(true) {
+        if(current_node->children.size()) {
+            ++depth;
+            path.push_back(0);
+            current_node = &nodes[current_node->children[0]];
+        } else break;
+    }
+    while(true) {
+        if(current_node->children.size() <= path.back()) {
+            forward_from.emplace(current_node->id, forward_to.size());
+            forward_to.emplace(forward_to.size(), current_node->id);
+
+            if(path.size() > depth) path.pop_back();
+            --depth;
+
+            if(current_node->parent == NULL_ENTITY) break;
+            
+            current_node = &nodes[current_node->parent];
+            ++path[path.size() - 1];
+        } else {
+            ++depth;
+            current_node = &nodes[current_node->children[path.back()]];
+            path.push_back(0);
+        }
+    }
+
+    for(auto& [k, i] : forward_to) std::cout << "[" << k << " " << i << "]" << "\n";
+
+    using amat = avie_matrix<11, 11>;
+
+    amat H = empty<11, 11>();
+    amat U = identity<11, 11>();
+    amat D = identity<11, 11>();
+
+    for(auto& [k, i] : forward_to) {
+        node& n = nodes[i];
+
+        uint32_t j = forward_from[i];
+        H(j, j) = core.random() * 200.0f;
+
+        if(n.parent != NULL_ENTITY) {
+            uint32_t k = forward_from[n.parent];
+            float r = core.random() * 200.0f;
+
+            H(j, k) = r;
+            H(k, j) = r;
+        }
+    }
+
+    for(int i = 0; i < 11; ++i) {
+        D[i][i] = H[i][i];
+
+        node& n = nodes[forward_to[i]];
+
+        for(uint32_t child : n.children) {
+            uint32_t j = forward_from[child];
+
+            D[i][i] -= U[i][j] * U[i][j] * D[j][j];
+        }
+        
+        if(n.parent != NULL_ENTITY) {
+            uint32_t j = forward_from[n.parent];
+            U[j][i] = H[j][i] / D[i][i];
+        }
+    }
+
+    /*
+    for(int i = 0; i < 11; ++i) {
+        D[i][i] = H[i][i];
+        for(int k = 0; k <= i - 1; ++k) {
+            D[i][i] -= U[i][k] * U[i][k] * D[k][k];
+        }
+
+        for(int j = i + 1; j < 11; ++j) {
+            U[j][i] = H[j][i];
+
+            for(int k = 0; k <= i - 1; ++k) {
+                U[j][i] -= U[j][k] * U[i][k] * D[k][k];
+            }
+
+            U[j][i] /= D[i][i];
+        }
+    } */
+
+    amat new_matrix = transpose(U) * D * U;
+
+    std::cout << "------------------\n";
+    write(H);
+    std::cout << "\n------------------\n";
+    write(new_matrix);
+    std::cout << "\n------------------\n";
+    write(U);
+    std::cout << "\n------------------\n";
+    write(D);
+    std::cout << "\n------------------\n";
+
+    /*
+    for(auto& [k, i] : forward_to) std::cout << "[" << k << " " << i << "]" << "\n";
+
+    using amat4 = avie_matrix<4, 4>;
+
+    float values[10];
+    for(int i = 0; i < 10; ++i) values[i] = core.random();
+    values[4] = 0.0f;
+    values[7] = 0.0f;
+    values[9] = 0.0f;
+    amat4 H = {
+        values[0], values[1], values[2], values[3],
+        values[1], values[4], values[5], values[6],
+        values[2], values[5], values[7], values[8],
+        values[3], values[6], values[8], values[9]
+    };
+
+    amat4 U = identity<4, 4>();
+    amat4 D = identity<4, 4>();
+
+    for(int i = 0; i < 4; ++i) {
+        D[i][i] = H[i][i];
+        for(int k = 0; k <= i - 1; ++k) {
+            D[i][i] -= U[i][k] * U[i][k] * D[k][k];
+        }
+
+        for(int j = i + 1; j < 4; ++j) {
+            U[j][i] = H[j][i];
+
+            for(int k = 0; k <= i - 1; ++k) {
+                U[j][i] -= U[j][k] * U[i][k] * D[k][k];
+            }
+
+            U[j][i] /= D[i][i];
+        }
+    } 
+    amat4 new_matrix = transpose(U) * D * U;
+
+    std::cout << "------------------\n";
+    write(H);
+    std::cout << "\n------------------\n";
+    write(new_matrix);
+    std::cout << "\n------------------\n";
+    write(U);
+    std::cout << "\n------------------\n";
+    write(D);
+    std::cout << "\n------------------\n";
+    */
+}
+
 int main() {
+    LDLT();
     //create_text_file();
     
     if(glfwInit() == GLFW_FALSE) {

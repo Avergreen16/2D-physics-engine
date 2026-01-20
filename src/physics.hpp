@@ -167,6 +167,8 @@ struct Constraint {
 struct Featherstone_constraint {
     std::vector<uint32_t> entities;
     std::vector<pos_constraint> constraints;
+
+    void solve();
 };
 
 struct Sap_point {
