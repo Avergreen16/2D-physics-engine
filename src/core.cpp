@@ -1,7 +1,7 @@
 #include "core.hpp"
 
 double get_time() {
-    return (double)std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count() / 1000000;
+    return (double)std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count() / 1000000000;
 }
 
 time_t get_time_t() {

@@ -4,6 +4,153 @@
 #include "ecs.hpp"
 #include "random.hpp"
 
+struct avie_matrix {
+    std::size_t columns;
+    std::size_t rows;
+    float* values;
+
+    avie_matrix() = default;
+
+    avie_matrix(std::size_t c, std::size_t r) {
+        columns = c;
+        rows = r;
+
+        values = new float[c * r];
+    }
+
+    ~avie_matrix() {
+        delete[] values;
+    }
+
+    avie_matrix(const avie_matrix& a) {
+        columns = a.columns;
+        rows = a.rows;
+
+        values = new float[columns * rows];
+        memcpy(values, a.values, columns * rows * sizeof(float));
+    }
+
+    avie_matrix& operator=(const avie_matrix& a) {
+        columns = a.columns;
+        rows = a.rows;
+
+        values = new float[columns * rows];
+        memcpy(values, a.values, columns * rows * sizeof(float));
+
+        return *this;
+    }
+
+    float* operator[](std::size_t r) {
+        return &values[r * columns];
+    }
+
+    float& operator()(std::size_t c, std::size_t r) {
+        return values[r * columns + c];
+    }
+
+    avie_matrix operator-() {
+        avie_matrix new_m = *this;
+
+        for(int i = 0; i < columns * rows; ++i) {
+            new_m.values[i] = -new_m.values[i];
+        }
+
+        return new_m;
+    }
+
+    avie_matrix& operator-=(avie_matrix a) {
+        for(int c = 0; c < columns; ++c) {
+            for(int r = 0; r < rows; ++r) {
+                int i = c * rows + r;
+                values[i] -= a.values[i];
+            }   
+        }
+
+        return *this;
+    }
+
+    avie_matrix operator-(avie_matrix a) {
+        avie_matrix new_m = *this;
+
+        for(int c = 0; c < columns; ++c) {
+            for(int r = 0; r < rows; ++r) {
+                int i = c * rows + r;
+                new_m.values[i] -= a.values[i];
+            }   
+        }
+
+        return new_m;
+    }
+
+    avie_matrix& operator+=(avie_matrix a) {
+        for(int c = 0; c < columns; ++c) {
+            for(int r = 0; r < rows; ++r) {
+                int i = c * rows + r;
+                values[i] += a.values[i];
+            }   
+        }
+
+        return *this;
+    }
+
+    avie_matrix operator+(avie_matrix a) {
+        avie_matrix new_m = *this;
+
+        for(int c = 0; c < columns; ++c) {
+            for(int r = 0; r < rows; ++r) {
+                int i = c * rows + r;
+                new_m.values[i] += a.values[i];
+            }   
+        }
+
+        return new_m;
+    }
+};
+
+avie_matrix empty(std::size_t columns, std::size_t rows);
+avie_matrix identity(std::size_t columns, std::size_t rows);
+avie_matrix transpose(avie_matrix& input);
+avie_matrix transpose(avie_matrix&& input);
+avie_matrix operator*(avie_matrix a, avie_matrix b);
+void write(avie_matrix& matrix);
+float get_error(avie_matrix& a, avie_matrix& b);
+avie_matrix UTDU_solve(avie_matrix A, avie_matrix b);
+avie_matrix invert(avie_matrix A);
+
+struct block_sparse_matrix {
+    std::unordered_map<uvec2, avie_matrix, hash_uvec2> matrices;
+    std::vector<std::unordered_set<uint32_t>> columns;
+    std::vector<std::unordered_set<uint32_t>> rows;
+    std::map<uint32_t, uvec2> column_widths;
+    std::map<uint32_t, uvec2> row_widths;
+
+    void insert(uvec2 v, avie_matrix matrix) {
+        matrices.emplace(v, matrix);
+
+        if(v.x + 1 > columns.size()) columns.resize(v.x + 1);
+        if(v.y + 1 > rows.size()) rows.resize(v.y + 1);
+
+        columns[v.x].emplace(v.y);
+        rows[v.y].emplace(v.x);
+        column_widths[v.x] = {0, matrix.columns};
+        row_widths[v.y] = {0, matrix.rows};
+    }
+
+    void compute_ranges() {
+        uint32_t accum = 0;
+        for(auto& [i, k] : column_widths) {
+            k.x = accum;
+            accum += k.y;
+        }
+
+        accum = 0;
+        for(auto& [i, k] : row_widths) {
+            k.x = accum;
+            accum += k.y;
+        }
+    }
+};
+
 struct Collider {
     std::vector<vec2> vertices;
     vec2 radius = vec2(0.0f);
@@ -167,6 +314,9 @@ struct Constraint {
 struct Featherstone_constraint {
     std::vector<uint32_t> entities;
     std::vector<pos_constraint> constraints;
+
+    std::unordered_map<uint32_t, avie_matrix> mass_matrices;
+    std::unordered_map<uvec2, std::vector<avie_matrix>, hash_uvec2> constraint_matrices;
 
     void solve();
 };

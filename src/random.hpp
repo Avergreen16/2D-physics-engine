@@ -1081,6 +1081,12 @@ struct Random32 {
     vec3 cube_vector(uvec3 i);
 };
 
+struct hash_uvec2 {
+    std::size_t operator()(const uvec2& v) const {
+        return hash(v.x ^ hash(v.y));
+    }
+};
+
 std::array<vec3, 256> gen_voronoi_vectors();
 
 struct Noise_gen {
