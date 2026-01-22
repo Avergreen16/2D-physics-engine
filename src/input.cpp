@@ -165,14 +165,14 @@ void Input_system::call() {
                     std::set<uint32_t> non_colliding;
                     Physics_system& ps = ecs.get_system<Physics_system>();
 
-                    uint32_t num_links = 10;
+                    uint32_t num_links = 2;
 
                     float sep = 0.025f;
                     vec2 size = vec2(0.333f, 1.0f);
 
                     Transform t;
                     t.position = world_cursor_pos;
-                    vec2 up = vec2(1.0f, 0.0f);
+                    vec2 up = normalize(vec2(1.0f, 1.0f));
                     t.orientation = {up, vec2(-up.y, up.x)};
                     
                     Collider c;

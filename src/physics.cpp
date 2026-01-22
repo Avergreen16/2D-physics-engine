@@ -105,7 +105,7 @@ avie_matrix clip(uvec4 range, avie_matrix a) {
     return clipped_matrix;
 }
 
-void write(avie_matrix& matrix) {
+void write(avie_matrix matrix) {
     std::size_t columns = matrix.columns;
     std::size_t rows = matrix.rows;
     std::string write_string;
@@ -121,16 +121,58 @@ void write(avie_matrix& matrix) {
     std::cout << write_string;
 }
 
-float get_error(avie_matrix& a, avie_matrix& b) {
-    float max_error = 0;
+void write(block_sparse_matrix& matrix) {
+    std::size_t columns = matrix.columns.size();
+    std::size_t rows = matrix.rows.size();
+    std::vector<std::string> strings;
 
-    for(int r = 0; r < a.rows; ++r) {
-        for(int c = 0; c < a.columns; ++c) {
-            max_error = max(max_error, abs((a(c, r) - b(c, r)) / a(c, r)));
+    for(int r = 0; r < rows; ++r) {
+        for(int c = 0; c < columns; ++c) {
+            if(matrix.columns[c].contains(r)) {
+                auto& sub_matrix = matrix.matrices[{c, r}];
+
+                for(int r2 = 0; r2 < sub_matrix.rows; ++r2) {
+                    for(int c2 = 0; c2 < sub_matrix.columns; ++c2) {
+                        int row = matrix.row_widths[r].x + r2;
+                        if(strings.size() <= row) strings.resize(row + 1);
+
+                        strings[row] += "X ";
+                    }
+                }
+            } else {
+                for(int r2 = 0; r2 < matrix.row_widths[r].y; ++r2) {
+                    for(int c2 = 0; c2 < matrix.column_widths[c].y; ++c2) {
+                        int row = matrix.row_widths[r].x + r2;
+                        if(strings.size() <= row) strings.resize(row + 1);
+
+                        strings[row] += "- ";
+                    }
+                }
+            }
         }
     }
 
-    return max_error;
+    std::string write_string;
+    for(std::string str : strings) {
+        write_string += str + "\n";
+    }
+
+    std::cout << write_string;
+}
+
+vec2 get_error(avie_matrix& a, avie_matrix& b) {
+    vec2 error = vec2(0.0f);
+
+    for(int r = 0; r < a.rows; ++r) {
+        for(int c = 0; c < a.columns; ++c) {
+            float av = a(c, r);
+            float bv = b(c, r);
+            if(av == 0.0f) error.y = max(error.y, bv);
+            else error.x = max(error.x, abs(bv - av) / av);
+        }
+    }
+
+    return error;
 }
 
 avie_matrix UTDU_solve(avie_matrix A, avie_matrix b) {
@@ -244,7 +286,6 @@ avie_matrix operator*(block_sparse_matrix& A, avie_matrix b) {
     
     for(uint32_t i = 0; i < A.columns.size(); ++i) {
         uvec2 column_range = A.column_widths[i];
-
         avie_matrix clip_b = clip(column_range, b);
 
         for(uint32_t j : A.columns[i]) {
@@ -252,12 +293,14 @@ avie_matrix operator*(block_sparse_matrix& A, avie_matrix b) {
             uvec2 range_y = A.row_widths[j];
 
             uvec2 coord = {i, j};
-            avie_matrix& mat = A.matrices[coord];
+            if(A.matrices.contains(coord)) {
+                avie_matrix& mat = A.matrices[coord];
 
-            avie_matrix result = mat * clip_b;
+                avie_matrix result = mat * clip_b;
 
-            for(int k = 0; k < range_y.y; ++k) {
-                r(0, range_y.x + k) += result(0, k);
+                for(int k = 0; k < range_y.y; ++k) {
+                    r(0, range_y.x + k) += result(0, k);
+                }
             }
         }
     }
@@ -279,7 +322,9 @@ block_sparse_matrix operator*(block_sparse_matrix& A, block_sparse_matrix& B) {
 
                     uvec2 new_v = {cb, ra};
 
-                    result.insert(new_v, m);
+                    if(!result.matrices.contains(new_v)) result.insert(new_v, empty(m.columns, m.rows));
+
+                    result.matrices[new_v] += m;
                 }
             }
         }
@@ -290,7 +335,7 @@ block_sparse_matrix operator*(block_sparse_matrix& A, block_sparse_matrix& B) {
     return result;
 }
 
-vec2 compute_error(block_sparse_matrix& A, block_sparse_matrix& B) {
+vec2 get_error(block_sparse_matrix& A, block_sparse_matrix& B) {
     vec2 result = {0, 0};
 
     for(int y0 = 0; y0 < A.rows.size(); ++y0) {
@@ -309,7 +354,7 @@ vec2 compute_error(block_sparse_matrix& A, block_sparse_matrix& B) {
                         if(a == 0.0f) {
                             result.y = max(result.y, b);
                         } else {
-                            result.x = max(result.x, b / a);
+                            result.x = max(result.x, abs(b - a) / a);
                         }
                     }
                 }
@@ -1421,7 +1466,7 @@ void Physics_system::call() {
 
 void Physics_system::apply_impulse(Collider* c, vec2 impulse, vec2 point) {
     c->velocity += impulse / c->mass;
-    c->angular_velocity += cross(vec3(point, 0.0f), vec3(impulse, 0.0f)).z / c->inertia;
+    if(c->allow_rotation) c->angular_velocity += cross(vec3(point, 0.0f), vec3(impulse, 0.0f)).z / c->inertia;
 }
 
 void Physics_system::apply_position(Collider* c, Transform* t, vec2 delta, vec2 point) {
@@ -1687,6 +1732,10 @@ void Physics_system::velocity_solve(std::vector<Collision_constraint>& collision
             apply_impulse(data.cb, -impulse, data.pos_b - data.tb->position);
         }
     }
+    
+    for(Featherstone_constraint& c : constraints_featherstone) {
+        c.init();
+    }
 
     for(Collision_constraint& data : collisions) {
         data.ca = &ecs.get_component<Collider>(data.a);
@@ -1929,6 +1978,10 @@ void Physics_system::velocity_solve(std::vector<Collision_constraint>& collision
                 }
             }
         }
+
+        for(Featherstone_constraint& c : constraints_featherstone) {
+            c.solve();
+        }
     }
     
     for(Collision_constraint& c : collisions) {
@@ -1937,105 +1990,84 @@ void Physics_system::velocity_solve(std::vector<Collision_constraint>& collision
             cc.d->prev_lambdaT = cc.lambdaT;
         }
     }
-
-    for(Featherstone_constraint& c : constraints_featherstone) {
-        c.solve();
-    }
 }
 
 vec2 angular_to_linear(vec2 pos, float angular_velocity) {
     return vec2(pos.y, -pos.x) * angular_velocity;
 }
 
-void Featherstone_constraint::solve() {
+void Featherstone_constraint::init() {
     // node tree construction
 
-    struct node {
-        uint32_t id;
-        uint32_t parent;
-        std::vector<uint32_t> children;
+    if(!nodes.size()) {
+        for(uint32_t e : entities) {
+            node n;
+            n.id = nodes.size();
+            n.parent = NULL_ENTITY;
+            
+            n.matrix_index = e;
 
-        bool is_body = true;
+            nodes.push_back(n);
+        }
 
-        uint32_t matrix_index;
-    };
-    
-    std::vector<node> nodes;
-    std::vector<uint32_t> body_ids;
-    std::vector<uint32_t> constraint_ids;
+        uint32_t i = 0;
+        for(auto& constraint : constraints) {
+            node n;
+            n.is_body = false;
+            n.id = nodes.size();
 
-    for(uint32_t e : entities) {
-        node n;
-        n.id = nodes.size();
-        n.parent = NULL_ENTITY;
+            uint32_t a = i;
+            uint32_t b = i + 1;
+
+            n.parent = min(a, b);
+            n.children.push_back(max(a, b));
+            nodes[n.parent].children.push_back(n.id);
+            
+            n.matrix_index = i;
+            
+            nodes.push_back(n);
+            
+            ++i;
+        }
         
-        n.matrix_index = e;
-        body_ids.push_back(n.id);
+        // fill in parent
+        for(node& n : nodes) {
+            for(uint32_t c : n.children) {
+                nodes[c].parent = n.id;
+            }
+        }
 
-        nodes.push_back(n);
-    }
+        node* current_node = &nodes[0];
+        int depth = 0;
+        std::vector<uint32_t> path = {0};
+        while(true) {
+            if(current_node->children.size()) {
+                ++depth;
+                path.push_back(0);
+                current_node = &nodes[current_node->children[0]];
+            } else break;
+        }
+        while(true) {
+            if(current_node->children.size() <= path.back()) {
+                from_order.emplace(to_order.size(), current_node->id);
+                to_order.emplace(current_node->id, to_order.size());
 
-    uint32_t i = 0;
-    for(auto& constraint : constraints) {
-        node n;
-        n.is_body = false;
-        n.id = nodes.size();
+                if(path.size() > depth) path.pop_back();
+                --depth;
 
-        uint32_t a = i;
-        uint32_t b = i + 1;
-
-        n.parent = min(a, b);
-        n.children.push_back(max(a, b));
-        nodes[n.parent].children.push_back(n.id);
-        
-        n.matrix_index = i;
-        constraint_ids.push_back(n.id);
-        
-        nodes.push_back(n);
-        
-        ++i;
-    }
-    
-    // fill in parent
-    for(node& n : nodes) {
-        for(uint32_t c : n.children) {
-            nodes[c].parent = n.id;
+                if(current_node->parent == NULL_ENTITY) break;
+                
+                current_node = &nodes[current_node->parent];
+                ++path[path.size() - 1];
+            } else {
+                ++depth;
+                current_node = &nodes[current_node->children[path.back()]];
+                path.push_back(0);
+            }
         }
     }
 
     // matrix ordering
-    
-    std::map<uint32_t, uint32_t> from_order; // every value comes BEFORE its parents
-    std::map<uint32_t, uint32_t> to_order;
-
-    node* current_node = &nodes[0];
-    int depth = 0;
-    std::vector<uint32_t> path = {0};
-    while(true) {
-        if(current_node->children.size()) {
-            ++depth;
-            path.push_back(0);
-            current_node = &nodes[current_node->children[0]];
-        } else break;
-    }
-    while(true) {
-        if(current_node->children.size() <= path.back()) {
-            from_order.emplace(to_order.size(), current_node->id);
-            to_order.emplace(current_node->id, to_order.size());
-
-            if(path.size() > depth) path.pop_back();
-            --depth;
-
-            if(current_node->parent == NULL_ENTITY) break;
-            
-            current_node = &nodes[current_node->parent];
-            ++path[path.size() - 1];
-        } else {
-            ++depth;
-            current_node = &nodes[current_node->children[path.back()]];
-            path.push_back(0);
-        }
-    }
 
     // jacobian creation
 
@@ -2083,9 +2115,9 @@ void Featherstone_constraint::solve() {
                 vec2 rel_pb = pc.pb - tb->position;
                 vec2 rot_b = cross(vec3(rel_pb, 0), vec3(0, 0, cb->angular_velocity)).xy();
 
-                j0(0, vi) = v.x;
-                j0(1, vi) = v.y;
-                j0(2, vi) = dot(rot_a, v);
+                j0(0, vi) = -v.x;
+                j0(1, vi) = -v.y;
+                j0(2, vi) = -dot(rot_a, v);
                 
                 j1(0, vi) = v.x;
                 j1(1, vi) = v.y;
@@ -2107,79 +2139,37 @@ void Featherstone_constraint::solve() {
     block_sparse_matrix H;
 
     for(node n : nodes) {
-        if(n.is_body) {
-            uint32_t i = to_order[n.id];
+        uint32_t ii = to_order[n.id];
 
-            H.insert({i, i}, mass_matrices[n.id]);
+        if(n.is_body) {
+            H.insert({ii, ii}, mass_matrices[n.id]);
 
             if(n.parent != NULL_ENTITY) {
                 avie_matrix& jacobian = jacobians[{n.id, n.parent}];
                 jacobian = transpose(jacobian);
 
-                uvec2 pos = {to_order[n.parent], i};
+                uvec2 pos = {to_order[n.parent], ii};
 
                 H.insert(pos, -jacobian);
+                H.insert({pos.y, pos.x}, -transpose(jacobian));
             }
         } else {
             if(n.parent != NULL_ENTITY) {
                 avie_matrix& jacobian = jacobians[{n.parent, n.id}];
 
-                uvec2 pos = {to_order[n.parent], i};
+                uvec2 pos = {to_order[n.parent], ii};
 
                 H.insert(pos, -jacobian);
+                H.insert({pos.y, pos.x}, -transpose(jacobian));
             }
         }
     }
     H.compute_ranges();
 
-    // now the fun part
-    // getting x (which is [y, lambda])
-
-    // build b
-    uint32_t num_bodies = entities.size();
-    uint32_t num_constraints = 0;
-    for(auto& constraint : constraints) {
-        num_constraints += constraint.vs.size();
-    }
-    avie_matrix B = empty(1, num_bodies * 3 + num_constraints);
-
-    i = 0;
-    for(auto [index, node_id] : from_order) {
-        node& n = nodes[node_id];
-
-        if(n.is_body) {
-            i += 3;
-        } else {
-            pos_constraint& constraint = constraints[n.matrix_index];
-
-            uint32_t a = entities[n.parent];
-            uint32_t b = entities[n.children[0]];
-
-            Collider* ca = &ecs.get_component<Collider>(a);
-            Transform* ta = &ecs.get_component<Transform>(a);
-            Collider* cb = &ecs.get_component<Collider>(b);
-            Transform* tb = &ecs.get_component<Transform>(b);
-
-            // now get the amount the velocity is violating the constraint (and maybe throw in a lil bit of baumgarte :3)
-            
-            vec2 pv_a = Physics_system::calculate_point_velocity(ca, constraint.pa - ta->position);
-            vec2 pv_b = Physics_system::calculate_point_velocity(cb, constraint.pb - tb->position);
-
-            vec2 rel_velocity = pv_b - pv_a;
-
-            for(vec2 v : constraint.vs) {
-                float bv = dot(rel_velocity, v);
-                B(0, i) = bv;
-
-                ++i;
-            }
-        }
-    }
-
     // solve for D and U
-    block_sparse_matrix Dn;
     block_sparse_matrix D;
-    block_sparse_matrix U;
+    Dn.clear();
+    U.clear();
 
     for(int i = 0; i < nodes.size(); ++i) {
         node& n = nodes[from_order[i]];
@@ -2213,27 +2203,69 @@ void Featherstone_constraint::solve() {
     U.compute_ranges();
     Dn.compute_ranges();
     D.compute_ranges();
-    std::cout << "x\n";
+}
 
-    block_sparse_matrix UT = transpose(U);
-    auto H1 = UT * D;
-    H1 = H1 * U;
+void Featherstone_constraint::solve() {
+    // now the fun part
+    // getting x (which is [y, lambda])
 
-    vec2 error = compute_error(H, H1);
+    // build b
+    uint32_t num_bodies = entities.size();
+    uint32_t num_constraints = 0;
+    for(auto& constraint : constraints) {
+        num_constraints += constraint.vs.size();
+    }
+    avie_matrix B = empty(1, num_bodies * 3 + num_constraints);
 
-    std::cout << "ERROR: " << error.x << " MAX 0: " << error.y << "\n";
+    uint32_t i = 0;
+    for(auto [index, node_id] : from_order) {
+        node& n = nodes[node_id];
+
+        if(n.is_body) {
+            i += 3;
+        } else {
+            pos_constraint& constraint = constraints[n.matrix_index];
+
+            node& na = nodes[n.parent];
+            node& nb = nodes[n.children[0]];
+
+            uint32_t a = na.matrix_index;
+            uint32_t b = nb.matrix_index;
+
+            Collider* ca = &ecs.get_component<Collider>(a);
+            Transform* ta = &ecs.get_component<Transform>(a);
+            Collider* cb = &ecs.get_component<Collider>(b);
+            Transform* tb = &ecs.get_component<Transform>(b);
+
+            // now get the amount the velocity is violating the constraint (and maybe throw in a lil bit of baumgarte :3)
+            
+            vec2 pv_a = Physics_system::calculate_point_velocity(ca, constraint.pa - ta->position);
+            vec2 pv_b = Physics_system::calculate_point_velocity(cb, constraint.pb - tb->position);
+
+            vec2 rel_velocity = pv_b - pv_a;
+            vec2 rel = constraint.pb - constraint.pa;
+
+            for(vec2 v : constraint.vs) {
+                B(0, i) = (dot(rel_velocity, v) + dot(v, rel) / 0.02f * 0.25f);
+
+                ++i;
+            }
+        }
+    }
 
     // UT substitution (UT * z = b)
     avie_matrix z = empty(1, B.rows);
-    for(int i = 0; i < H.columns.size(); ++i) {
-        uvec2 range = H.column_widths[i];
+    for(int i = 0; i < U.columns.size(); ++i) {
+        uvec2 range = U.column_widths[i];
 
         avie_matrix total = empty(1, range.y);
 
         for(int j = 0; j < i; ++j) {
             if(U.rows[j].contains(i)) {
+                uvec2 range_row = U.row_widths[j];
+
                 avie_matrix& matrix = U.matrices[{i, j}];
-                avie_matrix z_clip = clip(range, z);
+                avie_matrix z_clip = clip(range_row, z);
                 total += transpose(matrix) * z_clip;
             }
         }
@@ -2245,8 +2277,8 @@ void Featherstone_constraint::solve() {
 
     // D substitution (D * y = z);
     avie_matrix y = empty(1, B.rows);
-    for(int i = 0; i < H.columns.size(); ++i) {
-        uvec2 range = H.column_widths[i];
+    for(int i = 0; i < U.columns.size(); ++i) {
+        uvec2 range = U.column_widths[i];
 
         avie_matrix zm = clip(range, z);
         zm = Dn.matrices[{i, i}] * zm;
@@ -2258,17 +2290,17 @@ void Featherstone_constraint::solve() {
 
     // U substitution (U * x = y)
     avie_matrix x = empty(1, B.rows);
-    for(int i = H.rows.size() - 1; i >= 0; --i) {
-        uvec2 range = H.column_widths[i];
+    for(int i = U.rows.size() - 1; i >= 0; --i) {
+        uvec2 range = U.row_widths[i];
         
-        avie_matrix total(1, range.y);
+        avie_matrix total = empty(1, range.y);
 
-        for(int j = i + 1; j < H.columns.size(); ++j) {
-            uvec2 j_range = H.column_widths[j];
+        for(int j = i + 1; j < U.columns.size(); ++j) {
+            uvec2 range_column = U.column_widths[j];
 
             if(U.rows[i].contains(j)) {
                 auto& matrix = U.matrices[{j, i}];
-                avie_matrix x_clip = clip(j_range, x);
+                avie_matrix x_clip = clip(range_column, x);
                 total += matrix * x_clip;
             }
         }
@@ -2278,13 +2310,41 @@ void Featherstone_constraint::solve() {
         }
     }
 
-    //avie_matrix B1 = UT * z;
+    for(node& n : nodes) {
+        if(!n.is_body) {
+            uint32_t i = to_order[n.id];
+            vec2 range = U.column_widths[i];
 
-    std::cout << "\n------------------\n";
-    //write(B);
-    std::cout << "\n------------------\n";
-    //write(B1);
-    std::cout << "\n------------------\n";
+            pos_constraint& constraint = constraints[n.matrix_index];
+
+            node parent = nodes[n.parent];
+            node child = nodes[n.children[0]];
+
+            uint32_t a = parent.matrix_index;
+            uint32_t b = child.matrix_index;
+            
+            Collider* ca = &ecs.get_component<Collider>(a);
+            Transform* ta = &ecs.get_component<Transform>(a);
+            Collider* cb = &ecs.get_component<Collider>(b);
+            Transform* tb = &ecs.get_component<Transform>(b);
+
+            uint32_t ii = 0;
+            for(vec2 v : constraint.vs) {
+                float lambda = x(0, range.x + ii);
+
+                vec2 impulse = v * lambda;
+
+                if(!isnan(lambda)) {
+                    std::cout << lambda << "\n";
+
+                    Physics_system::apply_impulse(ca, -impulse, constraint.pa - ta->position);
+                    Physics_system::apply_impulse(cb, impulse, constraint.pb - tb->position);
+
+                    ++ii;
+                }
+            }
+        }
+    }
 }
 
 vec2 Physics_system::calculate_inertia(Collider& c) {

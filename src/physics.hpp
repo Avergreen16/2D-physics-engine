@@ -7,7 +7,7 @@
 struct avie_matrix {
     std::size_t columns;
     std::size_t rows;
-    float* values;
+    double* values;
 
     avie_matrix() = default;
 
@@ -15,7 +15,7 @@ struct avie_matrix {
         columns = c;
         rows = r;
 
-        values = new float[c * r];
+        values = new double[c * r];
     }
 
     ~avie_matrix() {
@@ -26,25 +26,25 @@ struct avie_matrix {
         columns = a.columns;
         rows = a.rows;
 
-        values = new float[columns * rows];
-        memcpy(values, a.values, columns * rows * sizeof(float));
+        values = new double[columns * rows];
+        memcpy(values, a.values, columns * rows * sizeof(double));
     }
 
     avie_matrix& operator=(const avie_matrix& a) {
         columns = a.columns;
         rows = a.rows;
 
-        values = new float[columns * rows];
-        memcpy(values, a.values, columns * rows * sizeof(float));
+        values = new double[columns * rows];
+        memcpy(values, a.values, columns * rows * sizeof(double));
 
         return *this;
     }
 
-    float* operator[](std::size_t r) {
+    double* operator[](std::size_t r) {
         return &values[r * columns];
     }
 
-    float& operator()(std::size_t c, std::size_t r) {
+    double& operator()(std::size_t c, std::size_t r) {
         return values[r * columns + c];
     }
 
@@ -112,8 +112,8 @@ avie_matrix identity(std::size_t columns, std::size_t rows);
 avie_matrix transpose(avie_matrix& input);
 avie_matrix transpose(avie_matrix&& input);
 avie_matrix operator*(avie_matrix a, avie_matrix b);
-void write(avie_matrix& matrix);
-float get_error(avie_matrix& a, avie_matrix& b);
+void write(avie_matrix matrix);
+vec2 get_error(avie_matrix& a, avie_matrix& b);
 avie_matrix UTDU_solve(avie_matrix A, avie_matrix b);
 avie_matrix invert(avie_matrix A);
 
@@ -148,6 +148,14 @@ struct block_sparse_matrix {
             k.x = accum;
             accum += k.y;
         }
+    }
+
+    void clear() {
+        matrices.clear();
+        columns.clear();
+        rows.clear();
+        column_widths.clear();
+        row_widths.clear();
     }
 };
 
@@ -311,6 +319,16 @@ struct Constraint {
     float weight = 1.0f;
 };
 
+struct node {
+    uint32_t id;
+    uint32_t parent;
+    std::vector<uint32_t> children;
+
+    bool is_body = true;
+
+    uint32_t matrix_index;
+};
+
 struct Featherstone_constraint {
     std::vector<uint32_t> entities;
     std::vector<pos_constraint> constraints;
@@ -318,6 +336,13 @@ struct Featherstone_constraint {
     std::unordered_map<uint32_t, avie_matrix> mass_matrices;
     std::unordered_map<uvec2, std::vector<avie_matrix>, hash_uvec2> constraint_matrices;
 
+    block_sparse_matrix U;
+    block_sparse_matrix Dn;
+    std::vector<node> nodes;
+    std::map<uint32_t, uint32_t> from_order; // every value comes BEFORE its parents
+    std::map<uint32_t, uint32_t> to_order;
+
+    void init();
     void solve();
 };
 
