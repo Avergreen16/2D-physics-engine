@@ -2071,7 +2071,7 @@ void Featherstone_constraint::init() {
 
     // jacobian creation
 
-    std::unordered_map<uvec2, avie_matrix, hash_uvec2> jacobians;
+    jacobians.clear();
     std::unordered_map<uint32_t, avie_matrix> mass_matrices;
 
     for(node& n : nodes) {
@@ -2080,10 +2080,10 @@ void Featherstone_constraint::init() {
             Collider* ca = &ecs.get_component<Collider>(a);
             Transform* ta = &ecs.get_component<Transform>(a);
 
-            avie_matrix mm = empty(3, 3);
+            avie_matrix mm = empty(2, 2);
             mm(0, 0) = ca->mass;
             mm(1, 1) = ca->mass;
-            mm(2, 2) = ca->inertia;
+            //mm(2, 2) = ca->inertia;
 
             mass_matrices.emplace(n.id, mm);
         } else {
@@ -2104,8 +2104,8 @@ void Featherstone_constraint::init() {
                 pc.pb = pc.b;
             }
 
-            avie_matrix j0 = empty(3, pc.vs.size());
-            avie_matrix j1 = empty(3, pc.vs.size());
+            avie_matrix j0 = empty(2, pc.vs.size());
+            avie_matrix j1 = empty(2, pc.vs.size());
             
             uint32_t vi = 0;
             for(auto v : pc.vs) { // compute jacobians
@@ -2117,11 +2117,11 @@ void Featherstone_constraint::init() {
 
                 j0(0, vi) = -v.x;
                 j0(1, vi) = -v.y;
-                j0(2, vi) = -dot(rot_a, v);
+                //j0(2, vi) = -dot(rot_a, v);
                 
                 j1(0, vi) = v.x;
                 j1(1, vi) = v.y;
-                j1(2, vi) = dot(rot_b, v);
+                //j1(2, vi) = dot(rot_b, v);
 
                 ++vi;
             }
@@ -2136,7 +2136,7 @@ void Featherstone_constraint::init() {
 
     // build sparse matrix
 
-    block_sparse_matrix H;
+    H.clear();
 
     for(node n : nodes) {
         uint32_t ii = to_order[n.id];
@@ -2215,14 +2215,14 @@ void Featherstone_constraint::solve() {
     for(auto& constraint : constraints) {
         num_constraints += constraint.vs.size();
     }
-    avie_matrix B = empty(1, num_bodies * 3 + num_constraints);
+    avie_matrix B = empty(1, num_bodies * 2 + num_constraints);
 
     uint32_t i = 0;
     for(auto [index, node_id] : from_order) {
         node& n = nodes[node_id];
 
         if(n.is_body) {
-            i += 3;
+            i += 2;
         } else {
             pos_constraint& constraint = constraints[n.matrix_index];
 
@@ -2327,21 +2327,36 @@ void Featherstone_constraint::solve() {
             Transform* ta = &ecs.get_component<Transform>(a);
             Collider* cb = &ecs.get_component<Collider>(b);
             Transform* tb = &ecs.get_component<Transform>(b);
+    
+            avie_matrix& jacobian_a = jacobians[{n.parent, n.id}];
+            avie_matrix& jacobian_b = jacobians[{n.children[0], n.id}];
 
+            bool c = false;
             uint32_t ii = 0;
             for(vec2 v : constraint.vs) {
                 float lambda = x(0, range.x + ii);
 
                 vec2 impulse = v * lambda;
 
-                if(!isnan(lambda)) {
+                if(!isnan(lambda) && lambda < 20000.0f) {
                     std::cout << lambda << "\n";
+                    c = true;
 
-                    Physics_system::apply_impulse(ca, -impulse, constraint.pa - ta->position);
-                    Physics_system::apply_impulse(cb, impulse, constraint.pb - tb->position);
+                    ca->velocity += vec2(jacobian_a(0, ii), jacobian_a(1, ii)) * lambda / ca->mass;
+                    //ca->angular_velocity += jacobian_a(2, ii) * lambda;
+                    
+                    cb->velocity += vec2(jacobian_b(0, ii), jacobian_b(1, ii)) * lambda / cb->mass;
+                    //cb->angular_velocity += jacobian_b(2, ii) * lambda;
+
+                    //Physics_system::apply_impulse(ca, -impulse, constraint.pa - ta->position);
+                    //Physics_system::apply_impulse(cb, impulse, constraint.pb - tb->position);
 
                     ++ii;
                 }
+            }
+            
+            if(c) {
+                std::cout << "\n";
             }
         }
     }

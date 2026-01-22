@@ -182,6 +182,7 @@ void Input_system::call() {
                     vec2 shift = Physics_system::calculate_inertia(c);
                     t.position += t.orientation * shift;
                     t.position += t.orientation * vec2(0, 1.0f);
+                    c.allow_rotation = false;
 
                     Mesh m;
                     m.color = vec3(0.9f, 0.9f, 0.9f);

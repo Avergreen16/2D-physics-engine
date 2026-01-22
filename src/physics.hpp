@@ -123,6 +123,7 @@ struct block_sparse_matrix {
     std::vector<std::unordered_set<uint32_t>> rows;
     std::map<uint32_t, uvec2> column_widths;
     std::map<uint32_t, uvec2> row_widths;
+    uvec2 size;
 
     void insert(uvec2 v, avie_matrix matrix) {
         matrices.emplace(v, matrix);
@@ -142,12 +143,14 @@ struct block_sparse_matrix {
             k.x = accum;
             accum += k.y;
         }
+        size.x = accum;
 
         accum = 0;
         for(auto& [i, k] : row_widths) {
             k.x = accum;
             accum += k.y;
         }
+        size.y = accum;
     }
 
     void clear() {
@@ -338,9 +341,11 @@ struct Featherstone_constraint {
 
     block_sparse_matrix U;
     block_sparse_matrix Dn;
+    block_sparse_matrix H;
     std::vector<node> nodes;
     std::map<uint32_t, uint32_t> from_order; // every value comes BEFORE its parents
     std::map<uint32_t, uint32_t> to_order;
+    std::unordered_map<uvec2, avie_matrix, hash_uvec2> jacobians;
 
     void init();
     void solve();
