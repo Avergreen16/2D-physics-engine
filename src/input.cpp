@@ -165,7 +165,7 @@ void Input_system::call() {
                     std::set<uint32_t> non_colliding;
                     Physics_system& ps = ecs.get_system<Physics_system>();
 
-                    uint32_t num_links = 12;
+                    uint32_t num_links = 64;
 
                     float sep = 0.025f;
                     vec2 size = vec2(0.333f, 1.0f);

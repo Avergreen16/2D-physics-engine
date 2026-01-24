@@ -1574,6 +1574,21 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
 
         data.get_points();
         data.get_values();
+        
+        for(pos_constraint& c : data.pos) {
+            for(int i = 0; i < c.inertia.size(); ++i) {
+                if(data.b == NULL_ENTITY) {
+                    vec2 delta = c.vs[i] * c.lambda[i];
+
+                    apply_position(data.ca, data.ta, delta, c.pa - data.ta->position);
+                } else {
+                    vec2 delta = c.vs[i] * c.lambda[i];
+
+                    apply_position(data.ca, data.ta, delta, c.pa - data.ta->position);
+                    apply_position(data.cb, data.tb, -delta, c.pb - data.tb->position);   
+                }
+            }
+        }
     }
 
     for(int i = 0; i < iterations; ++i) {
@@ -2674,6 +2689,8 @@ void Constraint::get_values() {
     for(pos_constraint& pc : pos) {
         int prev_i = pc.lambda.size();
 
+        bool reset = pc.lambda.size() != 0;
+
         pc.baumgarte.resize(pc.vs.size());
         pc.lambda.resize(pc.vs.size());
         pc.inertia.resize(pc.vs.size());
@@ -2685,7 +2702,7 @@ void Constraint::get_values() {
         uint32_t i = 0;
         vec2 target_pos = vec2(0.0f);
         
-        std::fill(pc.lambda.begin(), pc.lambda.end(), 0.0f);
+        if(reset) std::fill(pc.lambda.begin(), pc.lambda.end(), 0.0f);
         
         if(pc.tolerance != 0.0f) {
             float len = length(diff);
@@ -2693,7 +2710,7 @@ void Constraint::get_values() {
             if(len < pc.tolerance) {
                 target_pos = diff;
                 
-                std::fill(pc.lambda.begin(), pc.lambda.end(), 0.0f);
+                if(reset) std::fill(pc.lambda.begin(), pc.lambda.end(), 0.0f);
             } else {
                 target_pos = diff / len * pc.tolerance;
             }
