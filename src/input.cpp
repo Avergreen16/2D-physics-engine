@@ -165,7 +165,7 @@ void Input_system::call() {
                     std::set<uint32_t> non_colliding;
                     Physics_system& ps = ecs.get_system<Physics_system>();
 
-                    uint32_t num_links = 64;
+                    uint32_t num_links = 24;
 
                     float sep = 0.025f;
                     vec2 size = vec2(0.333f, 1.0f);
@@ -189,6 +189,7 @@ void Input_system::call() {
                     create_mesh(m, c.vertices, c.radius);
 
                     uint32_t prev_entity = NULL_ENTITY;
+                    uint32_t first_entity;
 
                     //Featherstone_constraint fc;
 
@@ -202,19 +203,19 @@ void Input_system::call() {
 
                         
                         if(prev_entity != NULL_ENTITY) {
-                            Constraint c;
-                            c.a = prev_entity;
-                            c.b = capsule;
+                            Constraint constraint;
+                            constraint.a = prev_entity;
+                            constraint.b = capsule;
 
                             pos_constraint pc;
                             pc.a = vec2(0, (size.y + sep) * 0.5f);
                             pc.b = vec2(0, -(size.y + sep) * 0.5f);
                             pc.vs = {vec2(1, 0), vec2(0, 1)};
 
-                            c.pos.push_back(pc);
+                            constraint.pos.push_back(pc);
 
-                            ps.constraints.push_back(c);
-                        }
+                            ps.constraints.push_back(constraint);
+                        } else first_entity = capsule;
 
                         t.position += t.orientation * vec2(0, (size.y + sep));
 
@@ -225,6 +226,21 @@ void Input_system::call() {
                         Collider& c = ecs.get_component<Collider>(link);
                         c.non_colliding = non_colliding;
                     }
+
+                    /*
+                    Constraint constraint;
+                    constraint.a = prev_entity;
+                    constraint.b = first_entity;
+
+                    pos_constraint pc;
+                    pc.a = vec2(0, (size.y + sep) * 0.5f);
+                    pc.b = vec2(0, -(size.y + sep) * 0.5f);
+                    pc.vs = {vec2(1, 0), vec2(0, 1)};
+
+                    constraint.pos.push_back(pc);
+
+                    ps.constraints.push_back(constraint);
+                    */
                     
                     //ps.constraints_featherstone.push_back(fc);
 

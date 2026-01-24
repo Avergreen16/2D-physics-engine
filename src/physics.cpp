@@ -1329,6 +1329,56 @@ void Physics_system::physics_loop() {
     }
     profiler.step("load constraint buffer");
 
+    struct transform_cache {
+        vec2 position;
+        mat2 orientation;
+
+        vec2 delta_position;
+        float delta_angle;
+    };
+
+    std::map<uint32_t, transform_cache> cache;
+
+    for(uint32_t entity : collectors[0].entities) {
+        Transform& ta = ecs.get_component<Transform>(entity);
+        Collider& ca = ecs.get_component<Collider>(entity);
+
+        transform_cache c;
+
+        c.position = ta.position;
+        c.orientation = ta.orientation;
+
+        cache.emplace(entity, c);
+    }
+
+    position_solve(collision_constraints);
+
+    for(uint32_t entity : collectors[0].entities) {
+        Transform& ta = ecs.get_component<Transform>(entity);
+        Collider& ca = ecs.get_component<Collider>(entity);
+
+        transform_cache& c = cache[entity];
+
+        if(!ca.is_static) {
+            vec2 delta_pos = ta.position - c.position;
+            vec2 r0 = c.orientation * vec2(1, 0);
+            vec2 r1 = ta.orientation * vec2(1, 0);
+            float rot0 = atan2(r0.y, r0.x);
+            float rot1 = atan2(r1.y, r1.x);
+
+            float diff = rot1 - rot0;
+
+            if(diff > 0.0f) {
+                while(diff > M_PI) diff -= M_PI * 2;
+            } else {
+                while(diff < -M_PI) diff += M_PI * 2;
+            }
+
+            ca.velocity += delta_pos / physics_step;
+            ca.angular_velocity += diff / physics_step;
+        }
+    }
+
     for(int i = 0; i < temporal_iterations; ++i) {
         velocity_solve(collision_constraints);
         profiler.step("solve velocity");
@@ -1355,55 +1405,10 @@ void Physics_system::physics_loop() {
         profiler.step("add velocities");
     }
 
-    struct transform_cache {
-        vec2 position;
-        mat2 orientation;
-    };
-
-    std::map<uint32_t, transform_cache> cache;
-
-    for(uint32_t entity : collectors[0].entities) {
-        Transform& ta = ecs.get_component<Transform>(entity);
-        Collider& ca = ecs.get_component<Collider>(entity);
-
-        transform_cache c;
-
-        c.position = ta.position;
-        c.orientation = ta.orientation;
-
-        cache.emplace(entity, c);
-    }
-
-    position_solve(collision_constraints);
+    
     //profiler.step("solve positions");
     
     // compute velocities
-    
-    for(uint32_t entity : collectors[0].entities) {
-        Transform& ta = ecs.get_component<Transform>(entity);
-        Collider& ca = ecs.get_component<Collider>(entity);
-
-        transform_cache& c = cache[entity];
-
-        if(!ca.is_static) {
-            vec2 delta_pos = ta.position - c.position;
-            vec2 r0 = c.orientation * vec2(1, 0);
-            vec2 r1 = ta.orientation * vec2(1, 0);
-            float rot0 = atan2(r0.y, r0.x);
-            float rot1 = atan2(r1.y, r1.x);
-
-            float diff = rot1 - rot0;
-
-            if(diff > 0.0f) {
-                while(diff > M_PI) diff -= M_PI * 2;
-            } else {
-                while(diff < -M_PI) diff += M_PI * 2;
-            }
-
-            ca.velocity += delta_pos / physics_step;
-            ca.angular_velocity += diff / physics_step;
-        }
-    }
 
     for(Collision_constraint& c : collision_constraints) {
         for(col_constraint& cc : c.constraints) {
@@ -1557,7 +1562,7 @@ void Constraint_distance::get_values() {
 }
 
 void Physics_system::position_solve(std::vector<Collision_constraint>& collisions) {
-    int iterations = 6;
+    int iterations = 64;
     float spring = 0.2f;
     float softness = 0.0f;
     float spring_constraint = 0.5f;
