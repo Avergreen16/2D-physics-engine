@@ -165,7 +165,7 @@ void Input_system::call() {
                     std::set<uint32_t> non_colliding;
                     Physics_system& ps = ecs.get_system<Physics_system>();
 
-                    uint32_t num_links = 24;
+                    uint32_t num_links = 12;
 
                     float sep = 0.025f;
                     vec2 size = vec2(0.333f, 1.0f);
@@ -190,7 +190,7 @@ void Input_system::call() {
 
                     uint32_t prev_entity = NULL_ENTITY;
 
-                    Featherstone_constraint fc;
+                    //Featherstone_constraint fc;
 
                     for(int i = 0; i < num_links; ++i) {    
                         uint32_t capsule = ecs.insert_entity();
@@ -199,19 +199,24 @@ void Input_system::call() {
                         ecs.insert_component(capsule, m);
                         ecs.insert_component(capsule, t);
                         ecs.insert_component(capsule, c);
+
                         
                         if(prev_entity != NULL_ENTITY) {
+                            Constraint c;
+                            c.a = prev_entity;
+                            c.b = capsule;
+
                             pos_constraint pc;
                             pc.a = vec2(0, (size.y + sep) * 0.5f);
                             pc.b = vec2(0, -(size.y + sep) * 0.5f);
                             pc.vs = {vec2(1, 0), vec2(0, 1)};
 
-                            fc.local_constraints.push_back(pc);
+                            c.pos.push_back(pc);
+
+                            ps.constraints.push_back(c);
                         }
 
                         t.position += t.orientation * vec2(0, (size.y + sep));
-
-                        fc.entities.push_back(capsule);
 
                         prev_entity = capsule;
                     }
@@ -221,7 +226,7 @@ void Input_system::call() {
                         c.non_colliding = non_colliding;
                     }
                     
-                    ps.constraints_featherstone.push_back(fc);
+                    //ps.constraints_featherstone.push_back(fc);
 
                     /*
                     Constraint constraint;
