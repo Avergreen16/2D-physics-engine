@@ -25,7 +25,7 @@ struct Input_system : System {
     uint32_t id = NULL_ENTITY;
 
     uint32_t held_object = NULL_ENTITY;
-    uint32_t held_constraint;
+    uint32_t held_constraint = NULL_ENTITY;
 
     bool debug_physics = false;
     bool debug_mode = false;

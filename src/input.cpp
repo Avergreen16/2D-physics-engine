@@ -165,7 +165,7 @@ void Input_system::call() {
                     std::set<uint32_t> non_colliding;
                     Physics_system& ps = ecs.get_system<Physics_system>();
 
-                    uint32_t num_links = 2;
+                    uint32_t num_links = 24;
 
                     float sep = 0.025f;
                     vec2 size = vec2(0.333f, 1.0f);
@@ -182,7 +182,7 @@ void Input_system::call() {
                     vec2 shift = Physics_system::calculate_inertia(c);
                     t.position += t.orientation * shift;
                     t.position += t.orientation * vec2(0, 1.0f);
-                    c.allow_rotation = false;
+                    //c.allow_rotation = false;
 
                     Mesh m;
                     m.color = vec3(0.9f, 0.9f, 0.9f);
@@ -206,7 +206,7 @@ void Input_system::call() {
                             pc.b = vec2(0, -(size.y + sep) * 0.5f);
                             pc.vs = {vec2(1, 0), vec2(0, 1)};
 
-                            fc.constraints.push_back(pc);
+                            fc.local_constraints.push_back(pc);
                         }
 
                         t.position += t.orientation * vec2(0, (size.y + sep));
@@ -577,6 +577,7 @@ void Input_system::call() {
             held_object = NULL_ENTITY;
 
             ps.constraints.erase(ps.constraints.begin() + held_constraint);
+            held_constraint = NULL_ENTITY;
         } else {
             Constraint& c = ps.constraints[held_constraint];
             c.pos[0].b = world_cursor_pos;

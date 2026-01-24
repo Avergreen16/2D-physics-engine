@@ -260,6 +260,8 @@ struct pos_constraint {
     std::vector<float> baumgarte;
     std::vector<float> inertia;
     std::vector<float> lambda;
+
+    bool is_hold = false;
 };
 
 struct Constraint_distance {
@@ -334,6 +336,7 @@ struct node {
 
 struct Featherstone_constraint {
     std::vector<uint32_t> entities;
+    std::vector<pos_constraint> local_constraints;
     std::vector<pos_constraint> constraints;
 
     std::unordered_map<uint32_t, avie_matrix> mass_matrices;

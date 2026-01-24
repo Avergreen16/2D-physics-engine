@@ -136,7 +136,8 @@ void write(block_sparse_matrix& matrix) {
                         int row = matrix.row_widths[r].x + r2;
                         if(strings.size() <= row) strings.resize(row + 1);
 
-                        strings[row] += "X ";
+                        if(isnan(matrix.matrices[{c, r}](c2, r2))) strings[row] += "N ";
+                        else strings[row] += "X ";
                     }
                 }
             } else {
@@ -1328,9 +1329,43 @@ void Physics_system::physics_loop() {
     }
     profiler.step("load constraint buffer");
 
+    struct transform_cache {
+        vec2 position;
+        mat2 orientation;
+    };
+
+    std::map<uint32_t, transform_cache> cache;
+
+    for(uint32_t entity : collectors[0].entities) {
+        Transform& ta = ecs.get_component<Transform>(entity);
+        Collider& ca = ecs.get_component<Collider>(entity);
+
+        transform_cache c;
+
+        c.position = ta.position;
+        c.orientation = ta.orientation;
+
+        cache.emplace(entity, c);
+
+        if(!ca.is_static) {
+            ta.position += ca.velocity * (physics_step / temporal_iterations);
+
+            if(ca.allow_rotation) {
+                mat2 rotation = rotate(ca.angular_velocity * (physics_step / temporal_iterations), vec3(0, 0, 1));
+                ta.orientation = rotation * ta.orientation;
+            }
+
+            if(ca.allow_gravity) {
+                vec2 g = get_gravity(ta.position) * -20.0f;
+
+                ca.velocity += g * (physics_step / temporal_iterations);
+            }
+        }
+    }
+
     for(int i = 0; i < temporal_iterations; ++i) {
-        //position_solve(collision_constraints);
-        //profiler.step("solve positions");
+        position_solve(collision_constraints);
+        profiler.step("solve positions");
         velocity_solve(collision_constraints);
         profiler.step("solve velocity");
 
@@ -1338,22 +1373,28 @@ void Physics_system::physics_loop() {
             Collider& ca = ecs.get_component<Collider>(a);
             Transform& ta = ecs.get_component<Transform>(a);
 
-            if(!ca.is_static) {
-                ta.position += ca.velocity * (physics_step / temporal_iterations);
-
-                if(ca.allow_rotation) {
-                    mat2 rotation = rotate(ca.angular_velocity * (physics_step / temporal_iterations), vec3(0, 0, 1));
-                    ta.orientation = rotation * ta.orientation;
-                }
-
-                if(ca.allow_gravity) {
-                    vec2 g = get_gravity(ta.position) * -20.0f;
-
-                    ca.velocity += g * (physics_step / temporal_iterations);
-                }
-            }
+            
         }
         profiler.step("add velocities");
+    }
+    
+    // compute velocities
+    for(uint32_t entity : collectors[0].entities) {
+        Transform& ta = ecs.get_component<Transform>(entity);
+        Collider& ca = ecs.get_component<Collider>(entity);
+
+        transform_cache& c = cache[entity];
+
+        if(!ca.is_static) {
+            vec2 delta_pos = ta.position - c.position;
+            mat2 rot_o = c.orientation * transpose(ta.orientation);
+            vec2 r = rot_o * vec2(1, 0);
+
+            float delta_rot = atan2(r.y, r.x);
+
+            ca.velocity = delta_pos;
+            ca.angular_velocity = delta_rot;
+        }
     }
 
     for(Collision_constraint& c : collision_constraints) {
@@ -1998,8 +2039,26 @@ vec2 angular_to_linear(vec2 pos, float angular_velocity) {
 
 void Featherstone_constraint::init() {
     // node tree construction
+    Input_system& is = ecs.get_system<Input_system>();
+    constraints = local_constraints;
+    if(is.held_constraint != NULL_ENTITY) {
+        uint32_t i = 0;
+        for(uint32_t entity : entities) {
+            if(entity == is.held_object) {
+                Constraint& cs = ecs.get_system<Physics_system>().constraints[is.held_constraint];
 
-    if(!nodes.size()) {
+                constraints.push_back(cs.pos[0]);
+                constraints[constraints.size() - 1].is_hold = true;
+                break;
+            }
+            ++i;
+        }
+    }
+
+    // IT CREATES A BRANCH
+
+    nodes.clear();
+    //if(!nodes.size()) {
         for(uint32_t e : entities) {
             node n;
             n.id = nodes.size();
@@ -2012,22 +2071,46 @@ void Featherstone_constraint::init() {
 
         uint32_t i = 0;
         for(auto& constraint : constraints) {
-            node n;
-            n.is_body = false;
-            n.id = nodes.size();
+            if(constraint.is_hold) {
+                uint32_t child = 0;
+                for(uint32_t entity : entities) {
+                    if(entity == is.held_object) {
+                        break;
+                    }
+                    ++child;
+                }
+            
+                node n;
+                n.is_body = false;
+                n.id = nodes.size();
 
-            uint32_t a = i;
-            uint32_t b = i + 1;
+                n.parent = NULL_ENTITY;
+                n.children.push_back(child);
+                
+                n.matrix_index = i;
+                
+                nodes.push_back(n);
+                
+                ++i;
+            } else {
+                node n;
+                n.is_body = false;
+                n.id = nodes.size();
 
-            n.parent = min(a, b);
-            n.children.push_back(max(a, b));
-            nodes[n.parent].children.push_back(n.id);
+                uint32_t a = i;
+                uint32_t b = i + 1;
+
+                n.parent = min(a, b);
+                n.children.push_back(max(a, b));
+                nodes[n.parent].children.push_back(n.id);
+                
+                n.matrix_index = i;
+                
+                nodes.push_back(n);
+                
+                ++i;
+            }
             
-            n.matrix_index = i;
-            
-            nodes.push_back(n);
-            
-            ++i;
         }
         
         // fill in parent
@@ -2037,7 +2120,13 @@ void Featherstone_constraint::init() {
             }
         }
 
-        node* current_node = &nodes[0];
+        node* current_node;
+        for(node& n : nodes) {
+            if(n.parent == NULL_ENTITY) {
+                current_node = &n;
+            }
+        }
+
         int depth = 0;
         std::vector<uint32_t> path = {0};
         while(true) {
@@ -2065,7 +2154,7 @@ void Featherstone_constraint::init() {
                 path.push_back(0);
             }
         }
-    }
+    //}
 
     // matrix ordering
 
@@ -2080,57 +2169,86 @@ void Featherstone_constraint::init() {
             Collider* ca = &ecs.get_component<Collider>(a);
             Transform* ta = &ecs.get_component<Transform>(a);
 
-            avie_matrix mm = empty(2, 2);
+            avie_matrix mm = empty(3, 3);
             mm(0, 0) = ca->mass;
             mm(1, 1) = ca->mass;
-            //mm(2, 2) = ca->inertia;
+            mm(2, 2) = ca->inertia;
 
             mass_matrices.emplace(n.id, mm);
         } else {
-            uint32_t a = entities[n.parent];
-            uint32_t b = entities[n.children[0]];
-            pos_constraint& pc = constraints[n.matrix_index];
-            
-            Collider* ca = &ecs.get_component<Collider>(a);
-            Transform* ta = &ecs.get_component<Transform>(a);
-            Collider* cb = &ecs.get_component<Collider>(b);
-            Transform* tb = &ecs.get_component<Transform>(b);
-
-            pc.pa = ta->orientation * pc.a + ta->position;
-
-            if(b != NULL_ENTITY) {
-                pc.pb = tb->orientation * pc.b + tb->position;
-            } else {
-                pc.pb = pc.b;
-            }
-
-            avie_matrix j0 = empty(2, pc.vs.size());
-            avie_matrix j1 = empty(2, pc.vs.size());
-            
-            uint32_t vi = 0;
-            for(auto v : pc.vs) { // compute jacobians
-                vec2 rel_pa = pc.pa - ta->position;
-                vec2 rot_a = cross(vec3(rel_pa, 0), vec3(0, 0, ca->angular_velocity)).xy();
-
-                vec2 rel_pb = pc.pb - tb->position;
-                vec2 rot_b = cross(vec3(rel_pb, 0), vec3(0, 0, cb->angular_velocity)).xy();
-
-                j0(0, vi) = -v.x;
-                j0(1, vi) = -v.y;
-                //j0(2, vi) = -dot(rot_a, v);
+            if(n.parent == NULL_ENTITY) {
+                uint32_t a = entities[n.children[0]];
+                pos_constraint& pc = constraints[n.matrix_index];
                 
-                j1(0, vi) = v.x;
-                j1(1, vi) = v.y;
-                //j1(2, vi) = dot(rot_b, v);
+                Collider* ca = &ecs.get_component<Collider>(a);
+                Transform* ta = &ecs.get_component<Transform>(a);
 
-                ++vi;
+                pc.pa = ta->orientation * pc.a + ta->position;
+                pc.pb = pc.b;
+
+                avie_matrix j0 = empty(3, pc.vs.size());
+                
+                uint32_t vi = 0;
+                for(auto v : pc.vs) { // compute jacobians
+                    vec2 rel_pa = pc.pa - ta->position;
+                    float ra = cross(vec3(rel_pa, 0), vec3(v, 0)).z;
+
+                    j0(0, vi) = v.x;
+                    j0(1, vi) = v.y;
+                    j0(2, vi) = ra;
+
+                    ++vi;
+                }
+
+                uvec2 j0_pos = {n.children[0], n.id};
+
+                jacobians.emplace(j0_pos, j0);
+            } else {
+                uint32_t a = entities[n.parent];
+                uint32_t b = entities[n.children[0]];
+                pos_constraint& pc = constraints[n.matrix_index];
+                
+                Collider* ca = &ecs.get_component<Collider>(a);
+                Transform* ta = &ecs.get_component<Transform>(a);
+                Collider* cb = &ecs.get_component<Collider>(b);
+                Transform* tb = &ecs.get_component<Transform>(b);
+
+                pc.pa = ta->orientation * pc.a + ta->position;
+
+                if(b != NULL_ENTITY) {
+                    pc.pb = tb->orientation * pc.b + tb->position;
+                } else {
+                    pc.pb = pc.b;
+                }
+
+                avie_matrix j0 = empty(3, pc.vs.size());
+                avie_matrix j1 = empty(3, pc.vs.size());
+                
+                uint32_t vi = 0;
+                for(auto v : pc.vs) { // compute jacobians
+                    vec2 rel_pa = pc.pa - ta->position;
+                    float ra = cross(vec3(rel_pa, 0), vec3(-v, 0)).z;
+
+                    vec2 rel_pb = pc.pb - tb->position;
+                    float rb = cross(vec3(rel_pb, 0), vec3(v, 0)).z;
+
+                    j0(0, vi) = -v.x;
+                    j0(1, vi) = -v.y;
+                    j0(2, vi) = ra;
+                    
+                    j1(0, vi) = v.x;
+                    j1(1, vi) = v.y;
+                    j1(2, vi) = rb;
+
+                    ++vi;
+                }
+
+                uvec2 j0_pos = {n.parent, n.id};
+                uvec2 j1_pos = {n.children[0], n.id};
+
+                jacobians.emplace(j0_pos, j0);
+                jacobians.emplace(j1_pos, j1);
             }
-
-            uvec2 j0_pos = {n.parent, n.id};
-            uvec2 j1_pos = {n.children[0], n.id};
-
-            jacobians.emplace(j0_pos, j0);
-            jacobians.emplace(j1_pos, j1);
         }
     }
 
@@ -2170,6 +2288,7 @@ void Featherstone_constraint::init() {
     block_sparse_matrix D;
     Dn.clear();
     U.clear();
+    D.clear();
 
     for(int i = 0; i < nodes.size(); ++i) {
         node& n = nodes[from_order[i]];
@@ -2215,40 +2334,64 @@ void Featherstone_constraint::solve() {
     for(auto& constraint : constraints) {
         num_constraints += constraint.vs.size();
     }
-    avie_matrix B = empty(1, num_bodies * 2 + num_constraints);
+    avie_matrix B = empty(1, H.size.y);
 
     uint32_t i = 0;
     for(auto [index, node_id] : from_order) {
         node& n = nodes[node_id];
 
         if(n.is_body) {
-            i += 2;
+            i += 3;
         } else {
-            pos_constraint& constraint = constraints[n.matrix_index];
+            if(n.parent == NULL_ENTITY) {
+                pos_constraint& constraint = constraints[n.matrix_index];
 
-            node& na = nodes[n.parent];
-            node& nb = nodes[n.children[0]];
+                node& na = nodes[n.children[0]];
 
-            uint32_t a = na.matrix_index;
-            uint32_t b = nb.matrix_index;
+                uint32_t a = na.matrix_index;
 
-            Collider* ca = &ecs.get_component<Collider>(a);
-            Transform* ta = &ecs.get_component<Transform>(a);
-            Collider* cb = &ecs.get_component<Collider>(b);
-            Transform* tb = &ecs.get_component<Transform>(b);
+                Collider* ca = &ecs.get_component<Collider>(a);
+                Transform* ta = &ecs.get_component<Transform>(a);
 
-            // now get the amount the velocity is violating the constraint (and maybe throw in a lil bit of baumgarte :3)
-            
-            vec2 pv_a = Physics_system::calculate_point_velocity(ca, constraint.pa - ta->position);
-            vec2 pv_b = Physics_system::calculate_point_velocity(cb, constraint.pb - tb->position);
+                // now get the amount the velocity is violating the constraint (and maybe throw in a lil bit of baumgarte :3)
+                
+                vec2 pv_a = Physics_system::calculate_point_velocity(ca, constraint.pa - ta->position);
 
-            vec2 rel_velocity = pv_b - pv_a;
-            vec2 rel = constraint.pb - constraint.pa;
+                vec2 rel_velocity = pv_a;
+                vec2 rel = constraint.pa - constraint.pb;
 
-            for(vec2 v : constraint.vs) {
-                B(0, i) = (dot(rel_velocity, v) + dot(v, rel) / 0.02f * 0.25f);
+                for(vec2 v : constraint.vs) {
+                    B(0, i) = (dot(rel_velocity, v) + dot(v, rel) / 0.02f * 0.35f);
 
-                ++i;
+                    ++i;
+                }
+            } else {
+                pos_constraint& constraint = constraints[n.matrix_index];
+
+                node& na = nodes[n.parent];
+                node& nb = nodes[n.children[0]];
+
+                uint32_t a = na.matrix_index;
+                uint32_t b = nb.matrix_index;
+
+                Collider* ca = &ecs.get_component<Collider>(a);
+                Transform* ta = &ecs.get_component<Transform>(a);
+                Collider* cb = &ecs.get_component<Collider>(b);
+                Transform* tb = &ecs.get_component<Transform>(b);
+
+                // now get the amount the velocity is violating the constraint (and maybe throw in a lil bit of baumgarte :3)
+                
+                vec2 pv_a = Physics_system::calculate_point_velocity(ca, constraint.pa - ta->position);
+                vec2 pv_b = Physics_system::calculate_point_velocity(cb, constraint.pb - tb->position);
+
+                vec2 rel_velocity = pv_b - pv_a;
+                vec2 rel = constraint.pb - constraint.pa;
+
+                for(vec2 v : constraint.vs) {
+                    B(0, i) = (dot(rel_velocity, v) + dot(v, rel) / 0.02f * 1.0f);
+
+                    ++i;
+                }
             }
         }
     }
@@ -2312,51 +2455,87 @@ void Featherstone_constraint::solve() {
 
     for(node& n : nodes) {
         if(!n.is_body) {
-            uint32_t i = to_order[n.id];
-            vec2 range = U.column_widths[i];
+            if(n.parent == NULL_ENTITY) {
+                uint32_t i = to_order[n.id];
+                vec2 range = U.column_widths[i];
 
-            pos_constraint& constraint = constraints[n.matrix_index];
+                pos_constraint& constraint = constraints[n.matrix_index];
 
-            node parent = nodes[n.parent];
-            node child = nodes[n.children[0]];
+                node& child = nodes[n.children[0]];
 
-            uint32_t a = parent.matrix_index;
-            uint32_t b = child.matrix_index;
-            
-            Collider* ca = &ecs.get_component<Collider>(a);
-            Transform* ta = &ecs.get_component<Transform>(a);
-            Collider* cb = &ecs.get_component<Collider>(b);
-            Transform* tb = &ecs.get_component<Transform>(b);
-    
-            avie_matrix& jacobian_a = jacobians[{n.parent, n.id}];
-            avie_matrix& jacobian_b = jacobians[{n.children[0], n.id}];
+                uint32_t a = child.matrix_index;
+                
+                Collider* ca = &ecs.get_component<Collider>(a);
+                Transform* ta = &ecs.get_component<Transform>(a);
+        
+                avie_matrix& jacobian_a = jacobians[{child.id, n.id}];
 
-            bool c = false;
-            uint32_t ii = 0;
-            for(vec2 v : constraint.vs) {
-                float lambda = x(0, range.x + ii);
+                bool c = false;
+                uint32_t ii = 0;
+                for(vec2 v : constraint.vs) {
+                    float lambda = x(0, range.x + ii);
 
-                vec2 impulse = v * lambda;
+                    vec2 impulse = v * lambda;
 
-                if(!isnan(lambda) && lambda < 20000.0f) {
-                    std::cout << lambda << "\n";
-                    c = true;
+                    if(!isnan(lambda)) {
+                        c = true;
 
-                    ca->velocity += vec2(jacobian_a(0, ii), jacobian_a(1, ii)) * lambda / ca->mass;
-                    //ca->angular_velocity += jacobian_a(2, ii) * lambda;
-                    
-                    cb->velocity += vec2(jacobian_b(0, ii), jacobian_b(1, ii)) * lambda / cb->mass;
-                    //cb->angular_velocity += jacobian_b(2, ii) * lambda;
+                        Physics_system::apply_impulse(ca, impulse, constraint.pa - ta->position);
 
-                    //Physics_system::apply_impulse(ca, -impulse, constraint.pa - ta->position);
-                    //Physics_system::apply_impulse(cb, impulse, constraint.pb - tb->position);
-
-                    ++ii;
+                        ++ii;
+                    }
                 }
-            }
-            
-            if(c) {
-                std::cout << "\n";
+                
+                if(c) {
+                    //std::cout << "\n\n";
+                }
+            } else {
+                uint32_t i = to_order[n.id];
+                vec2 range = U.column_widths[i];
+
+                pos_constraint& constraint = constraints[n.matrix_index];
+
+                node& parent = nodes[n.parent];
+                node& child = nodes[n.children[0]];
+
+                uint32_t a = parent.matrix_index;
+                uint32_t b = child.matrix_index;
+                
+                Collider* ca = &ecs.get_component<Collider>(a);
+                Transform* ta = &ecs.get_component<Transform>(a);
+                Collider* cb = &ecs.get_component<Collider>(b);
+                Transform* tb = &ecs.get_component<Transform>(b);
+        
+                avie_matrix& jacobian_a = jacobians[{parent.id, n.id}];
+                avie_matrix& jacobian_b = jacobians[{child.id, n.id}];
+
+                bool c = false;
+                uint32_t ii = 0;
+                for(vec2 v : constraint.vs) {
+                    float lambda = x(0, range.x + ii);
+
+                    vec2 impulse = v * lambda;
+
+                    if(!isnan(lambda)) {
+                        //std::cout << lambda << "\n";
+                        c = true;
+
+                        //ca->velocity += vec2(jacobian_a(0, ii), jacobian_a(1, ii)) * lambda / ca->mass;
+                        //ca->angular_velocity += jacobian_a(2, ii) * lambda / ca->inertia;
+                        
+                        //cb->velocity += vec2(jacobian_b(0, ii), jacobian_b(1, ii)) * lambda / cb->mass;
+                        //cb->angular_velocity += jacobian_b(2, ii) * lambda / cb->inertia;
+
+                        Physics_system::apply_impulse(ca, -impulse, constraint.pa - ta->position);
+                        Physics_system::apply_impulse(cb, impulse, constraint.pb - tb->position);
+
+                        ++ii;
+                    }
+                }
+                
+                if(c) {
+                    //std::cout << "\n\n";
+                }
             }
         }
     }
