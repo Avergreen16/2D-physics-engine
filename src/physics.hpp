@@ -218,6 +218,8 @@ struct col_constraint {
     float inertiaNa = 0.0f;
     float inertiaNb = 0.0f;
 
+    float normal_lambda = 0.0f;
+
     float baumgarte;
 };
 
@@ -378,7 +380,7 @@ struct input_data {
 };
 
 struct Physics_system : System {
-    float physics_step = 0.02f;
+    float physics_step = 0.005f;
     float physics_time = 0.0f;
     uint32_t max_frames = 1;
     uint32_t temporal_iterations = 1;
@@ -411,6 +413,7 @@ struct Physics_system : System {
 
     void velocity_solve(std::vector<Collision_constraint>& constraints);
     void position_solve(std::vector<Collision_constraint>& constraints);
+    void friction_solve(std::vector<Collision_constraint>& constraints);
 
     static vec2 calculate_inertia(Collider& c);
 

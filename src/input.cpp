@@ -400,6 +400,7 @@ void Input_system::call() {
                         for(vec2& v : c.vertices) v *= size * 0.5f;
                         c.radius = vec2(0.0f);
                         c.mass = size.x * size.y * 25.0f;
+                        //c.allow_rotation = false;
 
                         vec2 shift = Physics_system::calculate_inertia(c);
                         t.position += shift;
@@ -465,7 +466,7 @@ void Input_system::call() {
 
                         mat2 orientation = rotate(core.random(), vec3(0.0f, 0.0f, 1.0f));
 
-                        uint32_t square_size = 8;
+                        uint32_t square_size = 1;
                         float separation = 0.0625f;
                         vec2 max_size = vec2(1.0f, 1.0f);
                         vec2 min_size = vec2(0.75f, 0.75f);
