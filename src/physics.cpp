@@ -1648,9 +1648,10 @@ void Physics_system::velocity_solve(std::vector<Collision_constraint>& collision
     float spring_constraint = 0.75f;
     float softness_constraint = 0.0f;
 
-    float factor = 1.0f / (physics_step);
+    float factor = 0.75f / (physics_step);
     float factor_constraint = 1.0f / (physics_step);
 
+    /*
     for(Constraint& data : constraints) {
         data.ca = &ecs.get_component<Collider>(data.a);
         data.ta = &ecs.get_component<Transform>(data.a);
@@ -1708,7 +1709,7 @@ void Physics_system::velocity_solve(std::vector<Collision_constraint>& collision
     
     for(Featherstone_constraint& c : constraints_featherstone) {
         c.init();
-    }
+    }*/
 
     for(Collision_constraint& data : collisions) {
         data.ca = &ecs.get_component<Collider>(data.a);

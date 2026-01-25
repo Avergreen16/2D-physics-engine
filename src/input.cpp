@@ -178,10 +178,10 @@ void Input_system::call() {
                     Collider c;
                     c.vertices = {vec2(0, -(size.y - size.x) * 0.5f), vec2(0.0f, (size.y - size.x) * 0.5f)};
                     c.radius = vec2(size.x * 0.5f);
-                    c.mass = 0x40;
+                    c.mass = 0x100;
                     vec2 shift = Physics_system::calculate_inertia(c);
                     t.position += t.orientation * shift;
-                    t.position += t.orientation * vec2(0, 1.0f);
+                    t.position += t.orientation * vec2(0, size.y * 0.5f);
                     //c.allow_rotation = false;
 
                     Mesh m;
@@ -225,6 +225,66 @@ void Input_system::call() {
                     for(uint32_t link : non_colliding) {
                         Collider& c = ecs.get_component<Collider>(link);
                         c.non_colliding = non_colliding;
+                    }
+
+                    float asteroid_radius = 3.0f;
+
+                    Collider c2;
+                    c2.vertices = {vec2(0, 0)};
+                    c2.radius = vec2(asteroid_radius);
+                    c2.mass = 0xC00;
+                    shift = Physics_system::calculate_inertia(c2);
+                    t.position += t.orientation * shift;
+                    t.position += t.orientation * vec2(0, 1.0f);
+
+                    Mesh m2;
+                    m2.color = vec3(0.9f, 0.9f, 0.9f);
+                    create_mesh(m2, c2.vertices, c2.radius);
+                    
+                    t.position = world_cursor_pos + t.orientation * vec2(0, (size.y + sep) * num_links + asteroid_radius);
+
+                    uint32_t asteroid = ecs.insert_entity();
+                    ecs.insert_component(asteroid, m2);
+                    ecs.insert_component(asteroid, t);
+                    ecs.insert_component(asteroid, c2);
+
+                    {
+                        Constraint constraint;
+                        constraint.a = prev_entity;
+                        constraint.b = asteroid;
+
+                        pos_constraint pc;
+                        pc.a = vec2(0, (size.y + sep) * 0.5f);
+                        pc.b = vec2(0, -(asteroid_radius + sep * 0.5f));
+                        pc.vs = {vec2(1, 0), vec2(0, 1)};
+
+                        constraint.pos.push_back(pc);
+
+                        ps.constraints.push_back(constraint);
+                    }
+
+                    //
+
+                    t.position = world_cursor_pos + t.orientation * -vec2(0, asteroid_radius);
+
+                    asteroid = ecs.insert_entity();
+                    ecs.insert_component(asteroid, m2);
+                    ecs.insert_component(asteroid, t);
+                    ecs.insert_component(asteroid, c2);
+
+                    {
+                        Constraint constraint;
+                        constraint.a = asteroid;
+                        constraint.b = first_entity;
+
+                        pos_constraint pc;
+                        pc.a = vec2(0, asteroid_radius + sep * 0.5f);
+                        pc.b = vec2(0, -(size.y + sep) * 0.5f);
+                        pc.vs = {vec2(1, 0), vec2(0, 1)};
+
+                        constraint.pos.push_back(pc);
+
+                        ps.constraints.push_back(constraint);
                     }
 
                     /*
