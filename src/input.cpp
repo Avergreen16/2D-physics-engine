@@ -165,10 +165,10 @@ void Input_system::call() {
                     std::set<uint32_t> non_colliding;
                     Physics_system& ps = ecs.get_system<Physics_system>();
 
-                    uint32_t num_links = 24;
+                    uint32_t num_links = 6;
 
                     float sep = 0.025f;
-                    vec2 size = vec2(0.333f, 1.0f);
+                    vec2 size = vec2(0.1f, 1.0f);
 
                     Transform t;
                     t.position = world_cursor_pos;
@@ -178,7 +178,7 @@ void Input_system::call() {
                     Collider c;
                     c.vertices = {vec2(0, -(size.y - size.x) * 0.5f), vec2(0.0f, (size.y - size.x) * 0.5f)};
                     c.radius = vec2(size.x * 0.5f);
-                    c.mass = 0x100;
+                    c.mass = 0x4;
                     vec2 shift = Physics_system::calculate_inertia(c);
                     t.position += t.orientation * shift;
                     t.position += t.orientation * vec2(0, size.y * 0.5f);
@@ -227,12 +227,12 @@ void Input_system::call() {
                         c.non_colliding = non_colliding;
                     }
 
-                    float asteroid_radius = 3.0f;
+                    float asteroid_radius = 3.0f * 0.2f;
 
                     Collider c2;
                     c2.vertices = {vec2(0, 0)};
                     c2.radius = vec2(asteroid_radius);
-                    c2.mass = 0xC00;
+                    c2.mass = 0x30;
                     shift = Physics_system::calculate_inertia(c2);
                     t.position += t.orientation * shift;
                     t.position += t.orientation * vec2(0, 1.0f);

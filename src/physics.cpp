@@ -1329,6 +1329,32 @@ void Physics_system::physics_loop() {
     }
     profiler.step("load constraint buffer");
 
+    for(int i = 0; i < temporal_iterations; ++i) {
+        velocity_solve(collision_constraints);
+        profiler.step("solve velocity");
+
+        for(uint32_t a : collectors[0].entities) {
+            Collider& ca = ecs.get_component<Collider>(a);
+            Transform& ta = ecs.get_component<Transform>(a);
+
+            if(!ca.is_static) {
+                ta.position += ca.velocity * (physics_step / temporal_iterations);
+
+                if(ca.allow_rotation) {
+                    mat2 rotation = rotate(ca.angular_velocity * (physics_step / temporal_iterations), vec3(0, 0, 1));
+                    ta.orientation = rotation * ta.orientation;
+                }
+
+                if(ca.allow_gravity) {
+                    vec2 g = get_gravity(ta.position) * -20.0f;
+
+                    ca.velocity += g * (physics_step / temporal_iterations);
+                }
+            }
+        }
+        profiler.step("add velocities");
+    }
+
     struct transform_cache {
         vec2 position;
         mat2 orientation;
@@ -1377,32 +1403,6 @@ void Physics_system::physics_loop() {
             ca.velocity += delta_pos / physics_step;
             ca.angular_velocity += diff / physics_step;
         }
-    }
-
-    for(int i = 0; i < temporal_iterations; ++i) {
-        velocity_solve(collision_constraints);
-        profiler.step("solve velocity");
-
-        for(uint32_t a : collectors[0].entities) {
-            Collider& ca = ecs.get_component<Collider>(a);
-            Transform& ta = ecs.get_component<Transform>(a);
-
-            if(!ca.is_static) {
-                ta.position += ca.velocity * (physics_step / temporal_iterations);
-
-                if(ca.allow_rotation) {
-                    mat2 rotation = rotate(ca.angular_velocity * (physics_step / temporal_iterations), vec3(0, 0, 1));
-                    ta.orientation = rotation * ta.orientation;
-                }
-
-                if(ca.allow_gravity) {
-                    vec2 g = get_gravity(ta.position) * -20.0f;
-
-                    ca.velocity += g * (physics_step / temporal_iterations);
-                }
-            }
-        }
-        profiler.step("add velocities");
     }
 
     
@@ -1563,11 +1563,6 @@ void Constraint_distance::get_values() {
 
 void Physics_system::position_solve(std::vector<Collision_constraint>& collisions) {
     int iterations = 64;
-    float spring = 0.2f;
-    float softness = 0.0f;
-    float spring_constraint = 0.5f;
-    float softness_constraint = 0.03f;
-    float fraction = 1.0f;
 
     for(Constraint& data : constraints) {
         data.ca = &ecs.get_component<Collider>(data.a);
@@ -1579,21 +1574,6 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
 
         data.get_points();
         data.get_values();
-        
-        for(pos_constraint& c : data.pos) {
-            for(int i = 0; i < c.inertia.size(); ++i) {
-                if(data.b == NULL_ENTITY) {
-                    vec2 delta = c.vs[i] * c.lambda[i];
-
-                    apply_position(data.ca, data.ta, delta, c.pa - data.ta->position);
-                } else {
-                    vec2 delta = c.vs[i] * c.lambda[i];
-
-                    apply_position(data.ca, data.ta, delta, c.pa - data.ta->position);
-                    apply_position(data.cb, data.tb, -delta, c.pb - data.tb->position);   
-                }
-            }
-        }
     }
 
     for(int i = 0; i < iterations; ++i) {
@@ -1605,34 +1585,26 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
                     float inertia = c.inertia[i];
 
                     if(data.b == NULL_ENTITY) {
-                        float d = -c.baumgarte[i] * fraction;
+                        vec2 direction = c.vs[i];
+                        float wa = c.inertia_a[i];
 
-                        float L = d; 
-                        L /= inertia;
-                        L -= softness * c.lambda[i];
+                        float compliance = 0.001f;
 
-                        float new_lambda = c.lambda[i] + L;
-                        L = new_lambda - c.lambda[i];
-                        c.lambda[i] = new_lambda;
+                        vec2 delta_a = -1.0f / (wa + compliance / (physics_step * physics_step)) * direction * c.baumgarte[i];
 
-                        vec2 delta = c.vs[i] * L;
-
-                        apply_position(data.ca, data.ta, delta, c.pa - data.ta->position);
+                        apply_position(data.ca, data.ta, delta_a, c.pa - data.ta->position);
                     } else {
-                        float d = -c.baumgarte[i] * fraction;
+                        vec2 direction = c.vs[i];
+                        float wa = c.inertia_a[i];
+                        float wb = c.inertia_b[i];
 
-                        float L = d; 
-                        L /= inertia;
-                        L -= softness * c.lambda[i];
+                        float compliance = 0.001f;
 
-                        float new_lambda = c.lambda[i] + L;
-                        L = new_lambda - c.lambda[i];
-                        c.lambda[i] = new_lambda;
+                        vec2 delta_b = 1.0f / (wa + wb + compliance / (physics_step * physics_step)) * direction * c.baumgarte[i];
+                        vec2 delta_a = -1.0f / (wa + wb + compliance / (physics_step * physics_step)) * direction * c.baumgarte[i];
 
-                        vec2 delta = c.vs[i] * L;
-
-                        apply_position(data.ca, data.ta, delta, c.pa - data.ta->position);
-                        apply_position(data.cb, data.tb, -delta, c.pb - data.tb->position);   
+                        apply_position(data.ca, data.ta, delta_a, c.pa - data.ta->position);
+                        apply_position(data.cb, data.tb, delta_b, c.pb - data.tb->position);   
                     }
                 }
             }
@@ -2670,8 +2642,6 @@ void Constraint::refresh(pos_constraint& c) {
             float dd = dot(diff, c.vs[i]);
             c.baumgarte[i] = dd;
 
-            c.inertia[i] = c.inertia_a[i] + c.inertia_b[i];
-
             ca->flag = false;
             if(b != NULL_ENTITY) cb->flag = false;
         }
@@ -2695,8 +2665,6 @@ void Constraint::get_values() {
     for(pos_constraint& pc : pos) {
         int prev_i = pc.lambda.size();
 
-        bool reset = pc.lambda.size() != 0;
-
         pc.baumgarte.resize(pc.vs.size());
         pc.lambda.resize(pc.vs.size());
         pc.inertia.resize(pc.vs.size());
@@ -2708,7 +2676,7 @@ void Constraint::get_values() {
         uint32_t i = 0;
         vec2 target_pos = vec2(0.0f);
         
-        if(reset) std::fill(pc.lambda.begin(), pc.lambda.end(), 0.0f);
+        std::fill(pc.lambda.begin(), pc.lambda.end(), 0.0f);
         
         if(pc.tolerance != 0.0f) {
             float len = length(diff);
@@ -2716,7 +2684,6 @@ void Constraint::get_values() {
             if(len < pc.tolerance) {
                 target_pos = diff;
                 
-                if(reset) std::fill(pc.lambda.begin(), pc.lambda.end(), 0.0f);
             } else {
                 target_pos = diff / len * pc.tolerance;
             }
@@ -2727,9 +2694,9 @@ void Constraint::get_values() {
             pc.baumgarte[i] = -(abs(v_diff)) * sign(v_diff);
 
             if(i >= prev_i) pc.lambda[i] = 0.0f;
-            pc.inertia[i] = Physics_system::calculate_inverse_mass(ca, ta, v, pc.pa - ta->position);
+            pc.inertia_a[i] = Physics_system::calculate_inverse_mass(ca, ta, v, pc.pa - ta->position);
 
-            if(b != NULL_ENTITY) pc.inertia[i] += Physics_system::calculate_inverse_mass(cb, tb, v, pc.pb - tb->position);
+            if(b != NULL_ENTITY) pc.inertia_b[i] = Physics_system::calculate_inverse_mass(cb, tb, v, pc.pb - tb->position);
 
             ++i;
         }
