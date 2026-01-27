@@ -217,6 +217,8 @@ struct col_constraint {
 
     float inertiaNa = 0.0f;
     float inertiaNb = 0.0f;
+    float inertiaTa = 0.0f;
+    float inertiaTb = 0.0f;
 
     float normal_lambda = 0.0f;
 
