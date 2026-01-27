@@ -165,10 +165,10 @@ void Input_system::call() {
                     std::set<uint32_t> non_colliding;
                     Physics_system& ps = ecs.get_system<Physics_system>();
 
-                    uint32_t num_links = 6;
+                    uint32_t num_links = 12;
 
                     float sep = 0.025f;
-                    vec2 size = vec2(0.1f, 1.0f);
+                    vec2 size = vec2(0.25f, 0.75f);
 
                     Transform t;
                     t.position = world_cursor_pos;
@@ -582,12 +582,11 @@ void Input_system::call() {
                             Constraint constraint;
                             constraint.a = entity;
                             
-                            constraint.is_grab = true;
-                            
                             pos_constraint pc;
                             pc.a = rel_point;
                             pc.b = world_cursor_pos;
                             pc.vs = {vec2(1, 0), vec2(0, 1)};
+                            pc.compliance = 0.00033;
 
                             constraint.pos.push_back(pc);
 

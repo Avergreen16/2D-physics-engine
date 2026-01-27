@@ -200,6 +200,30 @@ struct Collision_data {
     float prev_lambdaT = 0.0f;
 };
 
+struct Constraint_distance {
+    uint32_t a = NULL_ENTITY;
+    uint32_t b = NULL_ENTITY;
+
+    vec2 pa;
+    vec2 pb;
+
+    vec2 pos_a;
+    vec2 pos_b;
+    
+    Collider* ca;
+    Transform* ta;
+    Collider* cb;
+    Transform* tb;
+
+    vec2 jacobian;
+    float lambda;
+    float inertia;
+    float baumgarte;
+    
+    void get_points();
+    void get_values();
+};
+
 struct col_constraint {
     Collision_data* d;
 
@@ -249,47 +273,14 @@ struct pos_constraint {
     vec2 pa;
     vec2 pb;
 
-    vec2 pos_a;
-    vec2 pos_b;
-
-    float tolerance = 0.0f;
-
-    vec2 target_dir;
-
     std::vector<vec2> vs;
-
     std::vector<float> inertia_a;
     std::vector<float> inertia_b;
-
-    std::vector<float> baumgarte;
-    std::vector<float> inertia;
-    std::vector<float> lambda;
+    std::vector<float> C;
+    
+    float compliance = 0.0001f;
 
     bool is_hold = false;
-};
-
-struct Constraint_distance {
-    uint32_t a = NULL_ENTITY;
-    uint32_t b = NULL_ENTITY;
-
-    vec2 pa;
-    vec2 pb;
-
-    vec2 pos_a;
-    vec2 pos_b;
-    
-    Collider* ca;
-    Transform* ta;
-    Collider* cb;
-    Transform* tb;
-
-    vec2 jacobian;
-    float lambda;
-    float inertia;
-    float baumgarte;
-    
-    void get_points();
-    void get_values();
 };
 
 struct rot_constraint {
@@ -315,8 +306,6 @@ struct Constraint {
     Collider* cb;
     Transform* tb;
 
-    bool is_grab = false;
-
     std::vector<pos_constraint> pos;
     std::vector<rot_constraint> rot;
 
@@ -324,8 +313,6 @@ struct Constraint {
     void get_values();
 
     void refresh(pos_constraint& c);
-
-    float weight = 1.0f;
 };
 
 struct node {
