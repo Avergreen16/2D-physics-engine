@@ -413,7 +413,6 @@ struct Physics_system : System {
 
     void insert_collision(Collision_data c);
 
-    void velocity_solve(std::vector<Collision_constraint>& constraints);
     void position_solve(std::vector<Collision_constraint>& constraints);
     void friction_solve(std::vector<Collision_constraint>& constraints);
 

@@ -165,10 +165,10 @@ void Input_system::call() {
                     std::set<uint32_t> non_colliding;
                     Physics_system& ps = ecs.get_system<Physics_system>();
 
-                    uint32_t num_links = 24;
+                    uint32_t num_links = 6;
 
                     float sep = 0.025f;
-                    vec2 size = vec2(0.333f, 1.0f);
+                    vec2 size = vec2(0.1f, 1.0f);
 
                     Transform t;
                     t.position = world_cursor_pos;
@@ -178,10 +178,10 @@ void Input_system::call() {
                     Collider c;
                     c.vertices = {vec2(0, -(size.y - size.x) * 0.5f), vec2(0.0f, (size.y - size.x) * 0.5f)};
                     c.radius = vec2(size.x * 0.5f);
-                    c.mass = 0x40;
+                    c.mass = 0x4;
                     vec2 shift = Physics_system::calculate_inertia(c);
                     t.position += t.orientation * shift;
-                    t.position += t.orientation * vec2(0, 1.0f);
+                    t.position += t.orientation * vec2(0, size.y * 0.5f);
                     //c.allow_rotation = false;
 
                     Mesh m;
@@ -189,8 +189,9 @@ void Input_system::call() {
                     create_mesh(m, c.vertices, c.radius);
 
                     uint32_t prev_entity = NULL_ENTITY;
+                    uint32_t first_entity;
 
-                    Featherstone_constraint fc;
+                    //Featherstone_constraint fc;
 
                     for(int i = 0; i < num_links; ++i) {    
                         uint32_t capsule = ecs.insert_entity();
@@ -199,19 +200,24 @@ void Input_system::call() {
                         ecs.insert_component(capsule, m);
                         ecs.insert_component(capsule, t);
                         ecs.insert_component(capsule, c);
+
                         
                         if(prev_entity != NULL_ENTITY) {
+                            Constraint constraint;
+                            constraint.a = prev_entity;
+                            constraint.b = capsule;
+
                             pos_constraint pc;
                             pc.a = vec2(0, (size.y + sep) * 0.5f);
                             pc.b = vec2(0, -(size.y + sep) * 0.5f);
                             pc.vs = {vec2(1, 0), vec2(0, 1)};
 
-                            fc.local_constraints.push_back(pc);
-                        }
+                            constraint.pos.push_back(pc);
+
+                            ps.constraints.push_back(constraint);
+                        } else first_entity = capsule;
 
                         t.position += t.orientation * vec2(0, (size.y + sep));
-
-                        fc.entities.push_back(capsule);
 
                         prev_entity = capsule;
                     }
@@ -220,8 +226,83 @@ void Input_system::call() {
                         Collider& c = ecs.get_component<Collider>(link);
                         c.non_colliding = non_colliding;
                     }
+
+                    float asteroid_radius = 3.0f * 0.2f;
+
+                    Collider c2;
+                    c2.vertices = {vec2(0, 0)};
+                    c2.radius = vec2(asteroid_radius);
+                    c2.mass = 0x30;
+                    shift = Physics_system::calculate_inertia(c2);
+                    t.position += t.orientation * shift;
+                    t.position += t.orientation * vec2(0, 1.0f);
+
+                    Mesh m2;
+                    m2.color = vec3(0.9f, 0.9f, 0.9f);
+                    create_mesh(m2, c2.vertices, c2.radius);
                     
-                    ps.constraints_featherstone.push_back(fc);
+                    t.position = world_cursor_pos + t.orientation * vec2(0, (size.y + sep) * num_links + asteroid_radius);
+
+                    uint32_t asteroid = ecs.insert_entity();
+                    ecs.insert_component(asteroid, m2);
+                    ecs.insert_component(asteroid, t);
+                    ecs.insert_component(asteroid, c2);
+
+                    {
+                        Constraint constraint;
+                        constraint.a = prev_entity;
+                        constraint.b = asteroid;
+
+                        pos_constraint pc;
+                        pc.a = vec2(0, (size.y + sep) * 0.5f);
+                        pc.b = vec2(0, -(asteroid_radius + sep * 0.5f));
+                        pc.vs = {vec2(1, 0), vec2(0, 1)};
+
+                        constraint.pos.push_back(pc);
+
+                        ps.constraints.push_back(constraint);
+                    }
+
+                    //
+
+                    t.position = world_cursor_pos + t.orientation * -vec2(0, asteroid_radius);
+
+                    asteroid = ecs.insert_entity();
+                    ecs.insert_component(asteroid, m2);
+                    ecs.insert_component(asteroid, t);
+                    ecs.insert_component(asteroid, c2);
+
+                    {
+                        Constraint constraint;
+                        constraint.a = asteroid;
+                        constraint.b = first_entity;
+
+                        pos_constraint pc;
+                        pc.a = vec2(0, asteroid_radius + sep * 0.5f);
+                        pc.b = vec2(0, -(size.y + sep) * 0.5f);
+                        pc.vs = {vec2(1, 0), vec2(0, 1)};
+
+                        constraint.pos.push_back(pc);
+
+                        ps.constraints.push_back(constraint);
+                    }
+
+                    /*
+                    Constraint constraint;
+                    constraint.a = prev_entity;
+                    constraint.b = first_entity;
+
+                    pos_constraint pc;
+                    pc.a = vec2(0, (size.y + sep) * 0.5f);
+                    pc.b = vec2(0, -(size.y + sep) * 0.5f);
+                    pc.vs = {vec2(1, 0), vec2(0, 1)};
+
+                    constraint.pos.push_back(pc);
+
+                    ps.constraints.push_back(constraint);
+                    */
+                    
+                    //ps.constraints_featherstone.push_back(fc);
 
                     /*
                     Constraint constraint;
@@ -400,7 +481,6 @@ void Input_system::call() {
                         for(vec2& v : c.vertices) v *= size * 0.5f;
                         c.radius = vec2(0.0f);
                         c.mass = size.x * size.y * 25.0f;
-                        //c.allow_rotation = false;
 
                         vec2 shift = Physics_system::calculate_inertia(c);
                         t.position += shift;
@@ -466,7 +546,7 @@ void Input_system::call() {
 
                         mat2 orientation = rotate(core.random(), vec3(0.0f, 0.0f, 1.0f));
 
-                        uint32_t square_size = 1;
+                        uint32_t square_size = 8;
                         float separation = 0.0625f;
                         vec2 max_size = vec2(1.0f, 1.0f);
                         vec2 min_size = vec2(0.75f, 0.75f);
