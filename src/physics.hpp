@@ -308,6 +308,8 @@ struct Constraint {
 
     bool is_grab = false;
 
+    float compliance = 0.00001f;
+
     std::vector<pos_constraint> pos;
     std::vector<rot_constraint> rot;
 
@@ -403,7 +405,7 @@ struct Physics_system : System {
     void insert_collision(Collision_data c);
 
     void velocity_solve(std::vector<Collision_constraint>& constraints);
-    void position_solve(std::vector<Collision_constraint>& constraints);
+    void position_solve();
 
     static vec2 calculate_inertia(Collider& c);
 
