@@ -278,7 +278,7 @@ void LDLT() {
 }
 
 int main() {
-    LDLT();
+    //LDLT();
     //create_text_file();
     
     if(glfwInit() == GLFW_FALSE) {
@@ -395,10 +395,6 @@ int main() {
 
     while(core.game_running) {
         float t = time.get_elapsed_time(true);
-        /*if(t < 0.016) {
-            std::this_thread::yield();
-            std::this_thread::sleep_for(std::chrono::milliseconds(int(1000 * (0.016f - t))));
-        }*/
 
         core.random();
         

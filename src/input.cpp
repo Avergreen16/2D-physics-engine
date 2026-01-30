@@ -165,10 +165,10 @@ void Input_system::call() {
                     std::set<uint32_t> non_colliding;
                     Physics_system& ps = ecs.get_system<Physics_system>();
 
-                    uint32_t num_links = 6;
+                    uint32_t num_links = 12;
 
                     float sep = 0.025f;
-                    vec2 size = vec2(0.1f, 1.0f);
+                    vec2 size = vec2(0.25f, 0.75f);
 
                     Transform t;
                     t.position = world_cursor_pos;
@@ -547,9 +547,9 @@ void Input_system::call() {
                         mat2 orientation = rotate(core.random(), vec3(0.0f, 0.0f, 1.0f));
 
                         uint32_t square_size = 8;
-                        float separation = 0.0625f;
-                        vec2 max_size = vec2(1.0f, 1.0f);
-                        vec2 min_size = vec2(0.75f, 0.75f);
+                        float separation = 0.01f;
+                        vec2 max_size = vec2(0.125f);
+                        vec2 min_size = vec2(0.125f);
 
                         for(int y = 0; y < square_size; ++y) {
                             for(int x = 0; x < square_size; ++x) {

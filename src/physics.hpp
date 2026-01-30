@@ -238,32 +238,6 @@ struct Collision_constraint {
     void refresh(col_constraint& c);
 };
 
-struct pos_constraint {
-    vec2 a;
-    vec2 b;
-
-    vec2 pa;
-    vec2 pb;
-
-    vec2 pos_a;
-    vec2 pos_b;
-
-    float tolerance = 0.0f;
-
-    vec2 target_dir;
-
-    std::vector<vec2> vs;
-
-    std::vector<float> inertia_a;
-    std::vector<float> inertia_b;
-
-    std::vector<float> baumgarte;
-    std::vector<float> inertia;
-    std::vector<float> lambda;
-
-    bool is_hold = false;
-};
-
 struct Constraint_distance {
     uint32_t a = NULL_ENTITY;
     uint32_t b = NULL_ENTITY;
@@ -286,6 +260,27 @@ struct Constraint_distance {
     
     void get_points();
     void get_values();
+};
+
+struct pos_constraint {
+    // positions in object space
+    vec2 a;
+    vec2 b;
+
+    // positions in world space
+    vec2 pa;
+    vec2 pb;
+
+    // constraint vectors
+    std::vector<vec2> vs;
+
+    std::vector<float> inertia_a;
+    std::vector<float> inertia_b;
+    std::vector<float> inertia;
+    std::vector<float> baumgarte;
+    std::vector<float> lambda;
+
+    bool is_hold = false;
 };
 
 struct rot_constraint {
@@ -320,8 +315,6 @@ struct Constraint {
     void get_values();
 
     void refresh(pos_constraint& c);
-
-    float weight = 1.0f;
 };
 
 struct node {
@@ -378,7 +371,7 @@ struct input_data {
 };
 
 struct Physics_system : System {
-    float physics_step = 0.02f;
+    float physics_step = 0.0167f;
     float physics_time = 0.0f;
     uint32_t max_frames = 1;
     uint32_t temporal_iterations = 1;
