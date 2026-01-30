@@ -133,6 +133,7 @@ void Core::init() {
     shaders.emplace("texture_shader", std::make_shared<Shader>(Shader("src/shaders/texture.vert", "src/shaders/texture.frag")));
     shaders.emplace("screen_shader", std::make_shared<Shader>(Shader("src/shaders/screen.vert", "src/shaders/screen.frag")));
     shaders.emplace("gui_shader", std::make_shared<Shader>(Shader("src/shaders/ui.vert", "src/shaders/ui.frag")));
+    shaders.emplace("background", std::make_shared<Shader>(Shader("src/shaders/background.vert", "src/shaders/background.frag")));
     textures.emplace("gui_texture", std::make_shared<Texture>(Texture("res/textures/gui.png", {GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE}, 4)));
     textures.emplace("text_texture", std::make_shared<Texture>(Texture("res/textures/text_mono.png", {GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE}, 4)));
 
@@ -279,7 +280,7 @@ void LDLT() {
 
 int main() {
     //LDLT();
-    create_text_file();
+    //create_text_file();
     
     if(glfwInit() == GLFW_FALSE) {
         std::cout << "ERROR: GLFW failed to load.\n";

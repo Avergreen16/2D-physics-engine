@@ -165,10 +165,12 @@ void Input_system::call() {
                     std::set<uint32_t> non_colliding;
                     Physics_system& ps = ecs.get_system<Physics_system>();
 
+                    float scale = 0.25f;
+
                     uint32_t num_links = 12;
 
-                    float sep = 0.025f;
-                    vec2 size = vec2(0.25f, 0.75f);
+                    float sep = 0.025f * scale;
+                    vec2 size = scale * vec2(0.33f, 1.0f);
 
                     Transform t;
                     t.position = world_cursor_pos;
@@ -178,7 +180,7 @@ void Input_system::call() {
                     Collider c;
                     c.vertices = {vec2(0, -(size.y - size.x) * 0.5f), vec2(0.0f, (size.y - size.x) * 0.5f)};
                     c.radius = vec2(size.x * 0.5f);
-                    c.mass = 0x4;
+                    c.mass = 0x6 * scale * scale;
                     vec2 shift = Physics_system::calculate_inertia(c);
                     t.position += t.orientation * shift;
                     t.position += t.orientation * vec2(0, size.y * 0.5f);
@@ -227,12 +229,12 @@ void Input_system::call() {
                         c.non_colliding = non_colliding;
                     }
 
-                    float asteroid_radius = 3.0f * 0.2f;
+                    float asteroid_radius = 1.0f * scale;
 
                     Collider c2;
                     c2.vertices = {vec2(0, 0)};
                     c2.radius = vec2(asteroid_radius);
-                    c2.mass = 0x30;
+                    c2.mass = 0x30 * scale * scale;
                     shift = Physics_system::calculate_inertia(c2);
                     t.position += t.orientation * shift;
                     t.position += t.orientation * vec2(0, 1.0f);
@@ -547,9 +549,9 @@ void Input_system::call() {
                         mat2 orientation = rotate(core.random(), vec3(0.0f, 0.0f, 1.0f));
 
                         uint32_t square_size = 8;
-                        float separation = 0.01f;
-                        vec2 max_size = vec2(0.125f);
-                        vec2 min_size = vec2(0.125f);
+                        float separation = 0.0625f;
+                        vec2 max_size = vec2(0.25f);
+                        vec2 min_size = vec2(0.25f);
 
                         for(int y = 0; y < square_size; ++y) {
                             for(int x = 0; x < square_size; ++x) {

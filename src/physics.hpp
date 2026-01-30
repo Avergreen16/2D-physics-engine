@@ -308,7 +308,7 @@ struct Constraint {
 
     bool is_grab = false;
 
-    float compliance = 0.00001f;
+    float compliance = 0.0001f;
 
     std::vector<pos_constraint> pos;
     std::vector<rot_constraint> rot;
@@ -373,7 +373,7 @@ struct input_data {
 };
 
 struct Physics_system : System {
-    float physics_step = 0.005f;
+    float physics_step = 0.02f;
     float physics_time = 0.0f;
     uint32_t max_frames = 1;
     uint32_t temporal_iterations = 1;

@@ -1375,7 +1375,7 @@ void Physics_system::physics_loop() {
     profiler.step("load constraint buffer");
 
     // solve
-    position_solve();
+    position_solve(collision_constraints);
 
     for(uint32_t entity : collectors[0].entities) {
         Transform& ta = ecs.get_component<Transform>(entity);
@@ -1519,13 +1519,15 @@ void Physics_system::apply_impulse(Collider* c, vec2 impulse, vec2 point) {
 }
 
 void Physics_system::apply_position(Collider* c, Transform* t, vec2 delta, vec2 point) {
-    vec2 d = delta / c->mass;
-    t->position += d;
-    float delta_rotation = cross(vec3(point, 0.0f), vec3(delta, 0.0f)).z / c->inertia;
-    t->orientation = mat2(rotate(delta_rotation, vec3(0.0f, 0.0f, 1.0f))) * t->orientation;
+    if(!c->is_static) {
+        vec2 d = delta / c->mass;
+        t->position += d;
+        float delta_rotation = cross(vec3(point, 0.0f), vec3(delta, 0.0f)).z / c->inertia;
+        t->orientation = mat2(rotate(delta_rotation, vec3(0.0f, 0.0f, 1.0f))) * t->orientation;
 
-    c->flag = true;
-    c->flag2 = true;
+        c->flag = true;
+        c->flag2 = true;
+    }
 }
 
 void Constraint_distance::get_points() {
@@ -1610,7 +1612,7 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
 */
 
 void Physics_system::position_solve() {
-    int iterations = 6;
+    int iterations = 24;
 
     for(Constraint& data : constraints) {
         data.ca = &ecs.get_component<Collider>(data.a);
@@ -1630,11 +1632,15 @@ void Physics_system::position_solve() {
                 data.refresh(c);
 
                 for(int i = 0; i < c.vs.size(); ++i) {
+                    vec2 direction = c.vs[i];
+
                     if(data.b == NULL_ENTITY) {
-                        vec2 direction = c.vs[i];
                         float wa = c.inertia_a[i];
+
+                        float compliance = data.compliance;
+                        compliance *= wa;
                         
-                        float delta = (-c.baumgarte[i] - data.compliance * c.lambda[i]) / (wa + data.compliance / (physics_step * physics_step)) * wa;
+                        float delta = (-c.baumgarte[i] - compliance * c.lambda[i]) / (wa + compliance / (physics_step * physics_step)) * wa;
                         
                         float L = c.lambda[i] + delta;
                         delta = L - c.lambda[i];
@@ -1642,11 +1648,13 @@ void Physics_system::position_solve() {
 
                         apply_position(data.ca, data.ta, delta * direction / wa, c.pa - data.ta->position);
                     } else {
-                        vec2 direction = c.vs[i];
                         float wa = c.inertia_a[i];
                         float wb = c.inertia_b[i];
+
+                        float compliance = data.compliance;
+                        compliance *= (wa + wb);
                         
-                        float delta = (-c.baumgarte[i] - data.compliance * c.lambda[i]) / (wa + wb + data.compliance / (physics_step * physics_step)) * (wa + wb);
+                        float delta = (-c.baumgarte[i] - compliance * c.lambda[i]) / (wa + wb + compliance / (physics_step * physics_step)) * (wa + wb);
                         
                         float L = c.lambda[i] + delta;
                         delta = L - c.lambda[i];
@@ -1684,12 +1692,12 @@ void Physics_system::position_solve() {
 }
 
 void Physics_system::velocity_solve(std::vector<Collision_constraint>& collisions) {
-    int iterations = 12;
+    int iterations = 6;
 
     float spring = 0.45f;
-    float softness = 0.025f;
+    float softness = 0.0f;
     float spring_constraint = 0.75f;
-    float softness_constraint = 0.25f;
+    float softness_constraint = 0.0f;
 
     /*
     for(Constraint& data : constraints) {
@@ -2633,31 +2641,23 @@ void Collision_constraint::refresh(col_constraint& c) {
 }
 
 void Constraint::refresh(pos_constraint& c) {
-    if(ca->flag) {
-        vec2 point_a = ta->orientation * c.a + ta->position;
-        c.pa = point_a;
-
-        for(int i = 0; i < c.vs.size(); ++i) c.inertia_a[i] = Physics_system::calculate_inverse_mass(ca, ta, c.vs[i], c.pa - ta->position);
-    }
+    vec2 point_a = ta->orientation * c.a + ta->position;
+    c.pa = point_a;
+    for(int i = 0; i < c.vs.size(); ++i) c.inertia_a[i] = Physics_system::calculate_inverse_mass(ca, ta, c.vs[i], c.pa - ta->position);
 
     if(b != NULL_ENTITY) {
-        if(cb->flag) {
-            vec2 point_b = tb->orientation * c.b + tb->position;
-            c.pb = point_b;
-
-            for(int i = 0; i < c.vs.size(); ++i) c.inertia_b[i] = Physics_system::calculate_inverse_mass(cb, tb, c.vs[i], c.pb - tb->position);
-        }
+        vec2 point_b = tb->orientation * c.b + tb->position;
+        c.pb = point_b;
+        for(int i = 0; i < c.vs.size(); ++i) c.inertia_b[i] = Physics_system::calculate_inverse_mass(cb, tb, c.vs[i], c.pb - tb->position);
     }
 
-    if((b == NULL_ENTITY) ? ca->flag : (ca->flag || cb->flag)) {
-        for(int i = 0; i < c.vs.size(); ++i) {
-            vec2 diff = c.pa - c.pb;
-            float dd = dot(diff, c.vs[i]);
-            c.baumgarte[i] = dd;
+    for(int i = 0; i < c.vs.size(); ++i) {
+        vec2 diff = c.pa - c.pb;
+        float dd = dot(diff, c.vs[i]);
+        c.baumgarte[i] = dd;
 
-            ca->flag = false;
-            if(b != NULL_ENTITY) cb->flag = false;
-        }
+        ca->flag = false;
+        if(b != NULL_ENTITY) cb->flag = false;
     }
 }
 
