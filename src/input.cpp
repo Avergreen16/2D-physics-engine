@@ -523,7 +523,7 @@ void Input_system::call() {
                     
                     if(key_map[GLFW_KEY_LEFT_ALT]) {
                         mat2 orientation = identity<mat2>();
-                        float floor = 64;
+                        float floor = 16;
                         vec2 size = vec2(1.0f, 1.0f);
 
                         float elev = 0;

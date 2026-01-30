@@ -37,7 +37,7 @@ void create_text_file() {
         values.push_back(0x20);
         values.push_back(0x06);
         
-        uint16_t num_glyphs = (0x7E - 0x20) + (0x85 - 0x80);
+        uint16_t num_glyphs = (0x7E - 0x20) + (0x85 - 0x7F);
         uint8_t* ptr = (uint8_t*)&num_glyphs;
         values.push_back(ptr[0]);
         values.push_back(ptr[1]);
@@ -279,7 +279,7 @@ void LDLT() {
 
 int main() {
     //LDLT();
-    //create_text_file();
+    create_text_file();
     
     if(glfwInit() == GLFW_FALSE) {
         std::cout << "ERROR: GLFW failed to load.\n";
