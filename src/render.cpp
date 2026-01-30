@@ -50,7 +50,7 @@ void create_mesh(Mesh& m, std::vector<vec2> v, vec2 radius, bool create_interior
                     vec2 vc = {cos(j), sin(j)};
                     vc *= radius;
                     vc = v0 + vc;
-
+                    
                     vv.push_back(vc);
                 }
             } else {
@@ -126,15 +126,36 @@ void create_mesh(Mesh& m, std::vector<vec2> v, vec2 radius, bool create_interior
         }
     }
 
+    float min_dist = FLT_MAX;
     std::vector<Object_vertex> vvv;
     for(int i = 0 ; i < vv.size(); ++i) {
+        vec2 v0 = vv[i];
+        vec2 v1 = vv[(i + 1) % vv.size()];
+
+        vec2 origin_v = -v0;
+        float len = length(v1 - v0);
+        vec2 dir = (v1 - v0) / len;
+        float f = dot(dir, origin_v);
+        f = clamp(f, 0.0f, len);
+        vec2 closest_point = f * dir + v0;
+
+        min_dist = min(length(closest_point), min_dist);
+
+
+
         Object_vertex ov;
-        ov.v = vec3(vv[i], 0.5);
+        ov.v = vec3(v0, 0.5);
         vvv.push_back(ov);
 
-        ov.v = vec3(vv[(i + 1) % vv.size()], 0.5);
+        ov.v = vec3(v1, 0.5);
         vvv.push_back(ov);
     }
+    
+    Object_vertex ov;
+    ov.v = vec3(0.0f, 0.0f, 0.5);
+    vvv.push_back(ov);
+    ov.v = vec3(vec2(0.0f, 0.75f) * min_dist, 0.5);
+    vvv.push_back(ov);
 
     m.v_lines->vertex_buffer_data(vvv.data(), vvv.size(), sizeof(Object_vertex), GL_STATIC_DRAW);
     m.v_lines->add_vertex_attribute(0, 3, GL_FLOAT, false, sizeof(float) * 3, 0);

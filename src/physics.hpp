@@ -244,7 +244,7 @@ struct col_constraint {
     float inertiaTa = 0.0f;
     float inertiaTb = 0.0f;
 
-    float normal_lambda = 0.0f;
+    float normal_force = 0.0f;
 
     float baumgarte;
 };
@@ -277,6 +277,7 @@ struct pos_constraint {
     std::vector<float> inertia_a;
     std::vector<float> inertia_b;
     std::vector<float> C;
+    std::vector<float> lambda;
     
     float compliance = 0.0001f;
 
@@ -369,7 +370,7 @@ struct input_data {
 };
 
 struct Physics_system : System {
-    float physics_step = 0.005f;
+    float physics_step = 1.0f / 60.0f;
     float physics_time = 0.0f;
     uint32_t max_frames = 1;
     uint32_t temporal_iterations = 1;

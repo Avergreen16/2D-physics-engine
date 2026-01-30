@@ -1167,7 +1167,7 @@ void Physics_system::physics_loop() {
             }
 
             if(ca.allow_gravity) {
-                vec2 g = get_gravity(ta.position) * -2.5f;
+                vec2 g = get_gravity(ta.position) * -20.0f;
 
                 ca.velocity += g * physics_step;
             }
@@ -1365,7 +1365,7 @@ void Physics_system::physics_loop() {
 
     //
     position_solve(collision_constraints);
-    friction_solve(collision_constraints);
+    //friction_solve(collision_constraints);
     
     // compute velocities
     for(uint32_t entity : collectors[0].entities) {
@@ -1542,8 +1542,6 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
         
         for(col_constraint& cc : data.constraints) {
             cc.lambdaN = 0.0f;
-            cc.lambdaT = 0.0f;
-            cc.normal_force = 0.0f;
         }
     }
 
@@ -1570,17 +1568,16 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
                     vec2 direction = cc.normal;
                     float wa = cc.inertiaNa;
 
-                    float compliance = 0.0001f;
+                    float compliance = 0.000001f;
 
-                    float delta = (-cc.baumgarte - compliance * cc.lambdaN) / (wa + compliance / (physics_step * physics_step)) * wa;
+                    float delta = (-cc.baumgarte - compliance * cc.lambdaN) / (wa + compliance / (physics_step * physics_step));
 
                     float L = cc.lambdaN + delta;
-                    L = clamp(L, 0.0f, FLT_MAX);
+                    L = clamp(L, 0.0f, __FLT_MAX__);
                     delta = L - cc.lambdaN;
                     cc.lambdaN = L;
-                    cc.normal_force += delta / wa;
                     
-                    vec2 delta_a = direction * delta / wa;
+                    vec2 delta_a = direction * delta * wa;
 
                     apply_position(data.ca, data.ta, delta_a, cc.pa - data.ta->position);
                 } else {
@@ -1588,18 +1585,17 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
                     float wa = cc.inertiaNa;
                     float wb = cc.inertiaNb;
 
-                    float compliance = 0.0001f;
+                    float compliance = 0.000001f;
 
-                    float delta = (-cc.baumgarte - compliance * cc.lambdaN) / (wa + wb + compliance / (physics_step * physics_step)) * (wa + wb);
+                    float delta = (-cc.baumgarte - compliance * cc.lambdaN) / (wa + wb + compliance / (physics_step * physics_step));
 
                     float L = cc.lambdaN + delta;
-                    L = clamp(L, 0.0f, FLT_MAX);
+                    L = clamp(L, 0.0f, __FLT_MAX__);
                     delta = L - cc.lambdaN;
                     cc.lambdaN = L;
-                    cc.normal_force += delta / (wa + wb);
 
-                    vec2 delta_a = direction * delta / (wa + wb);
-                    vec2 delta_b = direction * -delta / (wa + wb);
+                    vec2 delta_a = direction * delta * (wa + wb);
+                    vec2 delta_b = direction * -delta * (wa + wb);
 
                     apply_position(data.ca, data.ta, delta_a, cc.pa - data.ta->position);
                     apply_position(data.cb, data.tb, delta_b, cc.pb - data.tb->position);   
@@ -1616,9 +1612,10 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
                         vec2 direction = c.vs[i];
                         float wa = c.inertia_a[i];
                         
-                        float delta = (-c.C[i] - c.compliance * c.lambda[i]) / (wa + c.compliance / (physics_step * physics_step)) * wa;
+                        float delta = (-c.C[i] - c.compliance * c.lambda[i]) / (wa + c.compliance / (physics_step * physics_step));
                         
                         float L = c.lambda[i] + delta;
+                        L = clamp(L, 0.0f, __FLT_MAX__);
                         delta = L - c.lambda[i];
                         c.lambda[i] = L;
 
@@ -1630,14 +1627,15 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
 
                         float a = c.compliance / (physics_step * physics_step);
                         
-                        float delta = (-c.C[i] - c.compliance * c.lambda[i]) / (wa + wb + c.compliance / (physics_step * physics_step)) * (wa + wb);
+                        float delta = (-c.C[i] - c.compliance * c.lambda[i]) / (wa + wb + c.compliance / (physics_step * physics_step));
                         
                         float L = c.lambda[i] + delta;
+                        L = clamp(L, 0.0f, __FLT_MAX__);
                         delta = L - c.lambda[i];
                         c.lambda[i] = L;
 
-                        apply_position(data.ca, data.ta, delta * direction / (wa + wb), c.pa - data.ta->position);
-                        apply_position(data.cb, data.tb, -delta * direction / (wa + wb), c.pb - data.tb->position);   
+                        apply_position(data.ca, data.ta, delta * direction * (wa + wb), c.pa - data.ta->position);
+                        apply_position(data.cb, data.tb, -delta * direction * (wa + wb), c.pb - data.tb->position);   
                     }
                 }
             }
@@ -1686,38 +1684,29 @@ void Physics_system::friction_solve(std::vector<Collision_constraint>& collision
                 float diff = dot(direction, cc.pa - cc.pb);
                 float mu = 1.0f;
 
-                float bounds = abs(cc.normal_force * mu);
+                diff = sign(diff) * max(abs(diff), abs(cc.lambdaN * mu));
 
                 if(cc.d->b == NULL_ENTITY) {
                     float wa = cc.inertiaTa;
 
                     float compliance = 0.00001f;
+                    float a = compliance / (physics_step * physics_step);
 
-                    float delta = (-diff - compliance * cc.lambdaT) / (wa + compliance / (physics_step * physics_step)) * wa;
-                        
-                    float L = cc.lambdaT + delta;
-                    L = clamp(L / wa, -bounds, bounds);
-                    L *= wa;
-                    delta = L - cc.lambdaT;
-                    cc.lambdaT = L;
+                    vec2 delta_a = -1.0f / (wa + a) * direction * diff / (float)(iterations - i);
 
-                    apply_position(data.ca, data.ta, delta * direction / wa, cc.pa - data.ta->position);
+                    apply_position(data.ca, data.ta, delta_a, cc.pa - data.ta->position);
                 } else {
                     float wa = cc.inertiaTa;
                     float wb = cc.inertiaTb;
 
                     float compliance = 0.00001f;
+                    float a = compliance / (physics_step * physics_step);
 
-                    float delta = (-diff - compliance * cc.lambdaT) / (wa + wb + compliance / (physics_step * physics_step)) * (wa + wb);
-                        
-                    float L = cc.lambdaT + delta;
-                    L = clamp(L / (wa + wb), -bounds, bounds);
-                    L *= (wa + wb);
-                    delta = L - cc.lambdaT;
-                    cc.lambdaT = L;
+                    vec2 delta_b = 1.0f / (wa + wb + a) * direction * diff / (float)(iterations - i);
+                    vec2 delta_a = -1.0f / (wa + wb + a) * direction * diff / (float)(iterations - i);
 
-                    apply_position(data.ca, data.ta, delta * direction / (wa + wb), cc.pa - data.ta->position);
-                    apply_position(data.cb, data.tb, -delta * direction / (wa + wb), cc.pb - data.tb->position);   
+                    apply_position(data.ca, data.ta, delta_a, cc.pa - data.ta->position);
+                    apply_position(data.cb, data.tb, delta_b, cc.pb - data.tb->position);   
                 }
             }
         }
