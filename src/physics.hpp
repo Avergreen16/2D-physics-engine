@@ -183,6 +183,8 @@ struct Collider {
 
     bool flag = false;
     bool flag2 = false;
+
+    float angular_delta = 0.0f;
 };
 
 struct Collision_data {
@@ -279,7 +281,7 @@ struct pos_constraint {
     std::vector<float> C;
     std::vector<float> lambda;
     
-    float compliance = 0.0001f;
+    float compliance = 0.00001f;
 
     bool is_hold = false;
 };

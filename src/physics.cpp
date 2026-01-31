@@ -1167,7 +1167,7 @@ void Physics_system::physics_loop() {
             }
 
             if(ca.allow_gravity) {
-                vec2 g = get_gravity(ta.position) * -2.5f;
+                vec2 g = get_gravity(ta.position) * -20.0f;
 
                 ca.velocity += g * physics_step;
             }
@@ -1271,8 +1271,8 @@ void Physics_system::physics_loop() {
                             Mesh& am = ecs.get_component<Mesh>(ci.a);
                             Mesh& bm = ecs.get_component<Mesh>(ci.b);
 
-                            am.color = vec3(1.0f, 1.0f, 0.35f);
-                            bm.color = vec3(1.0f, 1.0f, 0.35f);
+                            am.color = vec3(1.0f, 0.35f, 0.35f);
+                            bm.color = vec3(1.0f, 0.35f, 0.35f);
                             
                             /*
                             if(c.a == 1) {
@@ -1392,7 +1392,9 @@ void Physics_system::physics_loop() {
             //if(delta_pos.x != 0.0f || delta_pos.y != 0.0f || diff != 0.0f) std::cout << delta_pos.x << " " << delta_pos.y << " " << diff << " | ";
 
             ca.velocity += delta_pos / physics_step;
-            ca.angular_velocity += diff / physics_step;
+            ca.angular_velocity += ca.angular_delta / physics_step;
+
+            ca.angular_delta = 0.0f;
         }
     }
 
@@ -1423,14 +1425,14 @@ void Physics_system::physics_loop() {
             Collider& collider = ecs.get_component<Collider>(a.a);
             if(!collider.is_static) {
                 Mesh& mesh = ecs.get_component<Mesh>(a.a);
-                mesh.color = vec3(0.35f, 1.0f, 1.0f); 
+                mesh.color = vec3(1.0f, 0.35f, 0.35f); 
             }
         }
         if(a.b != NULL_ENTITY) {
             Collider& collider = ecs.get_component<Collider>(a.b);
             if(!collider.is_static) {
                 Mesh& mesh = ecs.get_component<Mesh>(a.b);
-                mesh.color = vec3(0.35f, 1.0f, 1.0f); 
+                mesh.color = vec3(1.0f, 0.35f, 0.35f); 
             }
         }
     }
@@ -1492,8 +1494,7 @@ void Physics_system::apply_position(Collider* c, Transform* t, vec2 delta, vec2 
     float delta_rotation = cross(vec3(point, 0.0f), vec3(delta, 0.0f)).z / c->inertia;
     t->orientation = mat2(rotate(delta_rotation, vec3(0.0f, 0.0f, 1.0f))) * t->orientation;
 
-    c->flag = true;
-    c->flag2 = true;
+    c->angular_delta += delta_rotation;
 }
 
 void Constraint_distance::get_points() {
@@ -1570,7 +1571,8 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
                     vec2 direction = cc.normal;
                     float wa = cc.inertiaNa;
 
-                    float compliance = 0.0001f;
+                    float compliance = 0.00001f;
+                    compliance = compliance * wa;
 
                     float delta = (-cc.baumgarte - compliance * cc.lambdaN) / (wa + compliance / (physics_step * physics_step)) * wa;
 
@@ -1588,7 +1590,8 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
                     float wa = cc.inertiaNa;
                     float wb = cc.inertiaNb;
 
-                    float compliance = 0.0001f;
+                    float compliance = 0.00001f;
+                    compliance = compliance * (wa + wb);
 
                     float delta = (-cc.baumgarte - compliance * cc.lambdaN) / (wa + wb + compliance / (physics_step * physics_step)) * (wa + wb);
 
@@ -1616,7 +1619,9 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
                         vec2 direction = c.vs[i];
                         float wa = c.inertia_a[i];
                         
-                        float delta = (-c.C[i] - c.compliance * c.lambda[i]) / (wa + c.compliance / (physics_step * physics_step)) * wa;
+                        float compliance = c.compliance * wa;
+                        
+                        float delta = (-c.C[i] - compliance * c.lambda[i]) / (wa + compliance / (physics_step * physics_step)) * wa;
                         
                         float L = c.lambda[i] + delta;
                         delta = L - c.lambda[i];
@@ -1628,9 +1633,9 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
                         float wa = c.inertia_a[i];
                         float wb = c.inertia_b[i];
 
-                        float a = c.compliance / (physics_step * physics_step);
+                        float compliance = c.compliance * (wa + wb);
                         
-                        float delta = (-c.C[i] - c.compliance * c.lambda[i]) / (wa + wb + c.compliance / (physics_step * physics_step)) * (wa + wb);
+                        float delta = (-c.C[i] - compliance * c.lambda[i]) / (wa + wb + compliance / (physics_step * physics_step)) * (wa + wb);
                         
                         float L = c.lambda[i] + delta;
                         delta = L - c.lambda[i];
@@ -1692,6 +1697,7 @@ void Physics_system::friction_solve(std::vector<Collision_constraint>& collision
                     float wa = cc.inertiaTa;
 
                     float compliance = 0.00001f;
+                    compliance *= wa;
 
                     float delta = (-diff - compliance * cc.lambdaT) / (wa + compliance / (physics_step * physics_step)) * wa;
                         
@@ -1707,6 +1713,7 @@ void Physics_system::friction_solve(std::vector<Collision_constraint>& collision
                     float wb = cc.inertiaTb;
 
                     float compliance = 0.00001f;
+                    compliance *= (wa + wb);
 
                     float delta = (-diff - compliance * cc.lambdaT) / (wa + wb + compliance / (physics_step * physics_step)) * (wa + wb);
                         

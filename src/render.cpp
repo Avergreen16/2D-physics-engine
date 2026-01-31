@@ -463,7 +463,7 @@ void Render_system::call() {
     for(uint32_t camera : collectors[0].entities) {
         Camera& camera_camera = ecs.get_component<Camera>(camera);
 
-        render_cloud(camera);
+        render_background(camera);
 
         for(uint32_t entity : collectors[1].entities) {
             render_object(entity, camera);
@@ -616,6 +616,41 @@ void Render_system::render_cursor() {
 
     glUniformMatrix3fv(0, 1, false, &view_mat[0][0]);
     glUniformMatrix3fv(1, 1, false, &trans_mat[0][0]);
+
+    vv->draw_vertices(GL_TRIANGLES);
+}
+
+void Render_system::render_background(uint32_t camera) {
+    std::vector<vec2> square = {
+        vec2(-1.0f, -1.0f),
+        vec2(1.0f, -1.0f),
+        vec2(1.0f, 1.0f),
+        vec2(-1.0f, -1.0f),
+        vec2(1.0f, 1.0f),
+        vec2(-1.0f, 1.0f)
+    };
+    
+    vv->vertex_buffer_data(square.data(), square.size(), sizeof(vec2), GL_STREAM_DRAW);
+    vv->add_vertex_attribute(0, 2, GL_FLOAT, false, sizeof(vec2), 0);
+
+    Transform& ct = ecs.get_component<Transform>(camera);
+    Camera& cc = ecs.get_component<Camera>(camera);
+
+    Input_system& is = ecs.get_system<Input_system>();
+
+    mat4 inv_rot = mat4(transpose(ct.orientation));
+
+    mat4 view = inv_rot * scale(vec3(cc.scale, cc.scale, 1.0f)) * translate(vec3(-ct.position, 0.0f));
+
+    float aspect_ratio = float(core.window.screen_size.y) / core.window.screen_size.x;
+    mat4 proj = scale(vec3(1.0f, 1.0f / aspect_ratio, 1.0f));
+
+    core.shaders["background"]->use();
+    
+    vv->bind();
+
+    glUniformMatrix4fv(0, 1, false, &view[0][0]);
+    glUniformMatrix4fv(1, 1, false, &proj[0][0]);
 
     vv->draw_vertices(GL_TRIANGLES);
 }
