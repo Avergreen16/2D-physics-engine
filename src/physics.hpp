@@ -184,7 +184,8 @@ struct Collider {
     bool flag = false;
     bool flag2 = false;
 
-    float angular_delta = 0.0f;
+    float rot_delta = 0.0f;
+    vec2 pos_delta = vec2(0.0f);
 };
 
 struct Collision_data {
@@ -372,10 +373,12 @@ struct input_data {
 };
 
 struct Physics_system : System {
-    float physics_step = 1.0f / 180.0f;
+    float physics_step = 1.0f / 60.0f;
     float physics_time = 0.0f;
     uint32_t max_frames = 1;
-    uint32_t temporal_iterations = 1;
+    uint32_t iterations = 4;
+    uint32_t substeps = 4;
+    float sub_dt = physics_step / substeps;
 
     std::unordered_map<uint64_t, std::vector<Collision_data>> collision_table;
 
