@@ -379,6 +379,7 @@ struct Physics_system : System {
     uint32_t iterations = 4;
     uint32_t substeps = 4;
     float sub_dt = physics_step / substeps;
+    float contact_sep = 0.025f;
 
     std::unordered_map<uint64_t, std::vector<Collision_data>> collision_table;
 
@@ -407,7 +408,6 @@ struct Physics_system : System {
     void insert_collision(Collision_data c);
 
     void position_solve(std::vector<Collision_constraint>& constraints);
-    void friction_solve(std::vector<Collision_constraint>& constraints);
     void velocity_solve(std::vector<Collision_constraint>& constraints);
 
     static vec2 calculate_inertia(Collider& c);

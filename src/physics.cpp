@@ -1352,7 +1352,6 @@ void Physics_system::physics_loop() {
         }
         
         position_solve(collision_constraints);
-        friction_solve(collision_constraints);
         
         // compute velocities
         for(uint32_t entity : collectors[0].entities) {
@@ -1368,8 +1367,6 @@ void Physics_system::physics_loop() {
             }
         }
     }
-    
-    //velocity_solve(collision_constraints);
 
     for(Collision_constraint& c : collision_constraints) {
         for(col_constraint& cc : c.constraints) {
@@ -1378,7 +1375,7 @@ void Physics_system::physics_loop() {
             float dot_normal = dot(distance, cc.d->normal);
             float v = length(distance - cc.d->normal * dot_normal);
             
-            if(dot_normal > 0.03 || v > 0.03) {
+            if(dot_normal > contact_sep || v > contact_sep) {
                 uint64_t key = uint64_t(c.a) | (uint64_t(c.b) << 32);
                 
                 auto& d = collision_table[key];
@@ -1500,6 +1497,8 @@ void Constraint_distance::get_values() {
 }
 
 void Physics_system::position_solve(std::vector<Collision_constraint>& collisions) {
+    float friction_compliance = 0.000625;
+
     for(Collision_constraint& data : collisions) {
         data.ca = &ecs.get_component<Collider>(data.a);
         data.ca->flag = true;
@@ -1515,7 +1514,7 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
         
         for(col_constraint& cc : data.constraints) {
             cc.lambdaN = cc.d->prev_lambdaN;
-            cc.lambdaT = cc.d->prev_lambdaT;
+            cc.lambdaT = 0.0f;
             //cc.lambdaN = 0.0f;
             //cc.lambdaT = 0.0f;
             cc.normal_force = 0.0f;
@@ -1582,6 +1581,49 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
 
                     apply_position(data.ca, data.ta, delta_a, cc.pa - data.ta->position);
                     apply_position(data.cb, data.tb, delta_b, cc.pb - data.tb->position);   
+                }
+
+                // friction
+                data.refresh(cc);
+
+                vec2 direction = vec2(cc.d->normal.y, -cc.d->normal.x);
+                float diff = dot(direction, cc.pa - cc.pb);
+                float mu = 1.0f;
+
+                float bounds = abs(cc.normal_force * mu);
+
+                if(cc.d->b == NULL_ENTITY) {
+                    float wa = cc.inertiaTa;
+
+                    float compliance = friction_compliance;
+                    compliance *= wa;
+
+                    float delta = (-diff - compliance * cc.lambdaT) / (wa + compliance / (sub_dt * sub_dt)) * wa;
+                        
+                    float L = cc.lambdaT + delta;
+                    L = clamp(L / wa, -bounds, bounds);
+                    L *= wa;
+                    delta = L - cc.lambdaT;
+                    cc.lambdaT = L;
+
+                    apply_position(data.ca, data.ta, delta * direction / wa, cc.pa - data.ta->position);
+                } else {
+                    float wa = cc.inertiaTa;
+                    float wb = cc.inertiaTb;
+
+                    float compliance = friction_compliance;
+                    compliance *= (wa + wb);
+
+                    float delta = (-diff - compliance * cc.lambdaT) / (wa + wb + compliance / (sub_dt * sub_dt)) * (wa + wb);
+                        
+                    float L = cc.lambdaT + delta;
+                    L = clamp(L / (wa + wb), -bounds, bounds);
+                    L *= (wa + wb);
+                    delta = L - cc.lambdaT;
+                    cc.lambdaT = L;
+
+                    apply_position(data.ca, data.ta, delta * direction / (wa + wb), cc.pa - data.ta->position);
+                    apply_position(data.cb, data.tb, -delta * direction / (wa + wb), cc.pb - data.tb->position);   
                 }
             }
         }
@@ -1651,56 +1693,6 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
         for(col_constraint& cc : c.constraints) {
             cc.d->prev_lambdaN = cc.lambdaN;
             cc.d->prev_lambdaT = cc.lambdaT;
-        }
-    }
-}
-
-void Physics_system::friction_solve(std::vector<Collision_constraint>& collisions) {
-    for(int i = 0; i < iterations; ++i) {
-        for(Collision_constraint& data : collisions) {
-            for(col_constraint& cc : data.constraints) {
-                data.refresh(cc);
-
-                vec2 direction = vec2(cc.d->normal.y, -cc.d->normal.x);
-                float diff = dot(direction, cc.pa - cc.pb);
-                float mu = 1.0f;
-
-                float bounds = abs(cc.normal_force * mu);
-
-                if(cc.d->b == NULL_ENTITY) {
-                    float wa = cc.inertiaTa;
-
-                    float compliance = 0.00025f;
-                    compliance *= wa;
-
-                    float delta = (-diff - compliance * cc.lambdaT) / (wa + compliance / (sub_dt * sub_dt)) * wa;
-                        
-                    float L = cc.lambdaT + delta;
-                    L = clamp(L / wa, -bounds, bounds);
-                    L *= wa;
-                    delta = L - cc.lambdaT;
-                    cc.lambdaT = L;
-
-                    apply_position(data.ca, data.ta, delta * direction / wa, cc.pa - data.ta->position);
-                } else {
-                    float wa = cc.inertiaTa;
-                    float wb = cc.inertiaTb;
-
-                    float compliance = 0.00025f;
-                    compliance *= (wa + wb);
-
-                    float delta = (-diff - compliance * cc.lambdaT) / (wa + wb + compliance / (sub_dt * sub_dt)) * (wa + wb);
-                        
-                    float L = cc.lambdaT + delta;
-                    L = clamp(L / (wa + wb), -bounds, bounds);
-                    L *= (wa + wb);
-                    delta = L - cc.lambdaT;
-                    cc.lambdaT = L;
-
-                    apply_position(data.ca, data.ta, delta * direction / (wa + wb), cc.pa - data.ta->position);
-                    apply_position(data.cb, data.tb, -delta * direction / (wa + wb), cc.pb - data.tb->position);   
-                }
-            }
         }
     }
 }

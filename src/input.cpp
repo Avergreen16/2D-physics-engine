@@ -167,10 +167,10 @@ void Input_system::call() {
 
                     uint32_t num_links = 12;
 
-                    float scale = 0.25f;
+                    float scale = 0.5f;
 
                     float sep = 0.025f * scale;
-                    vec2 size = vec2(0.25f, 1.0f) * scale;
+                    vec2 size = vec2(0.33f, 1.0f) * scale;
 
                     Transform t;
                     t.position = world_cursor_pos;
@@ -549,7 +549,7 @@ void Input_system::call() {
 
                         mat2 orientation = rotate(core.random(), vec3(0.0f, 0.0f, 1.0f));
 
-                        float s = 0.125f;
+                        float s = 0.25f;
 
                         uint32_t square_size = 8;
                         float separation = s * 0.1f;
@@ -652,6 +652,12 @@ void Input_system::call() {
             --arrow_delta;
         } else if(key == GLFW_KEY_RIGHT) {
             ++arrow_delta;
+        } else if(key == GLFW_KEY_EQUAL) {
+            if(debug_physics) {
+                Physics_system& ps = ecs.get_system<Physics_system>();
+
+                ps.physics_loop();
+            }
         }
     }
 
