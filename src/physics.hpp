@@ -405,6 +405,7 @@ struct Physics_system : System {
 
     void position_solve(std::vector<Collision_constraint>& constraints);
     void friction_solve(std::vector<Collision_constraint>& constraints);
+    void velocity_solve(std::vector<Collision_constraint>& constraints);
 
     static vec2 calculate_inertia(Collider& c);
 

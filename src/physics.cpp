@@ -1397,6 +1397,8 @@ void Physics_system::physics_loop() {
             ca.angular_delta = 0.0f;
         }
     }
+    
+    //velocity_solve(collision_constraints);
 
     for(Collision_constraint& c : collision_constraints) {
         for(col_constraint& cc : c.constraints) {
@@ -1542,8 +1544,10 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
         data.get_value();
         
         for(col_constraint& cc : data.constraints) {
-            cc.lambdaN = 0.0f;
-            cc.lambdaT = 0.0f;
+            cc.lambdaN = cc.d->prev_lambdaN;
+            cc.lambdaT = cc.d->prev_lambdaT;
+            //cc.lambdaN = 0.0f;
+            //cc.lambdaT = 0.0f;
             cc.normal_force = 0.0f;
         }
     }
@@ -1730,6 +1734,68 @@ void Physics_system::friction_solve(std::vector<Collision_constraint>& collision
         }
     }
 }
+
+void Physics_system::velocity_solve(std::vector<Collision_constraint>& collisions) {
+    int iterations = 6;
+
+    for(Collision_constraint& data : collisions) {
+        data.ca = &ecs.get_component<Collider>(data.a);
+        data.ta = &ecs.get_component<Transform>(data.a);
+        if(data.b != NULL_ENTITY) {
+            data.cb = &ecs.get_component<Collider>(data.b);
+            data.tb = &ecs.get_component<Transform>(data.b);
+        }
+
+        data.get_points();
+        data.get_value();
+
+        for(col_constraint& c : data.constraints) {
+            c.lambdaT = 0.0f;
+        }
+    }
+
+    for(int i = 0; i < iterations; ++i) {
+        for(Collision_constraint& data : collisions) {
+            for(col_constraint& cc : data.constraints) {
+                float mu = 0.9f;
+
+                if(cc.d->b == NULL_ENTITY) {
+                    // friction
+                    float max_friction = abs(mu * cc.normal_force);
+
+                    vec2 velocity = calculate_point_velocity(data.ca, cc.pa - data.ta->position);
+                    float tangent_velocity = dot(velocity, cc.tangent);
+
+                    float new_lambdaT = cc.lambdaT - tangent_velocity / cc.inertiaT;
+                    new_lambdaT = clamp(new_lambdaT, -max_friction, max_friction);
+                    float L = new_lambdaT - cc.lambdaT;
+                    cc.lambdaT = new_lambdaT;
+
+                    vec2 friction_impulse = cc.tangent * L;
+
+                    apply_impulse(data.ca, friction_impulse, cc.pa - data.ta->position);
+                } else {
+                    // friction
+                    float max_friction = abs(mu * cc.normal_force);
+
+                    vec2 velocity = calculate_point_velocity(data.ca, cc.pa - data.ta->position) - calculate_point_velocity(data.cb, cc.pb - data.tb->position);
+                    float tangent_velocity = dot(velocity, cc.tangent);
+
+                    float new_lambdaT = cc.lambdaT - tangent_velocity / cc.inertiaT;
+                    new_lambdaT = clamp(new_lambdaT, -max_friction, max_friction);
+                    float L = new_lambdaT - cc.lambdaT;
+                    cc.lambdaT = new_lambdaT;
+
+                    vec2 friction_impulse = cc.tangent * L;
+
+                    apply_impulse(data.ca, friction_impulse, cc.pa - data.ta->position);
+                    apply_impulse(data.cb, -friction_impulse, cc.pb - data.tb->position);
+                }
+            }
+        }
+    }
+}
+
 
 vec2 angular_to_linear(vec2 pos, float angular_velocity) {
     return vec2(pos.y, -pos.x) * angular_velocity;
