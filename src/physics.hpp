@@ -372,7 +372,7 @@ struct input_data {
 };
 
 struct Physics_system : System {
-    float physics_step = 1.0f / 60.0f;
+    float physics_step = 1.0f / 180.0f;
     float physics_time = 0.0f;
     uint32_t max_frames = 1;
     uint32_t temporal_iterations = 1;

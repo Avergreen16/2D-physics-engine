@@ -1376,20 +1376,6 @@ void Physics_system::physics_loop() {
 
         if(!ca.is_static) {
             vec2 delta_pos = ta.position - c.position;
-            vec2 r0 = c.orientation * vec2(1, 0);
-            vec2 r1 = ta.orientation * vec2(1, 0);
-            float rot0 = atan2(r0.y, r0.x);
-            float rot1 = atan2(r1.y, r1.x);
-
-            float diff = rot1 - rot0;
-
-            if(diff > 0.0f) {
-                while(diff > M_PI) diff -= M_PI * 2;
-            } else {
-                while(diff < -M_PI) diff += M_PI * 2;
-            }
-
-            //if(delta_pos.x != 0.0f || delta_pos.y != 0.0f || diff != 0.0f) std::cout << delta_pos.x << " " << delta_pos.y << " " << diff << " | ";
 
             ca.velocity += delta_pos / physics_step;
             ca.angular_velocity += ca.angular_delta / physics_step;
@@ -1575,10 +1561,11 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
                     vec2 direction = cc.normal;
                     float wa = cc.inertiaNa;
 
-                    float compliance = 0.00001f;
+                    float compliance = 0.000001f;
                     compliance = compliance * wa;
 
                     float delta = (-cc.baumgarte - compliance * cc.lambdaN) / (wa + compliance / (physics_step * physics_step)) * wa;
+                    delta = clamp(delta, -0.025f, 0.025f);
 
                     float L = cc.lambdaN + delta;
                     L = clamp(L, 0.0f, FLT_MAX);
@@ -1594,10 +1581,11 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
                     float wa = cc.inertiaNa;
                     float wb = cc.inertiaNb;
 
-                    float compliance = 0.00001f;
+                    float compliance = 0.000001f;
                     compliance = compliance * (wa + wb);
 
                     float delta = (-cc.baumgarte - compliance * cc.lambdaN) / (wa + wb + compliance / (physics_step * physics_step)) * (wa + wb);
+                    delta = clamp(delta, -0.025f, 0.025f);
 
                     float L = cc.lambdaN + delta;
                     L = clamp(L, 0.0f, FLT_MAX);
@@ -1700,7 +1688,7 @@ void Physics_system::friction_solve(std::vector<Collision_constraint>& collision
                 if(cc.d->b == NULL_ENTITY) {
                     float wa = cc.inertiaTa;
 
-                    float compliance = 0.00001f;
+                    float compliance = 0.001f;
                     compliance *= wa;
 
                     float delta = (-diff - compliance * cc.lambdaT) / (wa + compliance / (physics_step * physics_step)) * wa;
@@ -1716,7 +1704,7 @@ void Physics_system::friction_solve(std::vector<Collision_constraint>& collision
                     float wa = cc.inertiaTa;
                     float wb = cc.inertiaTb;
 
-                    float compliance = 0.00001f;
+                    float compliance = 0.001f;
                     compliance *= (wa + wb);
 
                     float delta = (-diff - compliance * cc.lambdaT) / (wa + wb + compliance / (physics_step * physics_step)) * (wa + wb);

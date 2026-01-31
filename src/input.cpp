@@ -526,8 +526,8 @@ void Input_system::call() {
                     
                     if(key_map[GLFW_KEY_LEFT_ALT]) {
                         mat2 orientation = identity<mat2>();
-                        float floor = 64;
-                        vec2 size = vec2(1.0f, 1.0f);
+                        float floor = 16;
+                        vec2 size = vec2(0.5f, 0.5f);
 
                         float elev = 0;
                         uint32_t stack_size = 32;
@@ -549,7 +549,7 @@ void Input_system::call() {
 
                         mat2 orientation = rotate(core.random(), vec3(0.0f, 0.0f, 1.0f));
 
-                        float s = 0.5f;
+                        float s = 0.25f;
 
                         uint32_t square_size = 8;
                         float separation = s * 0.1f;
