@@ -1520,6 +1520,7 @@ void Constraint_distance::get_values() {
 
 void Physics_system::position_solve(std::vector<Collision_constraint>& collisions) {
     float friction_compliance = 0.0002;
+    float collision_compliance = 0.00001;
 
     for(Collision_constraint& data : collisions) {
         data.ca = &ecs.get_component<Collider>(data.a);
@@ -1537,8 +1538,7 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
         for(col_constraint& cc : data.constraints) {
             cc.lambdaN = cc.d->prev_lambdaN;
             cc.lambdaT = 0.0f;
-            //cc.lambdaN = 0.0f;
-            //cc.lambdaT = 0.0f;
+            cc.prev_lambdaT = cc.d->prev_lambdaT;
             cc.normal_force = 0.0f;
         }
     }
@@ -1566,7 +1566,7 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
                     vec2 direction = cc.normal;
                     float wa = cc.inertiaNa;
 
-                    float compliance = 0.000001f;
+                    float compliance = collision_compliance;
                     compliance = compliance * wa;
 
                     float delta = (-cc.baumgarte - compliance * cc.lambdaN) / (wa + compliance / (sub_dt * sub_dt)) * wa;
@@ -1586,7 +1586,7 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
                     float wa = cc.inertiaNa;
                     float wb = cc.inertiaNb;
 
-                    float compliance = 0.000001f;
+                    float compliance = collision_compliance;
                     compliance = compliance * (wa + wb);
 
                     float delta = (-cc.baumgarte - compliance * cc.lambdaN) / (wa + wb + compliance / (sub_dt * sub_dt)) * (wa + wb);
@@ -1609,10 +1609,10 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
                 data.refresh(cc);
 
                 vec2 direction = vec2(cc.d->normal.y, -cc.d->normal.x);
-                float diff = dot(direction, cc.pa - cc.pb);
+                float diff = dot(direction, cc.pa - cc.pb) - cc.prev_lambdaT;
                 float mu = 1.0f;
 
-                float bounds = abs(cc.normal_force * mu);
+                float bounds = max(cc.normal_force, 0.0f) * mu;
 
                 if(cc.d->b == NULL_ENTITY) {
                     float wa = cc.inertiaTa;

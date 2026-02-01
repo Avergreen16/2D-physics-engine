@@ -239,14 +239,15 @@ struct col_constraint {
     float lambdaN = 0.0f;
     float lambdaT = 0.0f;
 
-    float inertiaN;
-    float inertiaT;
-
     float inertiaNa = 0.0f;
     float inertiaNb = 0.0f;
+    float inertiaN;
+
     float inertiaTa = 0.0f;
     float inertiaTb = 0.0f;
+    float inertiaT;
 
+    float prev_lambdaT = 0.0f;
     float normal_force = 0.0f;
 
     float baumgarte;
@@ -374,7 +375,7 @@ struct input_data {
 
 /*
 0.0625 delta squares: 
-float physics_step = 1.0f / 180.0f;
+float fps = 180.0f;
 uint32_t iterations = 4;
 uint32_t substeps = 4;
 float contact_sep = 0.02f;
@@ -382,9 +383,9 @@ float contact_sep = 0.02f;
 
 struct Physics_system : System {
     // parameters
-    float fps = 60;
+    float fps = 60.0f;
     uint32_t iterations = 4;
-    uint32_t substeps = 2;
+    uint32_t substeps = 4;
     float contact_sep = 0.02f;
     
     float physics_step = 1.0f / fps;

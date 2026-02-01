@@ -170,7 +170,7 @@ void Input_system::call() {
                     float scale = 0.5f;
 
                     float sep = 0.025f * scale;
-                    vec2 size = vec2(0.33f, 1.0f) * scale;
+                    vec2 size = vec2(0.25f, 1.0f) * scale;
 
                     Transform t;
                     t.position = world_cursor_pos;
@@ -526,7 +526,7 @@ void Input_system::call() {
                     
                     if(key_map[GLFW_KEY_LEFT_ALT]) {
                         mat2 orientation = identity<mat2>();
-                        float floor = 16;
+                        float floor = 8;
                         vec2 size = vec2(0.5f, 0.5f);
 
                         float elev = 0;
@@ -552,7 +552,7 @@ void Input_system::call() {
                         float s = 0.125f;
 
                         uint32_t square_size = 8;
-                        float separation = s * 0.1f;
+                        float separation = s * 0.2f;
                         vec2 max_size = vec2(s);
                         vec2 min_size = vec2(s);
 
