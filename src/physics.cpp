@@ -1001,7 +1001,7 @@ void Physics_system::insert_collision(Collision_data c) {
         vec2 diff_a = d.pa - c.pa;
         vec2 diff_b = d.pb - c.pb;
 
-        if(length(diff_a) < contact_sep || length(diff_b) < contact_sep) return;
+        if(length(diff_a) < contact_sep && length(diff_b) < contact_sep) return;
     }
 
     v.push_back(c);
@@ -1146,6 +1146,26 @@ void Physics_system::physics_loop() {
     Render_system& render_system = ecs.get_system<Render_system>();
     render_system.marker_points.clear();
     render_system.normals.clear();
+
+    for(uint32_t entity : collectors[0].entities) {
+        Transform& ta = ecs.get_component<Transform>(entity);
+        Collider& ca = ecs.get_component<Collider>(entity);
+
+        if(!ca.is_static) {
+            ta.position += ca.velocity * sub_dt;
+
+            if(ca.allow_rotation) {
+                mat2 rotation = rotate(ca.angular_velocity * sub_dt, vec3(0, 0, 1));
+                ta.orientation = rotation * ta.orientation;
+            }
+
+            if(ca.allow_gravity) {
+                vec2 g = get_gravity(ta.position) * -20.0f;
+
+                ca.velocity += g * sub_dt;
+            }
+        }
+    }
 
     std::vector<input_data> input;
     for(uint32_t a : collectors[0].entities) {
@@ -1331,22 +1351,24 @@ void Physics_system::physics_loop() {
 
     //
     for(int i = 0; i < substeps; ++i) {
-        for(uint32_t entity : collectors[0].entities) {
-            Transform& ta = ecs.get_component<Transform>(entity);
-            Collider& ca = ecs.get_component<Collider>(entity);
+        if(i != 0) {
+            for(uint32_t entity : collectors[0].entities) {
+                Transform& ta = ecs.get_component<Transform>(entity);
+                Collider& ca = ecs.get_component<Collider>(entity);
 
-            if(!ca.is_static) {
-                ta.position += ca.velocity * sub_dt;
+                if(!ca.is_static) {
+                    ta.position += ca.velocity * sub_dt;
 
-                if(ca.allow_rotation) {
-                    mat2 rotation = rotate(ca.angular_velocity * sub_dt, vec3(0, 0, 1));
-                    ta.orientation = rotation * ta.orientation;
-                }
+                    if(ca.allow_rotation) {
+                        mat2 rotation = rotate(ca.angular_velocity * sub_dt, vec3(0, 0, 1));
+                        ta.orientation = rotation * ta.orientation;
+                    }
 
-                if(ca.allow_gravity) {
-                    vec2 g = get_gravity(ta.position) * -20.0f;
+                    if(ca.allow_gravity) {
+                        vec2 g = get_gravity(ta.position) * -20.0f;
 
-                    ca.velocity += g * sub_dt;
+                        ca.velocity += g * sub_dt;
+                    }
                 }
             }
         }
@@ -1497,7 +1519,7 @@ void Constraint_distance::get_values() {
 }
 
 void Physics_system::position_solve(std::vector<Collision_constraint>& collisions) {
-    float friction_compliance = 0.0001;
+    float friction_compliance = 0.0002;
 
     for(Collision_constraint& data : collisions) {
         data.ca = &ecs.get_component<Collider>(data.a);
