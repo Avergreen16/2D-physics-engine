@@ -186,6 +186,10 @@ struct Collider {
 
     float rot_delta = 0.0f;
     vec2 pos_delta = vec2(0.0f);
+    
+    uint32_t counter = 0;
+    bool is_soft = false;
+    float timer = 0.0f;
 };
 
 struct Collision_data {
@@ -383,10 +387,18 @@ float contact_sep = 0.02f;
 
 struct Physics_system : System {
     // parameters
-    float fps = 60.0f;
+    float fps = 240.0f;
     uint32_t iterations = 4;
     uint32_t substeps = 4;
-    float contact_sep = 0.02f;
+    float contact_sep = 0.005f;
+    float penetration_threshold = FLT_MAX;
+    uint32_t iteration_threshold = 3;
+    float softness_duration = 1.0f;
+    /*
+    float penetration_threshold = 0.01f;
+    uint32_t iteration_threshold = 3;
+    float softness_duration = 1.0f;
+    */
     
     float physics_step = 1.0f / fps;
     float sub_dt = physics_step / substeps;

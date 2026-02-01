@@ -151,11 +151,13 @@ void create_mesh(Mesh& m, std::vector<vec2> v, vec2 radius, bool create_interior
         vvv.push_back(ov);
     }
     
+    /*
     Object_vertex ov;
     ov.v = vec3(0.0f, 0.0f, 0.5);
     vvv.push_back(ov);
     ov.v = vec3(vec2(0.0f, 0.75f) * min_dist, 0.5);
     vvv.push_back(ov);
+    */
 
     m.v_lines->vertex_buffer_data(vvv.data(), vvv.size(), sizeof(Object_vertex), GL_STATIC_DRAW);
     m.v_lines->add_vertex_attribute(0, 3, GL_FLOAT, false, sizeof(float) * 3, 0);

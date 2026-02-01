@@ -702,7 +702,7 @@ std::vector<Collision_data> Physics_system::collision(Collision_input& input, bo
     std::vector<vec2> a_vertices;
     std::vector<vec2> b_vertices;
 
-    float limit = 0.01;
+    float limit = 0.0001;
 
     transform_vertices(*input.ta, *input.ca, a_vertices, input.ta->position);
     transform_vertices(*input.tb, *input.cb, b_vertices, input.ta->position);
@@ -1256,9 +1256,9 @@ void Physics_system::physics_loop() {
 
                             Mesh& am = ecs.get_component<Mesh>(ci.a);
                             Mesh& bm = ecs.get_component<Mesh>(ci.b);
-
-                            am.color = vec3(1.0f, 0.35f, 0.35f);
-                            bm.color = vec3(1.0f, 0.35f, 0.35f);
+                            
+                            am.color = vec3(1.0f, 1.0f, 0.35f);
+                            bm.color = vec3(1.0f, 1.0f, 0.35f);
                             
                             /*
                             if(c.a == 1) {
@@ -1417,14 +1417,14 @@ void Physics_system::physics_loop() {
             Collider& collider = ecs.get_component<Collider>(a.a);
             if(!collider.is_static) {
                 Mesh& mesh = ecs.get_component<Mesh>(a.a);
-                mesh.color = vec3(1.0f, 0.35f, 0.35f); 
+                mesh.color = vec3(0.35f, 1.0f, 0.35f); 
             }
         }
         if(a.b != NULL_ENTITY) {
             Collider& collider = ecs.get_component<Collider>(a.b);
             if(!collider.is_static) {
                 Mesh& mesh = ecs.get_component<Mesh>(a.b);
-                mesh.color = vec3(1.0f, 0.35f, 0.35f); 
+                mesh.color = vec3(0.35f, 1.0f, 0.35f); 
             }
         }
     }
@@ -1435,6 +1435,8 @@ void Physics_system::physics_loop() {
 
         if(ca.is_static) {
             am.color = vec3(1.0f, 1.0f, 1.0f);
+        } else if(ca.is_soft) {
+            am.color = mix(am.color, vec3(1.0f, 0.35f, 0.35f), ca.timer / softness_duration);
         }
         
         ca.flag2 = false;
@@ -1524,11 +1526,9 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
 
     for(Collision_constraint& data : collisions) {
         data.ca = &ecs.get_component<Collider>(data.a);
-        data.ca->flag = true;
         data.ta = &ecs.get_component<Transform>(data.a);
         if(data.b != NULL_ENTITY) {
             data.cb = &ecs.get_component<Collider>(data.b);
-            data.cb->flag = true;
             data.tb = &ecs.get_component<Transform>(data.b);
         }
 
@@ -1560,13 +1560,18 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
             for(col_constraint& cc : data.constraints) {
                 data.refresh(cc);
 
+                float compliance = collision_compliance;
+                if(data.ca->is_soft || (data.b != NULL_ENTITY && data.cb->is_soft)) {
+                    float blend = (data.b == NULL_ENTITY) ? data.ca->timer / softness_duration : (data.ca->timer + data.cb->timer) / (softness_duration * 2.0f);
+                    compliance = mix(compliance, 0.000175f, blend);
+                }
+
                 float inertia = cc.inertiaN;
 
                 if(cc.d->b == NULL_ENTITY) {
                     vec2 direction = cc.normal;
                     float wa = cc.inertiaNa;
 
-                    float compliance = collision_compliance;
                     compliance = compliance * wa;
 
                     float delta = (-cc.baumgarte - compliance * cc.lambdaN) / (wa + compliance / (sub_dt * sub_dt)) * wa;
@@ -1586,7 +1591,6 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
                     float wa = cc.inertiaNa;
                     float wb = cc.inertiaNb;
 
-                    float compliance = collision_compliance;
                     compliance = compliance * (wa + wb);
 
                     float delta = (-cc.baumgarte - compliance * cc.lambdaN) / (wa + wb + compliance / (sub_dt * sub_dt)) * (wa + wb);
@@ -1713,8 +1717,47 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
 
     for(Collision_constraint& c : collisions) {
         for(col_constraint& cc : c.constraints) {
+            c.refresh(cc);
+
+            if(-cc.baumgarte > penetration_threshold) {
+                if(!c.ca->flag) {
+                    ++c.ca->counter;
+                    if(c.ca->counter > iteration_threshold && !c.ca->is_soft) {
+                        c.ca->is_soft = true; 
+                        c.ca->timer = softness_duration;
+                    }
+                    c.ca->flag = true;
+                }
+                
+                if(c.b != NULL_ENTITY && !c.cb->flag) {
+                    ++c.cb->counter;
+                    if(c.cb->counter > iteration_threshold && !c.cb->is_soft) {
+                        c.cb->timer = softness_duration;
+                        c.cb->is_soft = true; 
+                    }
+                    c.cb->flag = true;
+                }
+            }
+
             cc.d->prev_lambdaN = cc.lambdaN;
             cc.d->prev_lambdaT = cc.lambdaT;
+        }
+    }
+
+    for(uint32_t a : collectors[0].entities) {
+        Collider& ca = ecs.get_component<Collider>(a);
+
+        if(!ca.flag) {
+            if(ca.counter != 0) --ca.counter;
+            ca.counter = min(ca.counter, iteration_threshold - 1);
+            ca.timer = 0.0f;
+            ca.is_soft = false;
+        }
+        ca.flag = false;
+
+        ca.timer -= sub_dt;
+        if(ca.timer <= 0.0f) {
+            ca.is_soft = false;
         }
     }
 }
