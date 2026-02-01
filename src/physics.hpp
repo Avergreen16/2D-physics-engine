@@ -390,7 +390,7 @@ struct Physics_system : System {
     float fps = 240.0f;
     uint32_t iterations = 4;
     uint32_t substeps = 4;
-    float contact_sep = 0.005f;
+    float contact_sep = 0.001f;
     float penetration_threshold = FLT_MAX;
     uint32_t iteration_threshold = 3;
     float softness_duration = 1.0f;

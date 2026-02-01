@@ -41,7 +41,18 @@ void main() {
     float alpha = max(0.0, 1.0 - (ddx / line_width) * 2.0);
     if(dist_from_line < ddx) {
         if(flag) line_a = max(line_a, vec4(color, alpha));
-        else line_c = vec4(color, alpha);
+        else {
+            line_c = vec4(color, alpha);
+        }
+    }
+
+    // x direction pixel    
+    color = base_color * 2.0;
+    line_width = 1;
+    dist_from_line = abs(fract(coords.x * 16 + 0.5) - 0.5) / 16.0 / line_width * 2.0;
+    alpha = max(0.0, 1.0 - (ddx * 16.0 / line_width) * 2.0);
+    if(dist_from_line < ddx) {
+        line_c = max(line_c, vec4(color, alpha * 0.5));
     }
     
     // y direction
@@ -59,6 +70,15 @@ void main() {
     if(dist_from_line < ddy) {
         if(flag) line_a = max(line_a, vec4(color, alpha));
         else line_c = vec4(color, alpha);
+    }
+
+    // y direction pixel
+    color = base_color * 2.0;
+    line_width = 1;
+    dist_from_line = abs(fract(coords.y * 16 + 0.5) - 0.5) / 16.0 / line_width * 2.0;
+    alpha = max(0.0, 1.0 - (ddy * 16.0 / line_width) * 2.0);
+    if(dist_from_line < ddy) {
+        line_c = max(line_c, vec4(color, alpha * 0.5));
     }
 
     c.rgb = line_c.rgb * line_c.w + c.rgb * (1.0 - line_c.w);

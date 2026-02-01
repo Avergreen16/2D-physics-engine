@@ -549,7 +549,7 @@ void Input_system::call() {
 
                         mat2 orientation = rotate(core.random(), vec3(0.0f, 0.0f, 1.0f));
 
-                        float s = 0.03125f;
+                        float s = 0.015625f;
 
                         uint32_t square_size = 8;
                         float separation = s * 0.2f;

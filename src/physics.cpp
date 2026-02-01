@@ -1521,8 +1521,8 @@ void Constraint_distance::get_values() {
 }
 
 void Physics_system::position_solve(std::vector<Collision_constraint>& collisions) {
-    float friction_compliance = 0.0002;
-    float collision_compliance = 0.00001;
+    float friction_compliance = 0.00001;
+    float collision_compliance = 0.000001;
 
     for(Collision_constraint& data : collisions) {
         data.ca = &ecs.get_component<Collider>(data.a);
@@ -1538,7 +1538,7 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
         for(col_constraint& cc : data.constraints) {
             cc.lambdaN = cc.d->prev_lambdaN;
             cc.lambdaT = 0.0f;
-            cc.prev_lambdaT = cc.d->prev_lambdaT;
+            cc.prev_lambdaT = 0.0f;//cc.d->prev_lambdaT;
             cc.normal_force = 0.0f;
         }
     }
@@ -1561,10 +1561,12 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
                 data.refresh(cc);
 
                 float compliance = collision_compliance;
+
+                /*
                 if(data.ca->is_soft || (data.b != NULL_ENTITY && data.cb->is_soft)) {
                     float blend = (data.b == NULL_ENTITY) ? data.ca->timer / softness_duration : (data.ca->timer + data.cb->timer) / (softness_duration * 2.0f);
                     compliance = mix(compliance, 0.000175f, blend);
-                }
+                }*/
 
                 float inertia = cc.inertiaN;
 
@@ -1575,7 +1577,6 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
                     compliance = compliance * wa;
 
                     float delta = (-cc.baumgarte - compliance * cc.lambdaN) / (wa + compliance / (sub_dt * sub_dt)) * wa;
-                    delta = clamp(delta, -0.025f, 0.025f);
 
                     float L = cc.lambdaN + delta;
                     L = clamp(L, 0.0f, FLT_MAX);
@@ -1594,7 +1595,6 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
                     compliance = compliance * (wa + wb);
 
                     float delta = (-cc.baumgarte - compliance * cc.lambdaN) / (wa + wb + compliance / (sub_dt * sub_dt)) * (wa + wb);
-                    delta = clamp(delta, -0.025f, 0.025f);
 
                     float L = cc.lambdaN + delta;
                     L = clamp(L, 0.0f, FLT_MAX);
