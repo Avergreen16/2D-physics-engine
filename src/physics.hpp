@@ -372,14 +372,25 @@ struct input_data {
     uint32_t id;
 };
 
+/*
+0.0625 delta squares: 
+float physics_step = 1.0f / 180.0f;
+uint32_t iterations = 4;
+uint32_t substeps = 4;
+float contact_sep = 0.02f;
+*/
+
 struct Physics_system : System {
-    float physics_step = 1.0f / 60.0f;
-    float physics_time = 0.0f;
-    uint32_t max_frames = 1;
+    // parameters
+    float fps = 60;
     uint32_t iterations = 4;
-    uint32_t substeps = 4;
+    uint32_t substeps = 2;
+    float contact_sep = 0.02f;
+    
+    float physics_step = 1.0f / fps;
     float sub_dt = physics_step / substeps;
-    float contact_sep = 0.025f;
+    uint32_t max_frames = 1;
+    float physics_time = 0.0f;
 
     std::unordered_map<uint64_t, std::vector<Collision_data>> collision_table;
 

@@ -1001,7 +1001,7 @@ void Physics_system::insert_collision(Collision_data c) {
         vec2 diff_a = d.pa - c.pa;
         vec2 diff_b = d.pb - c.pb;
 
-        if(length(diff_a) < 0.05f || length(diff_b) < 0.05f) return;
+        if(length(diff_a) < contact_sep || length(diff_b) < contact_sep) return;
     }
 
     v.push_back(c);
@@ -1497,7 +1497,7 @@ void Constraint_distance::get_values() {
 }
 
 void Physics_system::position_solve(std::vector<Collision_constraint>& collisions) {
-    float friction_compliance = 0.000625;
+    float friction_compliance = 0.0001;
 
     for(Collision_constraint& data : collisions) {
         data.ca = &ecs.get_component<Collider>(data.a);
