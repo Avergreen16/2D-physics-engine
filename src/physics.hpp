@@ -254,7 +254,8 @@ struct col_constraint {
     float prev_lambdaT = 0.0f;
     float normal_force = 0.0f;
 
-    float baumgarte;
+    float baumgarteN;
+    float baumgarteT;
 };
 
 struct Collision_constraint {
@@ -385,12 +386,34 @@ uint32_t substeps = 4;
 float contact_sep = 0.02f;
 */
 
+/*
+SCALING:
+
+contact_sep can make shapes unstable (increase for larger, decrease for smaller)
+so can collision_compliance and friction_compliance (increase for larger, decrease for smaller)
+
+for 0.25 delta boxes:
+float fps = 60.0f;
+float contact_sep = 0.025f;
+float friction_compliance = 0.0001;
+float collision_compliance = 0.00001;
+
+for 0.015625 delta boxes:
+float fps = 240.0f;
+float contact_sep = 0.001f;
+float friction_compliance = 0.00001;
+float collision_compliance = 0.000001;
+
+also the compliances scale with fps, so turn the compliances up when using a higher timestep (it's not because of the masses, i thought it was before lol)
+*/
+
 struct Physics_system : System {
     // parameters
-    float fps = 240.0f;
+    float fps = 60.0f;
     uint32_t iterations = 4;
     uint32_t substeps = 4;
-    float contact_sep = 0.001f;
+    float contact_sep = 0.025f;
+    float static_dist = 0.01f;
     float penetration_threshold = FLT_MAX;
     uint32_t iteration_threshold = 3;
     float softness_duration = 1.0f;

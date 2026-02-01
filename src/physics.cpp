@@ -1521,8 +1521,8 @@ void Constraint_distance::get_values() {
 }
 
 void Physics_system::position_solve(std::vector<Collision_constraint>& collisions) {
-    float friction_compliance = 0.00001;
-    float collision_compliance = 0.000001;
+    float friction_compliance = 0.0001;
+    float collision_compliance = 0.00001;
 
     for(Collision_constraint& data : collisions) {
         data.ca = &ecs.get_component<Collider>(data.a);
@@ -1538,7 +1538,7 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
         for(col_constraint& cc : data.constraints) {
             cc.lambdaN = cc.d->prev_lambdaN;
             cc.lambdaT = 0.0f;
-            cc.prev_lambdaT = 0.0f;//cc.d->prev_lambdaT;
+            cc.prev_lambdaT = cc.d->prev_lambdaT;
             cc.normal_force = 0.0f;
         }
     }
@@ -1576,7 +1576,7 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
 
                     compliance = compliance * wa;
 
-                    float delta = (-cc.baumgarte - compliance * cc.lambdaN) / (wa + compliance / (sub_dt * sub_dt)) * wa;
+                    float delta = (-cc.baumgarteN - compliance * cc.lambdaN) / (wa + compliance / (sub_dt * sub_dt)) * wa;
 
                     float L = cc.lambdaN + delta;
                     L = clamp(L, 0.0f, FLT_MAX);
@@ -1592,9 +1592,9 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
                     float wa = cc.inertiaNa;
                     float wb = cc.inertiaNb;
 
-                    compliance = compliance * (wa + wb);
+                    compliance = compliance * max(wa, wb);
 
-                    float delta = (-cc.baumgarte - compliance * cc.lambdaN) / (wa + wb + compliance / (sub_dt * sub_dt)) * (wa + wb);
+                    float delta = (-cc.baumgarteN - compliance * cc.lambdaN) / (wa + wb + compliance / (sub_dt * sub_dt)) * (wa + wb);
 
                     float L = cc.lambdaN + delta;
                     L = clamp(L, 0.0f, FLT_MAX);
@@ -1612,8 +1612,7 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
                 // friction
                 data.refresh(cc);
 
-                vec2 direction = vec2(cc.d->normal.y, -cc.d->normal.x);
-                float diff = dot(direction, cc.pa - cc.pb) - cc.prev_lambdaT;
+                float diff = cc.baumgarteT + cc.prev_lambdaT;
                 float mu = 1.0f;
 
                 float bounds = max(cc.normal_force, 0.0f) * mu;
@@ -1632,13 +1631,13 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
                     delta = L - cc.lambdaT;
                     cc.lambdaT = L;
 
-                    apply_position(data.ca, data.ta, delta * direction / wa, cc.pa - data.ta->position);
+                    apply_position(data.ca, data.ta, delta * cc.tangent / wa, cc.pa - data.ta->position);
                 } else {
                     float wa = cc.inertiaTa;
                     float wb = cc.inertiaTb;
 
                     float compliance = friction_compliance;
-                    compliance *= (wa + wb);
+                    compliance *= max(wa, wb);
 
                     float delta = (-diff - compliance * cc.lambdaT) / (wa + wb + compliance / (sub_dt * sub_dt)) * (wa + wb);
                         
@@ -1648,8 +1647,8 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
                     delta = L - cc.lambdaT;
                     cc.lambdaT = L;
 
-                    apply_position(data.ca, data.ta, delta * direction / (wa + wb), cc.pa - data.ta->position);
-                    apply_position(data.cb, data.tb, -delta * direction / (wa + wb), cc.pb - data.tb->position);   
+                    apply_position(data.ca, data.ta, delta * cc.tangent / (wa + wb), cc.pa - data.ta->position);
+                    apply_position(data.cb, data.tb, -delta * cc.tangent / (wa + wb), cc.pb - data.tb->position);   
                 }
             }
         }
@@ -1677,7 +1676,7 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
                         float wa = c.inertia_a[i];
                         float wb = c.inertia_b[i];
 
-                        float compliance = c.compliance * (wa + wb);
+                        float compliance = c.compliance * max(wa, wb);
                         
                         float delta = (-c.C[i] - compliance * c.lambda[i]) / (wa + wb + compliance / (sub_dt * sub_dt)) * (wa + wb);
                         
@@ -1719,7 +1718,7 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
         for(col_constraint& cc : c.constraints) {
             c.refresh(cc);
 
-            if(-cc.baumgarte > penetration_threshold) {
+            if(-cc.baumgarteN > penetration_threshold) {
                 if(!c.ca->flag) {
                     ++c.ca->counter;
                     if(c.ca->counter > iteration_threshold && !c.ca->is_soft) {
@@ -1740,7 +1739,7 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
             }
 
             cc.d->prev_lambdaN = cc.lambdaN;
-            cc.d->prev_lambdaT = cc.lambdaT;
+            if(abs(cc.baumgarteT) > static_dist) cc.d->prev_lambdaT = -cc.baumgarteT;
         }
     }
 
@@ -2452,8 +2451,6 @@ void Collision_constraint::get_points() {
 void Collision_constraint::get_value() {
     for(col_constraint& c : constraints) {
         vec2 diff = c.pa - c.pb;
-        float dd = dot(diff, c.d->normal);
-        c.baumgarte = dd;
         
         c.tangent = vec2(c.d->normal.y, -c.d->normal.x);
         c.normal = c.d->normal;
@@ -2471,6 +2468,9 @@ void Collision_constraint::get_value() {
             c.inertiaN += c.inertiaNb;
             c.inertiaT += c.inertiaTb;
         }
+        
+        c.baumgarteN = dot(diff, c.normal);
+        c.baumgarteT = dot(diff, c.tangent);
     }
 }
 
@@ -2489,11 +2489,12 @@ void Collision_constraint::refresh(col_constraint& c) {
         c.inertiaTb = Physics_system::calculate_inverse_mass(cb, tb, c.tangent, c.pb - tb->position);
     }
 
-    vec2 diff = c.pa - c.pb;
-    float dd = dot(diff, c.d->normal);
-    c.baumgarte = dd;
     c.inertiaN = c.inertiaNa + c.inertiaNb;
     c.inertiaT = c.inertiaTa + c.inertiaTb;
+
+    vec2 diff = c.pa - c.pb;
+    c.baumgarteN = dot(diff, c.normal);
+    c.baumgarteT = dot(diff, c.tangent);
 }
 
 void Constraint::refresh(pos_constraint& c) {

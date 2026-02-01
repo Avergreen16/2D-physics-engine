@@ -351,6 +351,8 @@ int main() {
     };*/
 
     c.is_static = true;
+    //c.mass = 0x100000;
+    //c.allow_gravity = false;
     
     Mesh m;
     create_mesh(m, {c.vertices}, c.radius);
