@@ -167,10 +167,10 @@ void Input_system::call() {
 
                     uint32_t num_links = 12;
 
-                    float scale = 0.5f;
+                    float scale = 1.5f;
 
                     float sep = 0.025f * scale;
-                    vec2 size = vec2(0.25f, 1.0f) * scale;
+                    vec2 size = vec2(0.33f, 1.0f) * scale;
 
                     Transform t;
                     t.position = world_cursor_pos;
@@ -229,7 +229,7 @@ void Input_system::call() {
                         c.non_colliding = non_colliding;
                     }
 
-                    float asteroid_radius = 1.0f * scale;
+                    float asteroid_radius = 0.5f * scale;
 
                     Collider c2;
                     c2.vertices = {vec2(0, 0)};
@@ -288,181 +288,33 @@ void Input_system::call() {
 
                         ps.constraints.push_back(constraint);
                     }
+                } else if(key_map[GLFW_KEY_LEFT_CONTROL]) {
+                    Physics_system& ps = ecs.get_system<Physics_system>();
 
-                    /*
-                    Constraint constraint;
-                    constraint.a = prev_entity;
-                    constraint.b = first_entity;
+                    vec2 size = vec2(1.0f, 24.0f);
 
-                    pos_constraint pc;
-                    pc.a = vec2(0, (size.y + sep) * 0.5f);
-                    pc.b = vec2(0, -(size.y + sep) * 0.5f);
-                    pc.vs = {vec2(1, 0), vec2(0, 1)};
-
-                    constraint.pos.push_back(pc);
-
-                    ps.constraints.push_back(constraint);
-                    */
-                    
-                    //ps.constraints_featherstone.push_back(fc);
-
-                    /*
-                    Constraint constraint;
-                    constraint.a = first_entity;
-                    constraint.b = prev_entity;
-                    
-                    pos_constraint pc;
-                    pc.a = vec2(0, (size.y + sep) * 0.5f);
-                    pc.b = vec2(0, -(size.y + sep) * 0.5f);
-                    pc.vs = {vec2(1, 0), vec2(0, 1)};
-                    pc.tolerance = (size.y + sep) * (num_links - 1);
-
-                    constraint.pos.push_back(pc);
-
-                    ps.constraints.push_back(constraint);*/
-
-                    /*
-                    Constraint constraint;
-                    constraint.a = first_entity;
-                    constraint.b = prev_entity;
-                    
-                    pos_constraint pc;
-                    pc.a = vec2(0, -(size.y + sep) * 0.5f);
-                    pc.b = vec2(0, -(size.y + sep) * 0.5f);
-                    pc.vs = {vec2(1, 0), vec2(0, 1)};
-                    pc.tolerance = (size.y + sep) * num_links;
-
-                    constraint.pos.push_back(pc);
-
-                    ps.constraints.push_back(constraint);
-                    */
-
-                    /*
-                    //ball on the end:
-                    float weight_size = 2.0f;
-
-                    uint32_t entity = ecs.insert_entity();
-                    
-                    Collider c2;
-                    c2.vertices = {vec3(0.0f)};//{vec2(0, -1.5f), vec2(0, 1.5f)};
-                    c2.radius = vec2(weight_size * 0.5f);
-                    c2.mass = 0x100;
-                    shift = Physics_system::calculate_inertia(c2);
-                    t.position += t.orientation * shift;
-                    t.position += t.orientation * vec2(0, (weight_size - (size.y + sep)) * 0.5f);
-
-                    Mesh m2;
-                    m2.color = vec3(0.9f, 0.9f, 0.9f);
-                    create_mesh(m2, c2.vertices, c2.radius);
-
-                    ecs.insert_component(entity, m2);
-                    ecs.insert_component(entity, t);
-                    ecs.insert_component(entity, c2);
-                    if(prev_entity != NULL_ENTITY) {
-                        Transform& tf = ecs.get_component<Transform>(entity);
-                        Collider& c = ecs.get_component<Collider>(entity);
-
-                        Constraint constraint;
-                        constraint.a = entity;
-                        constraint.b = prev_entity;
-                        
-                        pos_constraint pc;
-                        pc.a = vec2(0, -(weight_size + sep) * 0.5f);
-                        pc.b = vec2(0, (size.y + sep) * 0.5f);
-                        pc.vs = {vec2(1, 0), vec2(0, 1)};
-
-                        constraint.pos.push_back(pc);
-
-                        rot_constraint rc;
-                        rc.a = vec2(0, 1);
-                        rc.b = vec2(0, 1);
-                        
-                        //constraint.rot.push_back(rc);
-
-                        ps.constraints.push_back(constraint);
-                    }
-
-                    Constraint constraint;
-                    constraint.a = first_entity;
-                    constraint.b = entity;
-                    
-                    pos_constraint pc;
-                    pc.a = vec2(0, (size.y + sep) * 0.5f);
-                    pc.b = vec2(0.0f, 0.0f);
-                    pc.vs = {vec2(1, 0), vec2(0, 1)};
-                    pc.tolerance = (size.y + sep) * (num_links) + weight_size * 0.5f;
-
-                    constraint.pos.push_back(pc);
-
-                    ps.constraints.push_back(constraint);
-
-                    /*
-                    uint32_t entity = ecs.insert_entity();
-                    
-                    Collider c2;
-                    c2.vertices = {vec2(0.0f, 1.5f), vec2(0.0f, -1.5f)};
-                    c2.radius = vec2(0.5f);
-                    c2.mass = 500;
-                    c2.allow_gravity = true;
-                    vec2 shift = Physics_system::calculate_inertia(c2);
                     Transform t;
                     t.position = world_cursor_pos;
-                    t.orientation = identity<mat2>();
-
-                    Mesh m2;
-                    m2.color = vec3(0.9f, 0.9f, 0.9f);
-                    create_mesh(m2, c2.vertices, c2.radius);
-
-                    ecs.insert_component(entity, m2);
-                    ecs.insert_component(entity, t);
-                    ecs.insert_component(entity, c2);
-
-                    Transform& tf = ecs.get_component<Transform>(entity);
-                    Collider& c = ecs.get_component<Collider>(entity);
+                    vec2 up = normalize(vec2(1.0f, 1.0f));
+                    t.orientation = {up, vec2(-up.y, up.x)};
                     
-                    Constraint constraint;
-                    constraint.a = entity;
-                    constraint.b = NULL_ENTITY;
-                    
-                    pos_constraint pc;
-                    pc.a = vec2(0, -1.5f);
-                    pc.b = world_cursor_pos;
-                    pc.vs = {vec2(1, 0), vec2(0, 1)};
-                    pc.tolerance = 4.0f;
-
-                    constraint.pos.push_back(pc);
-
-                    ps.constraints.push_back(constraint);
+                    Collider c;
+                    c.vertices = {vec2(0, -(size.y - size.x) * 0.5f), vec2(0.0f, (size.y - size.x) * 0.5f)};
+                    c.radius = vec2(size.x * 0.5f);
+                    c.mass = 0x6 * size.x * size.y;
+                    vec2 shift = Physics_system::calculate_inertia(c);
+                    t.position += t.orientation * shift;
+                    t.position += t.orientation * vec2(0, size.y * 0.5f);
 
                     Mesh m;
-                    uint32_t e = ecs.insert_entity();
+                    m.color = vec3(0.9f, 0.9f, 0.9f);
+                    create_mesh(m, c.vertices, c.radius);
 
-                    Transform t2;
-                    t2.orientation = identity<mat2>();
-                    t2.position = world_cursor_pos;
+                    uint32_t capsule = ecs.insert_entity();
 
-                    ecs.insert_component(e, t2);
-
-                    m.color = vec3(1.0f);
-                    create_mesh(m, {vec2(0.0f)}, vec2(4.0f), false);
-
-                    ecs.insert_component(e, m);
-
-                    /*
-                    Constraint constraint;
-                    constraint.a = entity;
-                    constraint.b = NULL_ENTITY;
-                    
-                    pos_constraint pc;
-                    pc.a = vec2(0, -1.5f);
-                    pc.b = world_cursor_pos;
-                    pc.vs = {vec2(1, 0), vec2(0, 1)};
-                    pc.tolerance = 1.0f;
-
-                    constraint.pos.push_back(pc);
-
-                    ps.constraints.push_back(constraint);
-                    */
+                    ecs.insert_component(capsule, m);
+                    ecs.insert_component(capsule, t);
+                    ecs.insert_component(capsule, c);
                 } else {
 
                     auto insert_square = [&](vec2 pos, vec2 size, mat2 ori) {
@@ -549,10 +401,10 @@ void Input_system::call() {
 
                         mat2 orientation = rotate(core.random(), vec3(0.0f, 0.0f, 1.0f));
 
-                        float s = 1.0f / 3.0f;
+                        float s = 1.0f;
 
                         uint32_t square_size = 8;
-                        float separation = s * 0.2f;
+                        float separation = s * 0.25f;
                         vec2 max_size = vec2(s);
                         vec2 min_size = vec2(s);
 
@@ -561,7 +413,8 @@ void Input_system::call() {
                                 vec2 width = float(square_size) * max_size + (square_size - 1) * separation;
                                 vec2 pos = vec2(-width.x * 0.5f + max_size.x * (x + 0.5f) + separation * x, -width.y * 0.5f + max_size.y * (y + 0.5f) + separation * y);
 
-                                insert_square(orientation * pos + origin, min_size + (max_size - min_size) * vec2(abs(core.random()), abs(core.random())), orientation);
+                                if(key_map[GLFW_KEY_0]) insert_ellipse(orientation * pos + origin, min_size + (max_size - min_size) * vec2(abs(core.random()), abs(core.random())), orientation);
+                                else insert_square(orientation * pos + origin, min_size + (max_size - min_size) * vec2(abs(core.random()), abs(core.random())), orientation);
                             }
                         }
                     }
@@ -615,23 +468,6 @@ void Input_system::call() {
             profiler.restart();
             profiler2.output();
             profiler2.restart();
-        } else if(key == GLFW_KEY_P) {
-            int b[N] = {1, 0, 0, 0, 1, 0, 1, 1};
-
-            xsimd::batch<int> bi;
-            bi = xsimd::load_unaligned(b);
-
-            auto bbi = bi != 0;
-
-            auto bbf = bint_to_bfloat(bbi);
-
-            xsimd::batch<float> tmp_batch = static_cast<xsimd::batch<float>>(bbf);
-            float b2[N];
-            tmp_batch.store_unaligned(b2);
-
-            for(int i = 0; i < N; ++i) {
-                std::cout << b[i] << " " << b2[i] << "\n";
-            }
         } else if(key == GLFW_KEY_F5) {
             debug_physics = !debug_physics;
         } else if(key == GLFW_KEY_F3) {

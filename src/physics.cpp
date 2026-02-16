@@ -14,391 +14,6 @@ cyan -> held by cursor
 
 */
 
-avie_matrix empty(std::size_t columns, std::size_t rows) {
-    avie_matrix matrix(columns, rows);
-
-    for(int c = 0; c < columns; ++c) {
-        for(int r = 0; r < rows; ++r) {
-            matrix(c, r) = 0.0f;
-        }
-    }
-
-    return matrix;
-}
-
-avie_matrix identity(std::size_t columns, std::size_t rows) {
-    avie_matrix matrix(columns, rows);
-
-    for(int c = 0; c < columns; ++c) {
-        for(int r = 0; r < rows; ++r) {
-            if(c == r) matrix(c, r) = 1.0f;
-            else matrix(c, r) = 0.0f;
-        }
-    }
-
-    return matrix;
-}
-
-avie_matrix transpose(avie_matrix& input) {
-    avie_matrix result(input.rows, input.columns);
-
-    for(int c = 0; c < input.columns; ++c) {
-        for(int r = 0; r < input.rows; ++r) {
-            result(r, c) = input(c, r);
-        }
-    }
-
-    return result;
-}
-
-avie_matrix transpose(avie_matrix&& input) {
-    avie_matrix result(input.rows, input.columns);
-
-    for(int c = 0; c < input.columns; ++c) {
-        for(int r = 0; r < input.rows; ++r) {
-            result(r, c) = input(c, r);
-        }
-    }
-
-    return result;
-}
-
-avie_matrix operator*(avie_matrix a, avie_matrix b) {
-    std::size_t c0 = a.columns;
-    std::size_t r0 = a.rows;
-    std::size_t c1 = b.columns;
-    std::size_t r1 = b.rows;
-
-    avie_matrix result = empty(c1, r0);
-
-    for(int ra = 0; ra < r0; ++ra) {
-        for(int cb = 0; cb < c1; ++cb) {
-            for(int v = 0; v < r1; ++v) {
-                double vv = a(v, ra) * b(cb, v);
-                result(cb, ra) += vv;
-            }
-        }
-    }
-
-    return result;
-}
-
-avie_matrix clip(uvec2 range, avie_matrix a) {
-    avie_matrix clipped_matrix(1, range.y);
-
-    for(int i = 0; i < range.y; ++i) {
-        clipped_matrix(0, i) = a(0, i + range.x);
-    }
-
-    return clipped_matrix;
-}
-
-avie_matrix clip(uvec4 range, avie_matrix a) {
-    avie_matrix clipped_matrix(range.z, range.w);
-
-    for(int j = 0; j < range.w; ++j) {
-        for(int i = 0; i < range.z; ++i) {
-            clipped_matrix(i, j) = a(i + range.x, j + range.y);
-        }
-    }
-
-    return clipped_matrix;
-}
-
-void write(avie_matrix matrix) {
-    std::size_t columns = matrix.columns;
-    std::size_t rows = matrix.rows;
-    std::string write_string;
-
-    for(int r = 0; r < rows; ++r) {
-        for(int c = 0; c < columns; ++c) {
-            write_string += std::to_string(matrix(c, r));
-            if(c != columns - 1) write_string += " ";
-        }
-        if(r != rows - 1) write_string += "\n";
-    }
-
-    std::cout << write_string;
-}
-
-void write(block_sparse_matrix& matrix) {
-    std::size_t columns = matrix.columns.size();
-    std::size_t rows = matrix.rows.size();
-    std::vector<std::string> strings;
-
-    for(int r = 0; r < rows; ++r) {
-        for(int c = 0; c < columns; ++c) {
-            if(matrix.columns[c].contains(r)) {
-                auto& sub_matrix = matrix.matrices[{c, r}];
-
-                for(int r2 = 0; r2 < sub_matrix.rows; ++r2) {
-                    for(int c2 = 0; c2 < sub_matrix.columns; ++c2) {
-                        int row = matrix.row_widths[r].x + r2;
-                        if(strings.size() <= row) strings.resize(row + 1);
-
-                        if(isnan(matrix.matrices[{c, r}](c2, r2))) strings[row] += "N ";
-                        else strings[row] += "X ";
-                    }
-                }
-            } else {
-                for(int r2 = 0; r2 < matrix.row_widths[r].y; ++r2) {
-                    for(int c2 = 0; c2 < matrix.column_widths[c].y; ++c2) {
-                        int row = matrix.row_widths[r].x + r2;
-                        if(strings.size() <= row) strings.resize(row + 1);
-
-                        strings[row] += "- ";
-                    }
-                }
-            }
-        }
-    }
-
-    std::string write_string;
-    for(std::string str : strings) {
-        write_string += str + "\n";
-    }
-
-    std::cout << write_string;
-}
-
-vec2 get_error(avie_matrix& a, avie_matrix& b) {
-    vec2 error = vec2(0.0f);
-
-    for(int r = 0; r < a.rows; ++r) {
-        for(int c = 0; c < a.columns; ++c) {
-            float av = a(c, r);
-            float bv = b(c, r);
-            if(av == 0.0f) error.y = max(error.y, bv);
-            else error.x = max(error.x, abs(bv - av) / av);
-        }
-    }
-
-    return error;
-}
-
-avie_matrix UTDU_solve(avie_matrix A, avie_matrix b) {
-    // assumes A is square and b.rows == A.columns == A.rows
-    avie_matrix U = identity(A.columns, A.rows);
-    avie_matrix D = identity(A.columns, A.rows);
-
-    for(int i = 0; i < A.columns; ++i) {
-        D(i, i) = A(i, i);
-        for(int k = 0; k <= i - 1; ++k) {
-            D(i, i) -= U(i, k) * U(i, k) * D(k, k);
-        }
-
-        for(int j = i + 1; j < A.columns; ++j) {
-            U(j, i) = A(j, i);
-
-            for(int k = 0; k <= i - 1; ++k) {
-                U(j, i) -= U(j, k) * U(i, k) * D(k, k);
-            }
-
-            U(j, i) /= D(i, i);
-        }
-    }
-
-
-    // UT substitution (UT * z = b)
-    avie_matrix z = empty(1, A.columns);
-    for(int i = 0; i < A.columns; ++i) {
-        float total = 0;
-        for(int j = 0; j < i; ++j) total += z(0, j) * U(i, j);
-
-        z(0, i) = b(0, i) - total;
-    }
-
-    // D substitution (D * y = z);
-    avie_matrix y = empty(1, A.columns);
-    for(int i = 0; i < A.columns; ++i) {
-        y(0, i) = z(0, i) / D(i, i);
-    }
-
-    // U substitution (U * x = y)
-    avie_matrix x = empty(1, A.columns);
-    for(int i = A.columns - 1; i >= 0; --i) {
-        float total = 0;
-        for(int j = i + 1; j < A.columns; ++j) total += x(0, j) * U(j, i);
-        x(0, i) = y(0, i) - total;
-    }
-
-    return x;
-}
-
-avie_matrix invert(avie_matrix A) {
-    // assumes A is square and b.rows == A.columns == A.rows
-    avie_matrix U = identity(A.columns, A.rows);
-    avie_matrix D = identity(A.columns, A.rows);
-
-    for(int i = 0; i < A.columns; ++i) {
-        D(i, i) = A(i, i);
-        for(int k = 0; k <= i - 1; ++k) {
-            D(i, i) -= U(i, k) * U(i, k) * D(k, k);
-        }
-
-        for(int j = i + 1; j < A.columns; ++j) {
-            U(j, i) = A(j, i);
-
-            for(int k = 0; k <= i - 1; ++k) {
-                U(j, i) -= U(j, k) * U(i, k) * D(k, k);
-            }
-
-            U(j, i) /= D(i, i);
-        }
-    }
-
-    avie_matrix Ainv = empty(A.columns, A.rows);
-    avie_matrix b = empty(1, A.rows);
-    for(int i = 0; i < b.rows; ++i) {
-        if(i) b(0, i - 1) = 0;
-        b(0, i) = 1;
-
-        // UT substitution (UT * z = b)
-        avie_matrix z = empty(1, A.columns);
-        for(int i = 0; i < A.columns; ++i) {
-            float total = 0;
-            for(int j = 0; j < i; ++j) total += z(0, j) * U(i, j);
-
-            z(0, i) = b(0, i) - total;
-        }
-
-        // D substitution (D * y = z);
-        avie_matrix y = empty(1, A.columns);
-        for(int i = 0; i < A.columns; ++i) {
-            y(0, i) = z(0, i) / D(i, i);
-        }
-
-        // U substitution (U * x = y)
-        avie_matrix x = empty(1, A.columns);
-        for(int i = A.columns - 1; i >= 0; --i) {
-            float total = 0;
-            for(int j = i + 1; j < A.columns; ++j) total += x(0, j) * U(j, i);
-            x(0, i) = y(0, i) - total;
-        }
-
-        for(int j = 0; j < A.columns; ++j) Ainv(i, j) = x(0, j); 
-    }
-
-    return Ainv;
-}
-
-avie_matrix operator*(block_sparse_matrix& A, avie_matrix b) {
-    avie_matrix r = empty(1, b.rows);
-    
-    for(uint32_t i = 0; i < A.columns.size(); ++i) {
-        uvec2 column_range = A.column_widths[i];
-        avie_matrix clip_b = clip(column_range, b);
-
-        for(uint32_t j : A.columns[i]) {
-            uvec2 range_x = A.column_widths[i];
-            uvec2 range_y = A.row_widths[j];
-
-            uvec2 coord = {i, j};
-            if(A.matrices.contains(coord)) {
-                avie_matrix& mat = A.matrices[coord];
-
-                avie_matrix result = mat * clip_b;
-
-                for(int k = 0; k < range_y.y; ++k) {
-                    r(0, range_y.x + k) += result(0, k);
-                }
-            }
-        }
-    }
-
-    return r;
-}
-
-block_sparse_matrix operator*(block_sparse_matrix& A, block_sparse_matrix& B) {
-    block_sparse_matrix result;
-
-    for(int ra = 0; ra < A.rows.size(); ++ra) {
-        for(int cb = 0; cb < B.columns.size(); ++cb) {
-            for(int v = 0; v < A.columns.size(); ++v) {
-                uvec2 va = {v, ra};
-                uvec2 vb = {cb, v};
-
-                if(A.rows[ra].contains(v) && B.columns[cb].contains(v)) {
-                    avie_matrix m = A.matrices[va] * B.matrices[vb];
-
-                    uvec2 new_v = {cb, ra};
-
-                    if(!result.matrices.contains(new_v)) result.insert(new_v, empty(m.columns, m.rows));
-
-                    result.matrices[new_v] += m;
-                }
-            }
-        }
-    }
-
-    result.compute_ranges();
-
-    return result;
-}
-
-vec2 get_error(block_sparse_matrix& A, block_sparse_matrix& B) {
-    vec2 result = {0, 0};
-
-    for(int y0 = 0; y0 < A.rows.size(); ++y0) {
-        for(int x0 = 0; x0 < A.columns.size(); ++x0) {
-            uvec2 v = {x0, y0};
-
-            if(A.matrices.contains(v) && B.matrices.contains(v)) {
-                avie_matrix& am = A.matrices[v];
-                avie_matrix& bm = B.matrices[v];
-
-                for(int y1 = 0; y1 < am.rows; ++y1) {
-                    for(int x1 = 0; x1 < am.columns; ++x1) {
-                        float a = am(x1, y1);
-                        float b = bm(x1, y1);
-
-                        if(a == 0.0f) {
-                            result.y = max(result.y, b);
-                        } else {
-                            result.x = max(result.x, abs(b - a) / a);
-                        }
-                    }
-                }
-            } else if(A.matrices.contains(v)) {
-                avie_matrix& am = A.matrices[v];
-
-                for(int y1 = 0; y1 < am.rows; ++y1) {
-                    for(int x1 = 0; x1 < am.columns; ++x1) {
-                        float a = am(x1, y1);
-
-                        result.y = max(result.y, a);
-                    }
-                }
-            } else if(B.matrices.contains(v)) {
-                avie_matrix& bm = B.matrices[v];
-
-                for(int y1 = 0; y1 < bm.rows; ++y1) {
-                    for(int x1 = 0; x1 < bm.columns; ++x1) {
-                        float b = bm(x1, y1);
-
-                        result.y = max(result.y, b);
-                    }
-                }
-            }
-        }
-    }
-
-    return result;
-}
-
-block_sparse_matrix transpose(block_sparse_matrix& A) {
-    block_sparse_matrix result;
-
-    for(auto& [u, mat] : A.matrices) {
-        result.insert({u.y, u.x}, transpose(mat));
-    }
-
-    result.compute_ranges();
-
-    return result;
-}
-
-
 //
 
 Physics_system::Physics_system() {
@@ -1147,6 +762,7 @@ void Physics_system::physics_loop() {
     render_system.marker_points.clear();
     render_system.normals.clear();
 
+    /*
     for(uint32_t entity : collectors[0].entities) {
         Transform& ta = ecs.get_component<Transform>(entity);
         Collider& ca = ecs.get_component<Collider>(entity);
@@ -1160,12 +776,13 @@ void Physics_system::physics_loop() {
             }
 
             if(ca.allow_gravity) {
-                vec2 g = get_gravity(ta.position) * -20.0f;
+                vec2 g = get_gravity(ta.position) * -2.0f;
 
                 ca.velocity += g * sub_dt;
             }
         }
     }
+    */
 
     std::vector<input_data> input;
     for(uint32_t a : collectors[0].entities) {
@@ -1351,31 +968,24 @@ void Physics_system::physics_loop() {
 
     //
     for(int i = 0; i < substeps; ++i) {
-        if(i != 0) {
-            for(uint32_t entity : collectors[0].entities) {
-                Transform& ta = ecs.get_component<Transform>(entity);
-                Collider& ca = ecs.get_component<Collider>(entity);
+        std::unordered_map<uint32_t, Transform> old_transforms;
 
-                if(!ca.is_static) {
-                    ta.position += ca.velocity * sub_dt;
+        for(uint32_t entity : collectors[0].entities) {
+            Transform& ta = ecs.get_component<Transform>(entity);
+            Collider& ca = ecs.get_component<Collider>(entity);
 
-                    if(ca.allow_rotation) {
-                        mat2 rotation = rotate(ca.angular_velocity * sub_dt, vec3(0, 0, 1));
-                        ta.orientation = rotation * ta.orientation;
-                    }
+            if(!ca.is_static) {
+                if(ca.allow_gravity) {
+                    vec2 g = get_gravity(ta.position) * -20.0f;
 
-                    if(ca.allow_gravity) {
-                        vec2 g = get_gravity(ta.position) * -20.0f;
-
-                        ca.velocity += g * sub_dt;
-                    }
+                    ca.velocity += g * sub_dt;
                 }
             }
+
+            old_transforms.emplace(entity, ta);
         }
-        
+
         position_solve(collision_constraints);
-        
-        // compute velocities
         for(uint32_t entity : collectors[0].entities) {
             Transform& ta = ecs.get_component<Transform>(entity);
             Collider& ca = ecs.get_component<Collider>(entity);
@@ -1386,6 +996,24 @@ void Physics_system::physics_loop() {
 
                 ca.pos_delta = vec2(0.0f);
                 ca.rot_delta = 0.0f;
+            }
+
+            //ta = old_transforms[entity];
+        }
+
+        velocity_solve(collision_constraints);
+
+        for(uint32_t entity : collectors[0].entities) {
+            Transform& ta = ecs.get_component<Transform>(entity);
+            Collider& ca = ecs.get_component<Collider>(entity);
+
+            if(!ca.is_static) {
+                ta.position += ca.velocity * sub_dt;
+
+                if(ca.allow_rotation) {
+                    mat2 rotation = rotate(ca.angular_velocity * sub_dt, vec3(0, 0, 1));
+                    ta.orientation = rotation * ta.orientation;
+                }
             }
         }
     }
@@ -1521,27 +1149,8 @@ void Constraint_distance::get_values() {
 }
 
 void Physics_system::position_solve(std::vector<Collision_constraint>& collisions) {
-    float friction_compliance = 0.0001;
-    float collision_compliance = 0.00001;
-
-    for(Collision_constraint& data : collisions) {
-        data.ca = &ecs.get_component<Collider>(data.a);
-        data.ta = &ecs.get_component<Transform>(data.a);
-        if(data.b != NULL_ENTITY) {
-            data.cb = &ecs.get_component<Collider>(data.b);
-            data.tb = &ecs.get_component<Transform>(data.b);
-        }
-
-        data.get_points();
-        data.get_value();
-        
-        for(col_constraint& cc : data.constraints) {
-            cc.lambdaN = cc.d->prev_lambdaN;
-            cc.lambdaT = 0.0f;
-            cc.prev_lambdaT = cc.d->prev_lambdaT;
-            cc.normal_force = 0.0f;
-        }
-    }
+    float friction_compliance = 0.00001;
+    float collision_compliance = 0.000001;
 
     for(Constraint& data : constraints) {
         data.ca = &ecs.get_component<Collider>(data.a);
@@ -1556,103 +1165,6 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
     }
 
     for(int i = 0; i < iterations; ++i) {
-        for(Collision_constraint& data : collisions) {
-            for(col_constraint& cc : data.constraints) {
-                data.refresh(cc);
-
-                float compliance = collision_compliance;
-
-                /*
-                if(data.ca->is_soft || (data.b != NULL_ENTITY && data.cb->is_soft)) {
-                    float blend = (data.b == NULL_ENTITY) ? data.ca->timer / softness_duration : (data.ca->timer + data.cb->timer) / (softness_duration * 2.0f);
-                    compliance = mix(compliance, 0.000175f, blend);
-                }*/
-
-                float inertia = cc.inertiaN;
-
-                if(cc.d->b == NULL_ENTITY) {
-                    vec2 direction = cc.normal;
-                    float wa = cc.inertiaNa;
-
-                    compliance = compliance * wa;
-
-                    float delta = (-cc.baumgarteN - compliance * cc.lambdaN) / (wa + compliance / (sub_dt * sub_dt)) * wa;
-
-                    float L = cc.lambdaN + delta;
-                    L = clamp(L, 0.0f, FLT_MAX);
-                    delta = L - cc.lambdaN;
-                    cc.lambdaN = L;
-                    cc.normal_force += delta / wa;
-                    
-                    vec2 delta_a = direction * delta / wa;
-
-                    apply_position(data.ca, data.ta, delta_a, cc.pa - data.ta->position);
-                } else {
-                    vec2 direction = cc.normal;
-                    float wa = cc.inertiaNa;
-                    float wb = cc.inertiaNb;
-
-                    compliance = compliance * max(wa, wb);
-
-                    float delta = (-cc.baumgarteN - compliance * cc.lambdaN) / (wa + wb + compliance / (sub_dt * sub_dt)) * (wa + wb);
-
-                    float L = cc.lambdaN + delta;
-                    L = clamp(L, 0.0f, FLT_MAX);
-                    delta = L - cc.lambdaN;
-                    cc.lambdaN = L;
-                    cc.normal_force += delta / (wa + wb);
-
-                    vec2 delta_a = direction * delta / (wa + wb);
-                    vec2 delta_b = direction * -delta / (wa + wb);
-
-                    apply_position(data.ca, data.ta, delta_a, cc.pa - data.ta->position);
-                    apply_position(data.cb, data.tb, delta_b, cc.pb - data.tb->position);   
-                }
-
-                // friction
-                data.refresh(cc);
-
-                float diff = cc.baumgarteT + cc.prev_lambdaT;
-                float mu = 1.0f;
-
-                float bounds = max(cc.normal_force, 0.0f) * mu;
-
-                if(cc.d->b == NULL_ENTITY) {
-                    float wa = cc.inertiaTa;
-
-                    float compliance = friction_compliance;
-                    compliance *= wa;
-
-                    float delta = (-diff - compliance * cc.lambdaT) / (wa + compliance / (sub_dt * sub_dt)) * wa;
-                        
-                    float L = cc.lambdaT + delta;
-                    L = clamp(L / wa, -bounds, bounds);
-                    L *= wa;
-                    delta = L - cc.lambdaT;
-                    cc.lambdaT = L;
-
-                    apply_position(data.ca, data.ta, delta * cc.tangent / wa, cc.pa - data.ta->position);
-                } else {
-                    float wa = cc.inertiaTa;
-                    float wb = cc.inertiaTb;
-
-                    float compliance = friction_compliance;
-                    compliance *= max(wa, wb);
-
-                    float delta = (-diff - compliance * cc.lambdaT) / (wa + wb + compliance / (sub_dt * sub_dt)) * (wa + wb);
-                        
-                    float L = cc.lambdaT + delta;
-                    L = clamp(L / (wa + wb), -bounds, bounds);
-                    L *= (wa + wb);
-                    delta = L - cc.lambdaT;
-                    cc.lambdaT = L;
-
-                    apply_position(data.ca, data.ta, delta * cc.tangent / (wa + wb), cc.pa - data.ta->position);
-                    apply_position(data.cb, data.tb, -delta * cc.tangent / (wa + wb), cc.pb - data.tb->position);   
-                }
-            }
-        }
-
         for(Constraint& data : constraints) {
             for(pos_constraint& c : data.pos) {
                 data.refresh(c);
@@ -1713,56 +1225,16 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
             }*/
         }
     }
-
-    for(Collision_constraint& c : collisions) {
-        for(col_constraint& cc : c.constraints) {
-            c.refresh(cc);
-
-            if(-cc.baumgarteN > penetration_threshold) {
-                if(!c.ca->flag) {
-                    ++c.ca->counter;
-                    if(c.ca->counter > iteration_threshold && !c.ca->is_soft) {
-                        c.ca->is_soft = true; 
-                        c.ca->timer = softness_duration;
-                    }
-                    c.ca->flag = true;
-                }
-                
-                if(c.b != NULL_ENTITY && !c.cb->flag) {
-                    ++c.cb->counter;
-                    if(c.cb->counter > iteration_threshold && !c.cb->is_soft) {
-                        c.cb->timer = softness_duration;
-                        c.cb->is_soft = true; 
-                    }
-                    c.cb->flag = true;
-                }
-            }
-
-            cc.d->prev_lambdaN = cc.lambdaN;
-            if(abs(cc.baumgarteT) > static_dist) cc.d->prev_lambdaT = -cc.baumgarteT;
-        }
-    }
-
-    for(uint32_t a : collectors[0].entities) {
-        Collider& ca = ecs.get_component<Collider>(a);
-
-        if(!ca.flag) {
-            if(ca.counter != 0) --ca.counter;
-            ca.counter = min(ca.counter, iteration_threshold - 1);
-            ca.timer = 0.0f;
-            ca.is_soft = false;
-        }
-        ca.flag = false;
-
-        ca.timer -= sub_dt;
-        if(ca.timer <= 0.0f) {
-            ca.is_soft = false;
-        }
-    }
 }
 
 void Physics_system::velocity_solve(std::vector<Collision_constraint>& collisions) {
     int iterations = 6;
+
+    float spring = 0.45f;
+    float softness = 0.025f;
+
+    float factor = 1.0f / (physics_step);
+    float factor_constraint = 1.0f / (physics_step);
 
     for(Collision_constraint& data : collisions) {
         data.ca = &ecs.get_component<Collider>(data.a);
@@ -1775,44 +1247,135 @@ void Physics_system::velocity_solve(std::vector<Collision_constraint>& collision
         data.get_points();
         data.get_value();
 
+        float baumgarte_max = 1.0f;
+
         for(col_constraint& c : data.constraints) {
-            c.lambdaT = 0.0f;
+            c.baumgarteN = max(c.baumgarteN, -baumgarte_max);
+
+            c.lambdaN = c.d->lambdaN;
+            c.lambdaT = c.d->lambdaT;
+
+            if(data.b == NULL_ENTITY) {
+                vec2 impulse = c.normal * c.lambdaN;
+
+                apply_impulse(data.ca, impulse, c.pa - data.ta->position);
+
+                vec2 friction_impulse = c.tangent * c.lambdaT;
+
+                apply_impulse(data.ca, friction_impulse, c.pa - data.ta->position);
+            } else {                
+                vec2 impulse = c.normal * c.lambdaN;
+
+                apply_impulse(data.ca, impulse, c.pa - data.ta->position);
+                apply_impulse(data.cb, -impulse, c.pb - data.tb->position);
+
+                vec2 friction_impulse = c.tangent * c.lambdaT;
+
+                apply_impulse(data.ca, friction_impulse, c.pa - data.ta->position);
+                apply_impulse(data.cb, -friction_impulse, c.pb - data.tb->position);
+            }
         }
     }
 
     for(int i = 0; i < iterations; ++i) {
         for(Collision_constraint& data : collisions) {
             for(col_constraint& cc : data.constraints) {
-                float mu = 0.9f;
+
+                vec2 velocity = calculate_point_velocity(data.ca, cc.pa - data.ta->position);
+
+                float diff = (cc.baumgarteN) * spring * factor;
 
                 if(cc.d->b == NULL_ENTITY) {
+                    float inertia = cc.inertiaNa;
+
+                    float v = dot(velocity, cc.d->normal);
+
+                    float L = -v - diff; 
+                    L /= inertia;
+                    L -= softness * cc.lambdaN;
+                    
+                    vec2 limits = vec2(0.0f, FLT_MAX);
+
+                    float new_lambda = cc.lambdaN + L;
+                    new_lambda = clamp(new_lambda, limits.x, limits.y);
+                    L = new_lambda - cc.lambdaN;
+                    cc.lambdaN = new_lambda;
+
+                    vec2 impulse = cc.d->normal * L;
+
+                    apply_impulse(data.ca, impulse, cc.pa - data.ta->position);
+
+
                     // friction
-                    float max_friction = abs(mu * cc.normal_force);
 
-                    vec2 velocity = calculate_point_velocity(data.ca, cc.pa - data.ta->position);
-                    float tangent_velocity = dot(velocity, cc.tangent);
+                    float normal_magnitude = length(impulse);
 
-                    float new_lambdaT = cc.lambdaT - tangent_velocity / cc.inertiaT;
+                    velocity = calculate_point_velocity(data.ca, cc.pa - data.ta->position);
+
+                    vec2 tangent_vector = vec2(cc.d->normal.y, -cc.d->normal.x);
+                    float tangent_velocity = dot(velocity, tangent_vector);
+
+                    
+                    float inverse_mass = cc.inertiaTa;
+
+                    float mu = 0.9f;
+
+                    float max_friction = abs(mu * cc.lambdaN);
+
+                    float new_lambdaT = cc.lambdaT - tangent_velocity / inverse_mass;
                     new_lambdaT = clamp(new_lambdaT, -max_friction, max_friction);
-                    float L = new_lambdaT - cc.lambdaT;
+                    L = new_lambdaT - cc.lambdaT;
                     cc.lambdaT = new_lambdaT;
 
-                    vec2 friction_impulse = cc.tangent * L;
+                    float Pt = L;
+
+                    vec2 friction_impulse = tangent_vector * Pt;
 
                     apply_impulse(data.ca, friction_impulse, cc.pa - data.ta->position);
                 } else {
+                    float inertia = cc.inertiaNa + cc.inertiaNb;
+
+                    velocity -= calculate_point_velocity(data.cb, cc.pb - data.tb->position);
+
+                    float v = dot(velocity, cc.normal);
+
+                    float L = -v - diff;
+                    L /= inertia;
+                    L -= softness * cc.lambdaN;
+                    
+                    vec2 limits = vec2(0.0f, FLT_MAX);
+
+                    float new_lambda = cc.lambdaN + L;
+                    new_lambda = clamp(new_lambda, limits.x, limits.y);
+                    L = new_lambda - cc.lambdaN;
+                    cc.lambdaN = new_lambda;
+
+                    vec2 impulse = cc.normal * L;
+                    
+                    apply_impulse(data.ca, impulse, cc.pa - data.ta->position);
+                    apply_impulse(data.cb, -impulse, cc.pb - data.tb->position);
+
                     // friction
-                    float max_friction = abs(mu * cc.normal_force);
 
-                    vec2 velocity = calculate_point_velocity(data.ca, cc.pa - data.ta->position) - calculate_point_velocity(data.cb, cc.pb - data.tb->position);
+                    float normal_magnitude = length(impulse);
+
+                    velocity = calculate_point_velocity(data.ca, cc.pa - data.ta->position) - calculate_point_velocity(data.cb, cc.pb - data.tb->position);
                     float tangent_velocity = dot(velocity, cc.tangent);
+                    
+                    inertia = cc.inertiaTa + cc.inertiaTb;
+                    
+                    float mu = 0.9f;
 
-                    float new_lambdaT = cc.lambdaT - tangent_velocity / cc.inertiaT;
+                    float max_friction = abs(mu * cc.lambdaN);
+
+                    float new_lambdaT = cc.lambdaT - tangent_velocity / inertia;
                     new_lambdaT = clamp(new_lambdaT, -max_friction, max_friction);
-                    float L = new_lambdaT - cc.lambdaT;
+                    L = new_lambdaT - cc.lambdaT;
                     cc.lambdaT = new_lambdaT;
 
-                    vec2 friction_impulse = cc.tangent * L;
+                    float Pt = L;
+
+                    vec2 friction_impulse = cc.tangent * Pt;
 
                     apply_impulse(data.ca, friction_impulse, cc.pa - data.ta->position);
                     apply_impulse(data.cb, -friction_impulse, cc.pb - data.tb->position);
@@ -1820,515 +1383,17 @@ void Physics_system::velocity_solve(std::vector<Collision_constraint>& collision
             }
         }
     }
+    
+    for(Collision_constraint& c : collisions) {
+        for(col_constraint& cc : c.constraints) {
+            cc.d->lambdaN = cc.lambdaN;
+            cc.d->lambdaT = cc.lambdaT;
+        }
+    }
 }
-
 
 vec2 angular_to_linear(vec2 pos, float angular_velocity) {
     return vec2(pos.y, -pos.x) * angular_velocity;
-}
-
-void Featherstone_constraint::init() {
-    // node tree construction
-    Input_system& is = ecs.get_system<Input_system>();
-    constraints = local_constraints;
-    if(is.held_constraint != NULL_ENTITY) {
-        uint32_t i = 0;
-        for(uint32_t entity : entities) {
-            if(entity == is.held_object) {
-                Constraint& cs = ecs.get_system<Physics_system>().constraints[is.held_constraint];
-
-                constraints.push_back(cs.pos[0]);
-                constraints[constraints.size() - 1].is_hold = true;
-                break;
-            }
-            ++i;
-        }
-    }
-
-    // IT CREATES A BRANCH
-
-    nodes.clear();
-    //if(!nodes.size()) {
-        for(uint32_t e : entities) {
-            node n;
-            n.id = nodes.size();
-            n.parent = NULL_ENTITY;
-            
-            n.matrix_index = e;
-
-            nodes.push_back(n);
-        }
-
-        uint32_t i = 0;
-        for(auto& constraint : constraints) {
-            if(constraint.is_hold) {
-                uint32_t child = 0;
-                for(uint32_t entity : entities) {
-                    if(entity == is.held_object) {
-                        break;
-                    }
-                    ++child;
-                }
-            
-                node n;
-                n.is_body = false;
-                n.id = nodes.size();
-
-                n.parent = NULL_ENTITY;
-                n.children.push_back(child);
-                
-                n.matrix_index = i;
-                
-                nodes.push_back(n);
-                
-                ++i;
-            } else {
-                node n;
-                n.is_body = false;
-                n.id = nodes.size();
-
-                uint32_t a = i;
-                uint32_t b = i + 1;
-
-                n.parent = min(a, b);
-                n.children.push_back(max(a, b));
-                nodes[n.parent].children.push_back(n.id);
-                
-                n.matrix_index = i;
-                
-                nodes.push_back(n);
-                
-                ++i;
-            }
-            
-        }
-        
-        // fill in parent
-        for(node& n : nodes) {
-            for(uint32_t c : n.children) {
-                nodes[c].parent = n.id;
-            }
-        }
-
-        node* current_node;
-        for(node& n : nodes) {
-            if(n.parent == NULL_ENTITY) {
-                current_node = &n;
-            }
-        }
-
-        int depth = 0;
-        std::vector<uint32_t> path = {0};
-        while(true) {
-            if(current_node->children.size()) {
-                ++depth;
-                path.push_back(0);
-                current_node = &nodes[current_node->children[0]];
-            } else break;
-        }
-        while(true) {
-            if(current_node->children.size() <= path.back()) {
-                from_order.emplace(to_order.size(), current_node->id);
-                to_order.emplace(current_node->id, to_order.size());
-
-                if(path.size() > depth) path.pop_back();
-                --depth;
-
-                if(current_node->parent == NULL_ENTITY) break;
-                
-                current_node = &nodes[current_node->parent];
-                ++path[path.size() - 1];
-            } else {
-                ++depth;
-                current_node = &nodes[current_node->children[path.back()]];
-                path.push_back(0);
-            }
-        }
-    //}
-
-    // matrix ordering
-
-    // jacobian creation
-
-    jacobians.clear();
-    std::unordered_map<uint32_t, avie_matrix> mass_matrices;
-
-    for(node& n : nodes) {
-        if(n.is_body) {
-            uint32_t a = entities[n.id];
-            Collider* ca = &ecs.get_component<Collider>(a);
-            Transform* ta = &ecs.get_component<Transform>(a);
-
-            avie_matrix mm = empty(3, 3);
-            mm(0, 0) = ca->mass;
-            mm(1, 1) = ca->mass;
-            mm(2, 2) = ca->inertia;
-
-            mass_matrices.emplace(n.id, mm);
-        } else {
-            if(n.parent == NULL_ENTITY) {
-                uint32_t a = entities[n.children[0]];
-                pos_constraint& pc = constraints[n.matrix_index];
-                
-                Collider* ca = &ecs.get_component<Collider>(a);
-                Transform* ta = &ecs.get_component<Transform>(a);
-
-                pc.pa = ta->orientation * pc.a + ta->position;
-                pc.pb = pc.b;
-
-                avie_matrix j0 = empty(3, pc.vs.size());
-                
-                uint32_t vi = 0;
-                for(auto v : pc.vs) { // compute jacobians
-                    vec2 rel_pa = pc.pa - ta->position;
-                    float ra = cross(vec3(rel_pa, 0), vec3(v, 0)).z;
-
-                    j0(0, vi) = v.x;
-                    j0(1, vi) = v.y;
-                    j0(2, vi) = ra;
-
-                    ++vi;
-                }
-
-                uvec2 j0_pos = {n.children[0], n.id};
-
-                jacobians.emplace(j0_pos, j0);
-            } else {
-                uint32_t a = entities[n.parent];
-                uint32_t b = entities[n.children[0]];
-                pos_constraint& pc = constraints[n.matrix_index];
-                
-                Collider* ca = &ecs.get_component<Collider>(a);
-                Transform* ta = &ecs.get_component<Transform>(a);
-                Collider* cb = &ecs.get_component<Collider>(b);
-                Transform* tb = &ecs.get_component<Transform>(b);
-
-                pc.pa = ta->orientation * pc.a + ta->position;
-
-                if(b != NULL_ENTITY) {
-                    pc.pb = tb->orientation * pc.b + tb->position;
-                } else {
-                    pc.pb = pc.b;
-                }
-
-                avie_matrix j0 = empty(3, pc.vs.size());
-                avie_matrix j1 = empty(3, pc.vs.size());
-                
-                uint32_t vi = 0;
-                for(auto v : pc.vs) { // compute jacobians
-                    vec2 rel_pa = pc.pa - ta->position;
-                    float ra = cross(vec3(rel_pa, 0), vec3(-v, 0)).z;
-
-                    vec2 rel_pb = pc.pb - tb->position;
-                    float rb = cross(vec3(rel_pb, 0), vec3(v, 0)).z;
-
-                    j0(0, vi) = -v.x;
-                    j0(1, vi) = -v.y;
-                    j0(2, vi) = ra;
-                    
-                    j1(0, vi) = v.x;
-                    j1(1, vi) = v.y;
-                    j1(2, vi) = rb;
-
-                    ++vi;
-                }
-
-                uvec2 j0_pos = {n.parent, n.id};
-                uvec2 j1_pos = {n.children[0], n.id};
-
-                jacobians.emplace(j0_pos, j0);
-                jacobians.emplace(j1_pos, j1);
-            }
-        }
-    }
-
-    // build sparse matrix
-
-    H.clear();
-
-    for(node n : nodes) {
-        uint32_t ii = to_order[n.id];
-
-        if(n.is_body) {
-            H.insert({ii, ii}, mass_matrices[n.id]);
-
-            if(n.parent != NULL_ENTITY) {
-                avie_matrix& jacobian = jacobians[{n.id, n.parent}];
-                jacobian = transpose(jacobian);
-
-                uvec2 pos = {to_order[n.parent], ii};
-
-                H.insert(pos, -jacobian);
-                H.insert({pos.y, pos.x}, -transpose(jacobian));
-            }
-        } else {
-            if(n.parent != NULL_ENTITY) {
-                avie_matrix& jacobian = jacobians[{n.parent, n.id}];
-
-                uvec2 pos = {to_order[n.parent], ii};
-
-                H.insert(pos, -jacobian);
-                H.insert({pos.y, pos.x}, -transpose(jacobian));
-            }
-        }
-    }
-    H.compute_ranges();
-
-    // solve for D and U
-    block_sparse_matrix D;
-    Dn.clear();
-    U.clear();
-    D.clear();
-
-    for(int i = 0; i < nodes.size(); ++i) {
-        node& n = nodes[from_order[i]];
-
-        avie_matrix Di;
-        if(n.is_body) Di = H.matrices[{i, i}];
-        else {
-            pos_constraint& constraint = constraints[n.matrix_index];
-            Di = empty(constraint.vs.size(), constraint.vs.size());
-        }
-
-        for(uint32_t child : n.children) {
-            uint32_t j = to_order[child];
-
-            Di -= transpose(U.matrices[{i, j}]) * D.matrices[{j, j}] * U.matrices[{i, j}];
-        }
-
-        avie_matrix Dinv = invert(Di);
-        
-        if(n.parent != NULL_ENTITY) {
-            uint32_t j = to_order[n.parent];
-            avie_matrix U_ji = Dinv * H.matrices[{j, i}];
-            U.insert({j, i}, U_ji);
-        }
-
-        U.insert({i, i}, identity(Di.columns, Di.rows));
-        Dn.insert({i, i}, Dinv);
-        D.insert({i, i}, Di);
-    }
-
-    U.compute_ranges();
-    Dn.compute_ranges();
-    D.compute_ranges();
-}
-
-void Featherstone_constraint::solve() {
-    // now the fun part
-    // getting x (which is [y, lambda])
-
-    // build b
-    uint32_t num_bodies = entities.size();
-    uint32_t num_constraints = 0;
-    for(auto& constraint : constraints) {
-        num_constraints += constraint.vs.size();
-    }
-    avie_matrix B = empty(1, H.size.y);
-
-    uint32_t i = 0;
-    for(auto [index, node_id] : from_order) {
-        node& n = nodes[node_id];
-
-        if(n.is_body) {
-            i += 3;
-        } else {
-            if(n.parent == NULL_ENTITY) {
-                pos_constraint& constraint = constraints[n.matrix_index];
-
-                node& na = nodes[n.children[0]];
-
-                uint32_t a = na.matrix_index;
-
-                Collider* ca = &ecs.get_component<Collider>(a);
-                Transform* ta = &ecs.get_component<Transform>(a);
-
-                // now get the amount the velocity is violating the constraint (and maybe throw in a lil bit of baumgarte :3)
-                
-                vec2 pv_a = Physics_system::calculate_point_velocity(ca, constraint.pa - ta->position);
-
-                vec2 rel_velocity = pv_a;
-                vec2 rel = constraint.pa - constraint.pb;
-
-                for(vec2 v : constraint.vs) {
-                    B(0, i) = (dot(rel_velocity, v) + dot(v, rel) / 0.02f * 0.35f);
-
-                    ++i;
-                }
-            } else {
-                pos_constraint& constraint = constraints[n.matrix_index];
-
-                node& na = nodes[n.parent];
-                node& nb = nodes[n.children[0]];
-
-                uint32_t a = na.matrix_index;
-                uint32_t b = nb.matrix_index;
-
-                Collider* ca = &ecs.get_component<Collider>(a);
-                Transform* ta = &ecs.get_component<Transform>(a);
-                Collider* cb = &ecs.get_component<Collider>(b);
-                Transform* tb = &ecs.get_component<Transform>(b);
-
-                // now get the amount the velocity is violating the constraint (and maybe throw in a lil bit of baumgarte :3)
-                
-                vec2 pv_a = Physics_system::calculate_point_velocity(ca, constraint.pa - ta->position);
-                vec2 pv_b = Physics_system::calculate_point_velocity(cb, constraint.pb - tb->position);
-
-                vec2 rel_velocity = pv_b - pv_a;
-                vec2 rel = constraint.pb - constraint.pa;
-
-                for(vec2 v : constraint.vs) {
-                    B(0, i) = (dot(rel_velocity, v) + dot(v, rel) / 0.02f * 1.0f);
-
-                    ++i;
-                }
-            }
-        }
-    }
-
-    // UT substitution (UT * z = b)
-    avie_matrix z = empty(1, B.rows);
-    for(int i = 0; i < U.columns.size(); ++i) {
-        uvec2 range = U.column_widths[i];
-
-        avie_matrix total = empty(1, range.y);
-
-        for(int j = 0; j < i; ++j) {
-            if(U.rows[j].contains(i)) {
-                uvec2 range_row = U.row_widths[j];
-
-                avie_matrix& matrix = U.matrices[{i, j}];
-                avie_matrix z_clip = clip(range_row, z);
-                total += transpose(matrix) * z_clip;
-            }
-        }
-        
-        for(int k = 0; k < range.y; ++k) {
-            z(0, range.x + k) = B(0, range.x + k) - total(0, k);
-        }
-    }
-
-    // D substitution (D * y = z);
-    avie_matrix y = empty(1, B.rows);
-    for(int i = 0; i < U.columns.size(); ++i) {
-        uvec2 range = U.column_widths[i];
-
-        avie_matrix zm = clip(range, z);
-        zm = Dn.matrices[{i, i}] * zm;
-
-        for(int k = 0; k < range.y; ++k) {
-            y(0, range.x + k) = zm(0, k);
-        }
-    }
-
-    // U substitution (U * x = y)
-    avie_matrix x = empty(1, B.rows);
-    for(int i = U.rows.size() - 1; i >= 0; --i) {
-        uvec2 range = U.row_widths[i];
-        
-        avie_matrix total = empty(1, range.y);
-
-        for(int j = i + 1; j < U.columns.size(); ++j) {
-            uvec2 range_column = U.column_widths[j];
-
-            if(U.rows[i].contains(j)) {
-                auto& matrix = U.matrices[{j, i}];
-                avie_matrix x_clip = clip(range_column, x);
-                total += matrix * x_clip;
-            }
-        }
-
-        for(int k = 0; k < range.y; ++k) {
-            x(0, range.x + k) = y(0, range.x + k) - total(0, k);
-        }
-    }
-
-    for(node& n : nodes) {
-        if(!n.is_body) {
-            if(n.parent == NULL_ENTITY) {
-                uint32_t i = to_order[n.id];
-                vec2 range = U.column_widths[i];
-
-                pos_constraint& constraint = constraints[n.matrix_index];
-
-                node& child = nodes[n.children[0]];
-
-                uint32_t a = child.matrix_index;
-                
-                Collider* ca = &ecs.get_component<Collider>(a);
-                Transform* ta = &ecs.get_component<Transform>(a);
-        
-                avie_matrix& jacobian_a = jacobians[{child.id, n.id}];
-
-                bool c = false;
-                uint32_t ii = 0;
-                for(vec2 v : constraint.vs) {
-                    float lambda = x(0, range.x + ii);
-
-                    vec2 impulse = v * lambda;
-
-                    if(!isnan(lambda)) {
-                        c = true;
-
-                        Physics_system::apply_impulse(ca, impulse, constraint.pa - ta->position);
-
-                        ++ii;
-                    }
-                }
-                
-                if(c) {
-                    //std::cout << "\n\n";
-                }
-            } else {
-                uint32_t i = to_order[n.id];
-                vec2 range = U.column_widths[i];
-
-                pos_constraint& constraint = constraints[n.matrix_index];
-
-                node& parent = nodes[n.parent];
-                node& child = nodes[n.children[0]];
-
-                uint32_t a = parent.matrix_index;
-                uint32_t b = child.matrix_index;
-                
-                Collider* ca = &ecs.get_component<Collider>(a);
-                Transform* ta = &ecs.get_component<Transform>(a);
-                Collider* cb = &ecs.get_component<Collider>(b);
-                Transform* tb = &ecs.get_component<Transform>(b);
-        
-                avie_matrix& jacobian_a = jacobians[{parent.id, n.id}];
-                avie_matrix& jacobian_b = jacobians[{child.id, n.id}];
-
-                bool c = false;
-                uint32_t ii = 0;
-                for(vec2 v : constraint.vs) {
-                    float lambda = x(0, range.x + ii);
-
-                    vec2 impulse = v * lambda;
-
-                    if(!isnan(lambda)) {
-                        //std::cout << lambda << "\n";
-                        c = true;
-
-                        //ca->velocity += vec2(jacobian_a(0, ii), jacobian_a(1, ii)) * lambda / ca->mass;
-                        //ca->angular_velocity += jacobian_a(2, ii) * lambda / ca->inertia;
-                        
-                        //cb->velocity += vec2(jacobian_b(0, ii), jacobian_b(1, ii)) * lambda / cb->mass;
-                        //cb->angular_velocity += jacobian_b(2, ii) * lambda / cb->inertia;
-
-                        Physics_system::apply_impulse(ca, -impulse, constraint.pa - ta->position);
-                        Physics_system::apply_impulse(cb, impulse, constraint.pb - tb->position);
-
-                        ++ii;
-                    }
-                }
-                
-                if(c) {
-                    //std::cout << "\n\n";
-                }
-            }
-        }
-    }
 }
 
 vec2 Physics_system::calculate_inertia(Collider& c) {
@@ -2457,16 +1522,10 @@ void Collision_constraint::get_value() {
 
         c.inertiaNa = Physics_system::calculate_inverse_mass(ca, ta, c.normal, c.pa - ta->position);
         c.inertiaTa = Physics_system::calculate_inverse_mass(ca, ta, c.tangent, c.pa - ta->position);
-
-        c.inertiaN = c.inertiaNa;
-        c.inertiaT = c.inertiaTa;
         
         if(b != NULL_ENTITY) {
             c.inertiaNb = Physics_system::calculate_inverse_mass(cb, tb, c.normal, c.pb - tb->position);
             c.inertiaTb = Physics_system::calculate_inverse_mass(cb, tb, c.tangent, c.pb - tb->position);
-
-            c.inertiaN += c.inertiaNb;
-            c.inertiaT += c.inertiaTb;
         }
         
         c.baumgarteN = dot(diff, c.normal);
@@ -2489,8 +1548,21 @@ void Collision_constraint::refresh(col_constraint& c) {
         c.inertiaTb = Physics_system::calculate_inverse_mass(cb, tb, c.tangent, c.pb - tb->position);
     }
 
-    c.inertiaN = c.inertiaNa + c.inertiaNb;
-    c.inertiaT = c.inertiaTa + c.inertiaTb;
+    vec2 diff = c.pa - c.pb;
+    c.baumgarteN = dot(diff, c.normal);
+    c.baumgarteT = dot(diff, c.tangent);
+}
+
+void Collision_constraint::refresh_C(col_constraint& c) {
+    vec2 point_a = ta->orientation * c.d->pa + ta->position;
+    c.pa = point_a;
+    
+    if(c.d->b == NULL_ENTITY) {
+        c.pb = c.d->pb;
+    } else {
+        vec2 point_b = tb->orientation * c.d->pb + tb->position;
+        c.pb = point_b;
+    }
 
     vec2 diff = c.pa - c.pb;
     c.baumgarteN = dot(diff, c.normal);
@@ -2643,5 +1715,3 @@ void Profiler::output() {
 
 Profiler profiler;
 Profiler profiler2;
-
-float slop = 0.0625f;

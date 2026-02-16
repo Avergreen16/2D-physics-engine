@@ -37,7 +37,7 @@ void create_text_file() {
         values.push_back(0x20);
         values.push_back(0x06);
         
-        uint16_t num_glyphs = (0x7E - 0x20) + (0x86 - 0x7F);
+        uint16_t num_glyphs = (0x7E - 0x20) + (0x87 - 0x7F);
         uint8_t* ptr = (uint8_t*)&num_glyphs;
         values.push_back(ptr[0]);
         values.push_back(ptr[1]);
@@ -49,7 +49,7 @@ void create_text_file() {
             uint8_t id = i;
             uint8_t stride = 0x06;
             uint8_t px_x = 0x05;
-            uint8_t px_y = 0x0D;
+            uint8_t px_y = 0x0B;
             uint16_t tex_x = tex_pos;
             uint16_t tex_y = 0x0000;
             uint8_t gpos_x = 0x00;
@@ -75,12 +75,12 @@ void create_text_file() {
         }
 
         start = 0x80;
-        end = 0x85;
+        end = 0x86;
         for(uint8_t i = start; i <= end; ++i) {
             uint8_t id = i;
             uint8_t stride = 0x06;
             uint8_t px_x = 0x05;
-            uint8_t px_y = 0x0D;
+            uint8_t px_y = 0x0B;
             uint16_t tex_x = tex_pos;
             uint16_t tex_y = 0x0000;
             uint8_t gpos_x = 0x00;
@@ -104,6 +104,33 @@ void create_text_file() {
 
             tex_pos += 0x06;
         }
+
+        // missing char
+
+        uint8_t stride = 0x06;
+        uint8_t px_x = 0x05;
+        uint8_t px_y = 0x0B;
+        uint16_t tex_x = tex_pos;
+        uint16_t tex_y = 0x0000;
+        uint8_t gpos_x = 0x00;
+        uint8_t gpos_y = 0x00;
+
+        values.push_back(stride);
+        values.push_back(px_x);
+        values.push_back(px_y);
+
+        ptr = (uint8_t*)&tex_x;
+        values.push_back(ptr[0]);
+        values.push_back(ptr[1]);
+        
+        ptr = (uint8_t*)&tex_y;
+        values.push_back(ptr[0]);
+        values.push_back(ptr[1]);
+        
+        values.push_back(gpos_x);
+        values.push_back(gpos_y);
+
+        //
 
         file.write((const char*)values.data(), values.size());
 
@@ -208,80 +235,9 @@ void write(mat4& matrix) {
     std::cout << write_string;
 }
 
-/*
-using amat = avie_matrix;
-
-amat H = empty(6, 6);
-amat U = identity(6, 6);
-amat D = identity(6, 6);
-
-for(auto& [k, i] : forward_to) {
-    node& n = nodes[i];
-
-    uint32_t j = forward_from[i];
-    H(j, j) = core.random() * 200.0f;
-
-    if(n.parent != NULL_ENTITY) {
-        uint32_t k = forward_from[n.parent];
-        float r = core.random() * 200.0f;
-
-        H(j, k) = r;
-        H(k, j) = r;
-    }
-}
-
-for(int i = 0; i < 11; ++i) {
-    D[i][i] = H[i][i];
-
-    node& n = nodes[forward_to[i]];
-
-    for(uint32_t child : n.children) {
-        uint32_t j = forward_from[child];
-
-        D[i][i] -= U[i][j] * U[i][j] * D[j][j];
-    }
-    
-    if(n.parent != NULL_ENTITY) {
-        uint32_t j = forward_from[n.parent];
-        U[j][i] = H[j][i] / D[i][i];
-    }
-}
-*/
-
-void LDLT() {
-    avie_matrix H = empty(6, 6);
-    avie_matrix b = empty(1, 6);
-
-    for(int i = 0; i < 6; ++i) {
-        for(int j = i; j < 6; ++j) {
-            float f = core.random();
-            if(j == i) H(i, i) = f;
-            else {
-                H(j, i) = f;
-                H(i, j) = f;
-            }
-        }
-
-        b(0, i) = core.random();
-    }
-
-    double t0 = get_time();
-    avie_matrix Hinv = invert(H);
-    double t1 = get_time();
-
-    avie_matrix I = H * Hinv;
-
-    std::cout << "\n------------------\n";
-    write(I);
-    std::cout << "\n------------------\n";
-    std::cout << "elapsed time: " << (t1 - t0);
-    std::cout << "\n------------------\n";
-}
-
 int main() {
-    //LDLT();
-    //create_text_file();
-    
+    create_text_file();
+
     if(glfwInit() == GLFW_FALSE) {
         std::cout << "ERROR: GLFW failed to load.\n";
         exit(-1);
@@ -344,7 +300,7 @@ int main() {
     Collider c;
     c.radius = vec2(0.0f);
     c.vertices = square;
-    for(vec2& v : c.vertices) v *= vec2(64, 16);
+    for(vec2& v : c.vertices) v *= vec2(256, 16);
     /*c.radius = planet_radius;
     c.vertices = {
         vec2(0.0f)
