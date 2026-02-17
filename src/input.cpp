@@ -234,7 +234,7 @@ void Input_system::call() {
                     Collider c2;
                     c2.vertices = {vec2(0, 0)};
                     c2.radius = vec2(asteroid_radius);
-                    c2.mass = 0x30 * scale * scale;
+                    c2.mass = 0x3 * scale * scale;
                     shift = Physics_system::calculate_inertia(c2);
                     t.position += t.orientation * shift;
                     t.position += t.orientation * vec2(0, 1.0f);

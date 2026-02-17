@@ -127,7 +127,7 @@ struct pos_constraint {
     std::vector<vec2> vs;
     std::vector<float> inertia_a;
     std::vector<float> inertia_b;
-    std::vector<float> C;
+    std::vector<float> baumgarte;
     std::vector<float> lambda;
     
     float compliance = 0.00001f;
@@ -219,11 +219,16 @@ float collision_compliance = 0.000001;
 also the compliances scale with fps, so turn the compliances up when using a higher timestep (it's not because of the masses, i thought it was before lol)
 */
 
+struct delta_pos {
+    vec2 pos_delta;
+    float rot_delta;
+};
+
 struct Physics_system : System {
     // parameters
     float fps = 60.0f;
     uint32_t iterations = 4;
-    uint32_t substeps = 2;
+    uint32_t substeps = 4;
     float contact_sep = 0.025f;
     float static_dist = 0.01f;
     float penetration_threshold = FLT_MAX;
@@ -267,6 +272,7 @@ struct Physics_system : System {
 
     void position_solve(std::vector<Collision_constraint>& constraints);
     void velocity_solve(std::vector<Collision_constraint>& constraints);
+    void vs(std::vector<Collision_constraint>& constraints, std::unordered_map<uint32_t, delta_pos>& dp);
 
     static vec2 calculate_inertia(Collider& c);
 
