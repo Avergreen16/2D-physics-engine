@@ -36,14 +36,9 @@ void main() {
         line_width = 2;
         flag = true;
     }
-    if(int(round(coords.x)) == 0) {
-        color = hex_color(0xFF5959);
-        line_width = 2;
-        flag = true;
-    }
 
     float dist_from_line = abs(fract(coords.x + 0.5) - 0.5) / line_width * 2.0;
-    float alpha = max(0.0, 1.0 - (ddx / (line_width * line_width)) * 2.0);
+    float alpha = max(0.0, 1.0 - (ddx / line_width) * 2.0);
     if(dist_from_line < ddx) {
         if(flag) line_a = max(line_a, vec4(color, alpha));
         else {
@@ -66,11 +61,6 @@ void main() {
     color = base_color * 2.0;
     if(int(round(coords.y)) % 256 == 0) {
         color = sector_color;
-        line_width = 2;
-        flag = true;
-    }
-    if(int(round(coords.y)) == 0) {
-        color = hex_color(0x59FF59);
         line_width = 2;
         flag = true;
     }

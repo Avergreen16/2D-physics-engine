@@ -4,6 +4,164 @@
 #include "ecs.hpp"
 #include "random.hpp"
 
+struct avie_matrix {
+    std::size_t columns;
+    std::size_t rows;
+    double* values;
+
+    avie_matrix() = default;
+
+    avie_matrix(std::size_t c, std::size_t r) {
+        columns = c;
+        rows = r;
+
+        values = new double[c * r];
+    }
+
+    ~avie_matrix() {
+        delete[] values;
+    }
+
+    avie_matrix(const avie_matrix& a) {
+        columns = a.columns;
+        rows = a.rows;
+
+        values = new double[columns * rows];
+        memcpy(values, a.values, columns * rows * sizeof(double));
+    }
+
+    avie_matrix& operator=(const avie_matrix& a) {
+        columns = a.columns;
+        rows = a.rows;
+
+        values = new double[columns * rows];
+        memcpy(values, a.values, columns * rows * sizeof(double));
+
+        return *this;
+    }
+
+    double* operator[](std::size_t r) {
+        return &values[r * columns];
+    }
+
+    double& operator()(std::size_t c, std::size_t r) {
+        return values[r * columns + c];
+    }
+
+    avie_matrix operator-() {
+        avie_matrix new_m = *this;
+
+        for(int i = 0; i < columns * rows; ++i) {
+            new_m.values[i] = -new_m.values[i];
+        }
+
+        return new_m;
+    }
+
+    avie_matrix& operator-=(avie_matrix a) {
+        for(int c = 0; c < columns; ++c) {
+            for(int r = 0; r < rows; ++r) {
+                int i = c * rows + r;
+                values[i] -= a.values[i];
+            }   
+        }
+
+        return *this;
+    }
+
+    avie_matrix operator-(avie_matrix a) {
+        avie_matrix new_m = *this;
+
+        for(int c = 0; c < columns; ++c) {
+            for(int r = 0; r < rows; ++r) {
+                int i = c * rows + r;
+                new_m.values[i] -= a.values[i];
+            }   
+        }
+
+        return new_m;
+    }
+
+    avie_matrix& operator+=(avie_matrix a) {
+        for(int c = 0; c < columns; ++c) {
+            for(int r = 0; r < rows; ++r) {
+                int i = c * rows + r;
+                values[i] += a.values[i];
+            }   
+        }
+
+        return *this;
+    }
+
+    avie_matrix operator+(avie_matrix a) {
+        avie_matrix new_m = *this;
+
+        for(int c = 0; c < columns; ++c) {
+            for(int r = 0; r < rows; ++r) {
+                int i = c * rows + r;
+                new_m.values[i] += a.values[i];
+            }   
+        }
+
+        return new_m;
+    }
+};
+
+avie_matrix empty(std::size_t columns, std::size_t rows);
+avie_matrix identity(std::size_t columns, std::size_t rows);
+avie_matrix transpose(avie_matrix& input);
+avie_matrix transpose(avie_matrix&& input);
+avie_matrix operator*(avie_matrix a, avie_matrix b);
+void write(avie_matrix matrix);
+vec2 get_error(avie_matrix& a, avie_matrix& b);
+avie_matrix UTDU_solve(avie_matrix A, avie_matrix b);
+avie_matrix invert(avie_matrix A);
+
+struct block_sparse_matrix {
+    std::unordered_map<uvec2, avie_matrix, hash_uvec2> matrices;
+    std::vector<std::unordered_set<uint32_t>> columns;
+    std::vector<std::unordered_set<uint32_t>> rows;
+    std::map<uint32_t, uvec2> column_widths;
+    std::map<uint32_t, uvec2> row_widths;
+    uvec2 size;
+
+    void insert(uvec2 v, avie_matrix matrix) {
+        matrices.emplace(v, matrix);
+
+        if(v.x + 1 > columns.size()) columns.resize(v.x + 1);
+        if(v.y + 1 > rows.size()) rows.resize(v.y + 1);
+
+        columns[v.x].emplace(v.y);
+        rows[v.y].emplace(v.x);
+        column_widths[v.x] = {0, matrix.columns};
+        row_widths[v.y] = {0, matrix.rows};
+    }
+
+    void compute_ranges() {
+        uint32_t accum = 0;
+        for(auto& [i, k] : column_widths) {
+            k.x = accum;
+            accum += k.y;
+        }
+        size.x = accum;
+
+        accum = 0;
+        for(auto& [i, k] : row_widths) {
+            k.x = accum;
+            accum += k.y;
+        }
+        size.y = accum;
+    }
+
+    void clear() {
+        matrices.clear();
+        columns.clear();
+        rows.clear();
+        column_widths.clear();
+        row_widths.clear();
+    }
+};
+
 struct Collider {
     std::vector<vec2> vertices;
     vec2 radius = vec2(0.0f);
@@ -45,12 +203,8 @@ struct Collision_data {
 
     vec2 normal;
 
-    float lambdaN = 0.0f;
-    float lambdaT = 0.0f;
-    
-    float deltaT = 0.0f;
-    float deltaN = 0.0f;
-    float sumN = 0.0f;
+    float prev_lambdaN = 0.0f;
+    float prev_lambdaT = 0.0f;
 };
 
 struct Constraint_distance {
@@ -91,9 +245,14 @@ struct col_constraint {
 
     float inertiaNa = 0.0f;
     float inertiaNb = 0.0f;
+    float inertiaN;
 
     float inertiaTa = 0.0f;
     float inertiaTb = 0.0f;
+    float inertiaT;
+
+    float prev_lambdaT = 0.0f;
+    float normal_force = 0.0f;
 
     float baumgarteN;
     float baumgarteT;
@@ -114,7 +273,6 @@ struct Collision_constraint {
     void get_value();
 
     void refresh(col_constraint& c);
-    void refresh_C(col_constraint& c);
 };
 
 struct pos_constraint {
@@ -165,6 +323,36 @@ struct Constraint {
     void get_values();
 
     void refresh(pos_constraint& c);
+};
+
+struct node {
+    uint32_t id;
+    uint32_t parent;
+    std::vector<uint32_t> children;
+
+    bool is_body = true;
+
+    uint32_t matrix_index;
+};
+
+struct Featherstone_constraint {
+    std::vector<uint32_t> entities;
+    std::vector<pos_constraint> local_constraints;
+    std::vector<pos_constraint> constraints;
+
+    std::unordered_map<uint32_t, avie_matrix> mass_matrices;
+    std::unordered_map<uvec2, std::vector<avie_matrix>, hash_uvec2> constraint_matrices;
+
+    block_sparse_matrix U;
+    block_sparse_matrix Dn;
+    block_sparse_matrix H;
+    std::vector<node> nodes;
+    std::map<uint32_t, uint32_t> from_order; // every value comes BEFORE its parents
+    std::map<uint32_t, uint32_t> to_order;
+    std::unordered_map<uvec2, avie_matrix, hash_uvec2> jacobians;
+
+    void init();
+    void solve();
 };
 
 struct Sap_point {
@@ -223,7 +411,7 @@ struct Physics_system : System {
     // parameters
     float fps = 60.0f;
     uint32_t iterations = 4;
-    uint32_t substeps = 2;
+    uint32_t substeps = 4;
     float contact_sep = 0.025f;
     float static_dist = 0.01f;
     float penetration_threshold = FLT_MAX;
@@ -244,6 +432,7 @@ struct Physics_system : System {
 
     std::vector<Constraint> constraints;
     std::vector<Constraint_distance> constraints_distance;
+    std::vector<Featherstone_constraint> constraints_featherstone;
 
     vec2 gravity_aspect = vec2(1.0f, 1.0f);
 
@@ -308,3 +497,4 @@ struct Profiler {
 
 extern Profiler profiler;
 extern Profiler profiler2;
+extern float slop;

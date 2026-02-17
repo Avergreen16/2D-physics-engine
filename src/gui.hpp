@@ -82,19 +82,6 @@ struct Font {
 
                 glyph_map.insert({id, data});
             }
-            
-            // missing placeholder
-            Glyph_data data;
-            data.visible = true;
-            file.read((char*)&data.stride, 1);
-            file.read((char*)&data.size[0], 1);
-            file.read((char*)&data.size[1], 1);
-            file.read((char*)&data.pos_tex[0], 2);
-            file.read((char*)&data.pos_tex[1], 2);
-            file.read((char*)&data.pos_line[0], 1);
-            file.read((char*)&data.pos_line[1], 1);
-
-            empty_data = data;
 
             file.close();
         } else {

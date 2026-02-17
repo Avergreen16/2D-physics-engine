@@ -15,7 +15,7 @@ std::string physics_callback() {
     Physics_system& sp = ecs.get_system<Physics_system>();
     uint32_t num_objects = sp.collectors[0].entities.size();
 
-    return to_base(int32_t(num_objects), 16) + "\x89";
+    return to_base(int32_t(num_objects), 16);
 }
 
 std::string null_callback() {
@@ -40,7 +40,7 @@ std::string fps_callback() {
 
 void insert_char(std::vector<UI_vertex>& vertices, Font& font, char character, vec2 pos, int text_size, bool italic, bool bold, vec4 color) {
     std::array<glm::vec2, 4> offsets = {glm::vec2{0, 0}, glm::vec2{0, 0}, glm::vec2{0, 0}, glm::vec2{0, 0}};
-    Glyph_data& g = font.at(character);
+    Glyph_data& g = font.glyph_map[character];
 
     if(italic) {
         float y0 = g.pos_line[1];
@@ -306,7 +306,7 @@ std::vector<UI_vertex> GUI_system::create_mesh(std::string string, uint32_t text
             ++skip;
         }
 
-        Glyph_data& g = font.at(c);
+        Glyph_data& g = font.glyph_map[c];
  
         if(g.visible) {
             insert_char(vertices, font, c, p, text_size, flag_italic, flag_bold, vec4(color, 1.0));
