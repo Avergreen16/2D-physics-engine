@@ -127,7 +127,7 @@ struct pos_constraint {
     std::vector<vec2> vs;
     std::vector<float> inertia_a;
     std::vector<float> inertia_b;
-    std::vector<float> C;
+    std::vector<float> baumgarte;
     std::vector<float> lambda;
     
     float compliance = 0.00001f;

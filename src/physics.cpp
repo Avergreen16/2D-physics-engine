@@ -985,6 +985,7 @@ void Physics_system::physics_loop() {
             old_transforms.emplace(entity, ta);
         }
 
+        /*
         position_solve(collision_constraints);
         for(uint32_t entity : collectors[0].entities) {
             Transform& ta = ecs.get_component<Transform>(entity);
@@ -999,7 +1000,7 @@ void Physics_system::physics_loop() {
             }
 
             //ta = old_transforms[entity];
-        }
+        }*/
 
         velocity_solve(collision_constraints);
 
@@ -1176,7 +1177,7 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
                         
                         float compliance = c.compliance * wa;
                         
-                        float delta = (-c.C[i] - compliance * c.lambda[i]) / (wa + compliance / (sub_dt * sub_dt)) * wa;
+                        float delta = (-c.baumgarte[i] - compliance * c.lambda[i]) / (wa + compliance / (sub_dt * sub_dt)) * wa;
                         
                         float L = c.lambda[i] + delta;
                         delta = L - c.lambda[i];
@@ -1190,7 +1191,7 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
 
                         float compliance = c.compliance * max(wa, wb);
                         
-                        float delta = (-c.C[i] - compliance * c.lambda[i]) / (wa + wb + compliance / (sub_dt * sub_dt)) * (wa + wb);
+                        float delta = (-c.baumgarte[i] - compliance * c.lambda[i]) / (wa + wb + compliance / (sub_dt * sub_dt)) * (wa + wb);
                         
                         float L = c.lambda[i] + delta;
                         delta = L - c.lambda[i];
@@ -1233,6 +1234,9 @@ void Physics_system::velocity_solve(std::vector<Collision_constraint>& collision
     float spring = 0.45f;
     float softness = 0.025f;
 
+    float spring_constraint = 0.75f;
+    float softness_constraint = 0.015f;
+
     float factor = 1.0f / (physics_step);
     float factor_constraint = 1.0f / (physics_step);
 
@@ -1274,6 +1278,42 @@ void Physics_system::velocity_solve(std::vector<Collision_constraint>& collision
                 apply_impulse(data.ca, friction_impulse, c.pa - data.ta->position);
                 apply_impulse(data.cb, -friction_impulse, c.pb - data.tb->position);
             }
+        }
+    }
+
+    for(Constraint& data : constraints) {
+        data.ca = &ecs.get_component<Collider>(data.a);
+        data.ta = &ecs.get_component<Transform>(data.a);
+        if(data.b != NULL_ENTITY) {
+            data.cb = &ecs.get_component<Collider>(data.b);
+            data.tb = &ecs.get_component<Transform>(data.b);
+        }
+
+        data.get_points();
+        data.get_values();
+        
+
+        for(pos_constraint& c : data.pos) {
+            uint32_t i = 0;
+            for(vec2 v : c.vs) {
+                vec2 impulse = v * c.lambda[i];
+
+                if(data.b == NULL_ENTITY) {
+                    apply_impulse(data.ca, impulse, c.pa - data.ta->position);
+                } else {
+                    apply_impulse(data.ca, impulse, c.pa - data.ta->position);
+                    apply_impulse(data.cb, -impulse, c.pb - data.tb->position);
+                }
+
+                ++i;
+            }
+        }
+        
+        for(rot_constraint& c : data.rot) {
+            float twirl = c.lambda;
+
+            data.ca->angular_velocity += twirl / data.ca->inertia;
+            data.cb->angular_velocity -= twirl / data.cb->inertia;
         }
     }
 
@@ -1380,6 +1420,89 @@ void Physics_system::velocity_solve(std::vector<Collision_constraint>& collision
                     apply_impulse(data.ca, friction_impulse, cc.pa - data.ta->position);
                     apply_impulse(data.cb, -friction_impulse, cc.pb - data.tb->position);
                 }
+            }
+        }
+
+        for(Constraint& data : constraints) {
+            float max_grab = FLT_MAX;
+
+            for(pos_constraint& c : data.pos) {
+                uint32_t i = 0;
+                for(vec2 v : c.vs) {
+                    float bg = -c.baumgarte[i] * spring_constraint / sub_dt;
+
+                    float inertia = c.inertia_a[i];
+
+                    vec2 velocity = calculate_point_velocity(data.ca, c.pa - data.ta->position);
+
+                    vec2 diff = c.pa - c.pb;
+                    float len = length(diff);
+                    vec2 vv = diff / len;
+
+                    if(data.b == NULL_ENTITY) {
+                        vec2 vel = velocity;
+                        //if(c.tolerance != 0.0f) vel = vv * dot(vel, vv);
+
+                        float L = -dot(vel, v) + bg;
+                        L /= inertia;
+                        L -= softness_constraint * c.lambda[i];
+
+                        float new_lambda = c.lambda[i] + L;
+
+                        new_lambda = clamp(new_lambda, -max_grab / inertia, max_grab / inertia);
+                        L = new_lambda - c.lambda[i];
+                        c.lambda[i] = new_lambda;
+
+                        vec2 impulse = v * L;
+
+                        apply_impulse(data.ca, impulse, c.pa - data.ta->position);
+                    } else {
+                        inertia += c.inertia_b[i];
+
+                        velocity -= calculate_point_velocity(data.cb, c.pb - data.tb->position);
+                        
+                        vec2 vel = velocity;
+                        //if(c.tolerance != 0.0f) vel = vv * dot(vel, vv);
+
+                        float L = -dot(vel, v) + bg;
+                        L /= inertia;
+                        L -= softness_constraint * c.lambda[i];
+                        
+                        float new_lambda = c.lambda[i] + L;
+
+                        new_lambda = clamp(new_lambda, -max_grab / inertia, max_grab / inertia);
+                        L = new_lambda - c.lambda[i];
+                        c.lambda[i] = new_lambda;
+
+                        vec2 impulse = v * L;
+
+                        apply_impulse(data.ca, impulse, c.pa - data.ta->position);
+                        apply_impulse(data.cb, -impulse, c.pb - data.tb->position);
+                    }
+
+                    ++i;
+                }
+            }
+            
+            for(rot_constraint& c : data.rot) {
+                float angular_delta = -c.baumgarte;
+                float inertia = c.inertia;
+
+                float bg = angular_delta * spring_constraint * factor_constraint;
+
+                float angular_velocity = data.ca->angular_velocity - data.cb->angular_velocity;
+
+                float L = -angular_velocity + bg;
+                L /= inertia;
+                L -= softness_constraint * c.lambda;
+                float new_lambda = c.lambda + L;
+
+                new_lambda = clamp(new_lambda, -max_grab / c.inertia, max_grab / c.inertia);
+                L = new_lambda - c.lambda;
+                c.lambda = new_lambda;
+
+                data.ca->angular_velocity += L / data.ca->inertia;
+                data.cb->angular_velocity -= L / data.cb->inertia;
             }
         }
     }
@@ -1583,7 +1706,7 @@ void Constraint::refresh(pos_constraint& c) {
     for(int i = 0; i < c.vs.size(); ++i) {
         vec2 diff = c.pa - c.pb;
         float dd = dot(diff, c.vs[i]);
-        c.C[i] = dd;
+        c.baumgarte[i] = dd;
     }
 }
 
@@ -1604,7 +1727,7 @@ void Constraint::get_values() {
     for(pos_constraint& pc : pos) {
         pc.inertia_a.resize(pc.vs.size());
         pc.inertia_b.resize(pc.vs.size());
-        pc.C.resize(pc.vs.size());
+        pc.baumgarte.resize(pc.vs.size());
         pc.lambda.resize(pc.vs.size());
 
         vec2 diff = pc.pa - pc.pb;
@@ -1612,12 +1735,10 @@ void Constraint::get_values() {
         for(int i = 0; i < pc.vs.size(); ++i) {
             vec2 v = pc.vs[i];
             float v_diff = dot(diff, v);
-            pc.C[i] = v_diff;
+            pc.baumgarte[i] = v_diff;
 
             pc.inertia_a[i] = Physics_system::calculate_inverse_mass(ca, ta, v, pc.pa - ta->position);
             if(b != NULL_ENTITY) pc.inertia_b[i] += Physics_system::calculate_inverse_mass(cb, tb, v, pc.pb - tb->position);
-
-            ++i;
 
             pc.lambda[i] = 0.0f;
         }
