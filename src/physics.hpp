@@ -222,8 +222,8 @@ also the compliances scale with fps, so turn the compliances up when using a hig
 struct Physics_system : System {
     // parameters
     float fps = 60.0f;
-    uint32_t iterations = 4;
-    uint32_t substeps = 2;
+    uint32_t iterations = 8;
+    uint32_t substeps = 1;
     float contact_sep = 0.025f;
     float static_dist = 0.01f;
     float penetration_threshold = FLT_MAX;

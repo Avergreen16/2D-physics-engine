@@ -1234,7 +1234,7 @@ void Physics_system::velocity_solve(std::vector<Collision_constraint>& collision
     float spring = 0.45f;
     float softness = 0.025f;
 
-    float spring_constraint = 0.75f;
+    float spring_constraint = 0.45f;
     float softness_constraint = 0.015f;
 
     float factor = 1.0f / (physics_step);
@@ -1728,7 +1728,7 @@ void Constraint::get_values() {
         pc.inertia_a.resize(pc.vs.size());
         pc.inertia_b.resize(pc.vs.size());
         pc.baumgarte.resize(pc.vs.size());
-        pc.lambda.resize(pc.vs.size());
+        pc.lambda.resize(pc.vs.size(), 0.0f);
 
         vec2 diff = pc.pa - pc.pb;
 
@@ -1738,9 +1738,9 @@ void Constraint::get_values() {
             pc.baumgarte[i] = v_diff;
 
             pc.inertia_a[i] = Physics_system::calculate_inverse_mass(ca, ta, v, pc.pa - ta->position);
-            if(b != NULL_ENTITY) pc.inertia_b[i] += Physics_system::calculate_inverse_mass(cb, tb, v, pc.pb - tb->position);
+            if(b != NULL_ENTITY) pc.inertia_b[i] = Physics_system::calculate_inverse_mass(cb, tb, v, pc.pb - tb->position);
 
-            pc.lambda[i] = 0.0f;
+            //pc.lambda[i] = 0.0f;
         }
     }
 
