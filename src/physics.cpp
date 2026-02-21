@@ -1290,10 +1290,10 @@ void Physics_system::position_solve(std::vector<Collision_constraint>& collision
 
 void Physics_system::velocity_solve(std::vector<Collision_constraint>& collisions) {
     float spring = 0.45f;
-    float softness = 0.025f;
+    float softness = 0.05f;
 
     float spring_constraint = 0.75f;
-    float softness_constraint = 0.015f;
+    float softness_constraint = 0.05f;
 
     float factor = 1.0f / (physics_step);
     float factor_constraint = 1.0f / (physics_step);
