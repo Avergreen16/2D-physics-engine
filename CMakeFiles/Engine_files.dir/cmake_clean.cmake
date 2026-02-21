@@ -3,6 +3,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/Engine_files.dir/src/core.cpp.obj.d"
   "CMakeFiles/Engine_files.dir/src/ecs.cpp.obj"
   "CMakeFiles/Engine_files.dir/src/ecs.cpp.obj.d"
+  "CMakeFiles/Engine_files.dir/src/erosion.cpp.obj"
+  "CMakeFiles/Engine_files.dir/src/erosion.cpp.obj.d"
   "CMakeFiles/Engine_files.dir/src/gui.cpp.obj"
   "CMakeFiles/Engine_files.dir/src/gui.cpp.obj.d"
   "CMakeFiles/Engine_files.dir/src/input.cpp.obj"

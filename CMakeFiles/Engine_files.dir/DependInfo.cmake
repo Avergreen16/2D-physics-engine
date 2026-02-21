@@ -10,6 +10,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/core.cpp" "CMakeFiles/Engine_files.dir/src/core.cpp.obj" "gcc" "CMakeFiles/Engine_files.dir/src/core.cpp.obj.d"
   "C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/ecs.cpp" "CMakeFiles/Engine_files.dir/src/ecs.cpp.obj" "gcc" "CMakeFiles/Engine_files.dir/src/ecs.cpp.obj.d"
+  "C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/erosion.cpp" "CMakeFiles/Engine_files.dir/src/erosion.cpp.obj" "gcc" "CMakeFiles/Engine_files.dir/src/erosion.cpp.obj.d"
   "C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/gui.cpp" "CMakeFiles/Engine_files.dir/src/gui.cpp.obj" "gcc" "CMakeFiles/Engine_files.dir/src/gui.cpp.obj.d"
   "C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/input.cpp" "CMakeFiles/Engine_files.dir/src/input.cpp.obj" "gcc" "CMakeFiles/Engine_files.dir/src/input.cpp.obj.d"
   "C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/physics.cpp" "CMakeFiles/Engine_files.dir/src/physics.cpp.obj" "gcc" "CMakeFiles/Engine_files.dir/src/physics.cpp.obj.d"

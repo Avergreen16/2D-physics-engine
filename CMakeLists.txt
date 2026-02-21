@@ -17,7 +17,7 @@ add_executable(Engine src/client_main.cpp)
 
 add_library(Glad src/glad.c)
 
-add_library(Engine_files src/wrapper.cpp src/core.cpp src/random.cpp src/ecs.cpp src/render.cpp src/input.cpp src/physics.cpp src/gui.cpp)
+add_library(Engine_files src/wrapper.cpp src/core.cpp src/random.cpp src/ecs.cpp src/render.cpp src/input.cpp src/physics.cpp src/gui.cpp src/erosion.cpp)
 
 target_link_libraries(Engine Glad)
 

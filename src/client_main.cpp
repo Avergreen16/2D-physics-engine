@@ -3,6 +3,7 @@
 #include "input.hpp"
 #include "physics.hpp"
 #include "gui.hpp"
+#include "erosion.hpp"
 
 #include <chrono>
 #include <windows.h>
@@ -161,6 +162,8 @@ void Core::init() {
     shaders.emplace("screen_shader", std::make_shared<Shader>(Shader("src/shaders/screen.vert", "src/shaders/screen.frag")));
     shaders.emplace("gui_shader", std::make_shared<Shader>(Shader("src/shaders/ui.vert", "src/shaders/ui.frag")));
     shaders.emplace("background", std::make_shared<Shader>(Shader("src/shaders/background.vert", "src/shaders/background.frag")));
+    shaders.emplace("map_shader", std::make_shared<Shader>(Shader("src/shaders/map.vert", "src/shaders/map.frag")));
+
     textures.emplace("gui_texture", std::make_shared<Texture>(Texture("res/textures/gui.png", {GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE}, 4)));
     textures.emplace("text_texture", std::make_shared<Texture>(Texture("res/textures/text_mono.png", {GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE}, 4)));
 
@@ -276,6 +279,7 @@ int main() {
     ecs.register_system<GUI_system>();
     ecs.register_system<Physics_system>();
     ecs.register_system<Render_system>();
+    ecs.register_system<Erosion_system>();
 
     Input_system& input_system = ecs.get_system<Input_system>();
     Physics_system& physics_system = ecs.get_system<Physics_system>();
@@ -313,9 +317,10 @@ int main() {
     Mesh m;
     create_mesh(m, {c.vertices}, c.radius);
 
-    ecs.insert_component(entity, m);
-    ecs.insert_component(entity, t);
-    ecs.insert_component(entity, c);
+    // platform
+    //ecs.insert_component(entity, m);
+    //ecs.insert_component(entity, t);
+    //ecs.insert_component(entity, c);
 
     t.orientation = identity<mat2>();
 
@@ -324,7 +329,7 @@ int main() {
     entity = ecs.insert_entity();
 
     Camera cc;
-    cc.scale = 1.0f;
+    cc.scale = 1.0f / 1024.0f;
     
     t.position = vec2(0.0f, 0.0f);
 

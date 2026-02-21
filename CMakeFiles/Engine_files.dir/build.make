@@ -189,6 +189,21 @@ CMakeFiles/Engine_files.dir/src/gui.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/Engine_files.dir/src/gui.cpp.s"
 	C:/msys64/ucrt64/bin/x86_64-w64-mingw32-g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/gui.cpp -o CMakeFiles/Engine_files.dir/src/gui.cpp.s
 
+CMakeFiles/Engine_files.dir/src/erosion.cpp.obj: CMakeFiles/Engine_files.dir/flags.make
+CMakeFiles/Engine_files.dir/src/erosion.cpp.obj: CMakeFiles/Engine_files.dir/includes_CXX.rsp
+CMakeFiles/Engine_files.dir/src/erosion.cpp.obj: src/erosion.cpp
+CMakeFiles/Engine_files.dir/src/erosion.cpp.obj: CMakeFiles/Engine_files.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building CXX object CMakeFiles/Engine_files.dir/src/erosion.cpp.obj"
+	C:/msys64/ucrt64/bin/x86_64-w64-mingw32-g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Engine_files.dir/src/erosion.cpp.obj -MF CMakeFiles/Engine_files.dir/src/erosion.cpp.obj.d -o CMakeFiles/Engine_files.dir/src/erosion.cpp.obj -c C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/erosion.cpp
+
+CMakeFiles/Engine_files.dir/src/erosion.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/Engine_files.dir/src/erosion.cpp.i"
+	C:/msys64/ucrt64/bin/x86_64-w64-mingw32-g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/erosion.cpp > CMakeFiles/Engine_files.dir/src/erosion.cpp.i
+
+CMakeFiles/Engine_files.dir/src/erosion.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/Engine_files.dir/src/erosion.cpp.s"
+	C:/msys64/ucrt64/bin/x86_64-w64-mingw32-g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/erosion.cpp -o CMakeFiles/Engine_files.dir/src/erosion.cpp.s
+
 # Object files for target Engine_files
 Engine_files_OBJECTS = \
 "CMakeFiles/Engine_files.dir/src/wrapper.cpp.obj" \
@@ -198,7 +213,8 @@ Engine_files_OBJECTS = \
 "CMakeFiles/Engine_files.dir/src/render.cpp.obj" \
 "CMakeFiles/Engine_files.dir/src/input.cpp.obj" \
 "CMakeFiles/Engine_files.dir/src/physics.cpp.obj" \
-"CMakeFiles/Engine_files.dir/src/gui.cpp.obj"
+"CMakeFiles/Engine_files.dir/src/gui.cpp.obj" \
+"CMakeFiles/Engine_files.dir/src/erosion.cpp.obj"
 
 # External object files for target Engine_files
 Engine_files_EXTERNAL_OBJECTS =
@@ -211,9 +227,10 @@ lib/libEngine_files.a: CMakeFiles/Engine_files.dir/src/render.cpp.obj
 lib/libEngine_files.a: CMakeFiles/Engine_files.dir/src/input.cpp.obj
 lib/libEngine_files.a: CMakeFiles/Engine_files.dir/src/physics.cpp.obj
 lib/libEngine_files.a: CMakeFiles/Engine_files.dir/src/gui.cpp.obj
+lib/libEngine_files.a: CMakeFiles/Engine_files.dir/src/erosion.cpp.obj
 lib/libEngine_files.a: CMakeFiles/Engine_files.dir/build.make
 lib/libEngine_files.a: CMakeFiles/Engine_files.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Linking CXX static library lib/libEngine_files.a"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Linking CXX static library lib/libEngine_files.a"
 	$(CMAKE_COMMAND) -P CMakeFiles/Engine_files.dir/cmake_clean_target.cmake
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/Engine_files.dir/link.txt --verbose=$(VERBOSE)
 

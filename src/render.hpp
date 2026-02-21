@@ -45,6 +45,8 @@ struct Render_system : System {
 
     void render_cloud(uint32_t camera);
 
+    void render_map(uint32_t camera);
+
     void render_cursor();
 
     void render_background(uint32_t camera);

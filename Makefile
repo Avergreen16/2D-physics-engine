@@ -227,6 +227,30 @@ src/ecs.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Engine_files.dir/build.make CMakeFiles/Engine_files.dir/src/ecs.cpp.s
 .PHONY : src/ecs.cpp.s
 
+src/erosion.obj: src/erosion.cpp.obj
+.PHONY : src/erosion.obj
+
+# target to build an object file
+src/erosion.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Engine_files.dir/build.make CMakeFiles/Engine_files.dir/src/erosion.cpp.obj
+.PHONY : src/erosion.cpp.obj
+
+src/erosion.i: src/erosion.cpp.i
+.PHONY : src/erosion.i
+
+# target to preprocess a source file
+src/erosion.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Engine_files.dir/build.make CMakeFiles/Engine_files.dir/src/erosion.cpp.i
+.PHONY : src/erosion.cpp.i
+
+src/erosion.s: src/erosion.cpp.s
+.PHONY : src/erosion.s
+
+# target to generate assembly for a file
+src/erosion.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Engine_files.dir/build.make CMakeFiles/Engine_files.dir/src/erosion.cpp.s
+.PHONY : src/erosion.cpp.s
+
 src/glad.obj: src/glad.c.obj
 .PHONY : src/glad.obj
 
@@ -415,6 +439,9 @@ help:
 	@echo "... src/ecs.obj"
 	@echo "... src/ecs.i"
 	@echo "... src/ecs.s"
+	@echo "... src/erosion.obj"
+	@echo "... src/erosion.i"
+	@echo "... src/erosion.s"
 	@echo "... src/glad.obj"
 	@echo "... src/glad.i"
 	@echo "... src/glad.s"

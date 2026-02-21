@@ -2,6 +2,7 @@
 #include "input.hpp"
 #include "core.hpp"
 #include "physics.hpp"
+#include "erosion.hpp"
 
 float ellipsoid_height(vec3 pos, vec3 radii) {
     return sqrt(1.0f / (pos.x * pos.x / (radii.x * radii.x) + pos.y * pos.y / (radii.y * radii.y) + pos.z * pos.z / (radii.z * radii.z)));
@@ -328,6 +329,64 @@ void Render_system::render_cloud(uint32_t camera) {
     vv->draw_vertices(GL_TRIANGLES);
 }
 
+struct Map_vertex {
+    vec2 position;
+    vec2 tex_coord;
+};
+
+void Render_system::render_map(uint32_t camera) {
+    Erosion_system& es = ecs.get_system<Erosion_system>();
+
+    vec2 pos = vec2(0.0f, 0.0f);
+    vec2 size = es.size;
+
+    std::vector<vec2> square = {
+        vec2(-1.0f, -1.0f),
+        vec2(1.0f, -1.0f),
+        vec2(1.0f, 1.0f),
+        vec2(-1.0f, -1.0f),
+        vec2(1.0f, 1.0f),
+        vec2(-1.0f, 1.0f)
+    };
+
+    std::vector<Map_vertex> map_vs;
+
+    for(vec2& v : square) {
+        map_vs.push_back({v * size, v * 0.5f - 0.5f});
+    }
+
+    vec2 map_size = es.size;
+
+    vv->vertex_buffer_data(map_vs.data(), map_vs.size(), sizeof(Map_vertex), GL_STREAM_DRAW);
+    vv->add_vertex_attribute(0, 2, GL_FLOAT, false, sizeof(Map_vertex), 0);
+    vv->add_vertex_attribute(1, 2, GL_FLOAT, false, sizeof(Map_vertex), sizeof(float) * 2);
+
+    Transform& ct = ecs.get_component<Transform>(camera);
+    Camera& cc = ecs.get_component<Camera>(camera);
+
+    Input_system& is = ecs.get_system<Input_system>();
+
+    mat4 inv_rot = mat4(transpose(ct.orientation));
+
+    mat4 view = inv_rot * scale(vec3(cc.scale, cc.scale, 1.0f)) * translate(vec3(-ct.position, 0.0f));
+    mat4 model = translate(vec3(pos, 0.0f));
+
+    float aspect_ratio = float(core.window.screen_size.y) / core.window.screen_size.x;
+    mat4 proj = scale(vec3(1.0f, 1.0f / aspect_ratio, 1.0f));
+
+    core.shaders["map_shader"]->use();
+
+    es.map_texture->bind(0);
+    
+    vv->bind();
+
+    glUniformMatrix4fv(0, 1, false, &view[0][0]);
+    glUniformMatrix4fv(1, 1, false, &proj[0][0]);
+    glUniformMatrix4fv(2, 1, false, &model[0][0]);
+
+    vv->draw_vertices(GL_TRIANGLES);
+}
+
 void Render_system::render_marker(vec2 pos, vec2 normal, uint32_t camera) {
     Transform ct = ecs.get_component<Transform>(camera);
     Camera& cc = ecs.get_component<Camera>(camera);
@@ -466,6 +525,8 @@ void Render_system::call() {
         Camera& camera_camera = ecs.get_component<Camera>(camera);
 
         render_background(camera);
+
+        render_map(camera);
 
         for(uint32_t entity : collectors[1].entities) {
             render_object(entity, camera);
