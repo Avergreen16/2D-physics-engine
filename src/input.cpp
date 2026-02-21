@@ -167,7 +167,7 @@ void Input_system::call() {
 
                     uint32_t num_links = 12;
 
-                    float scale = 1.5f;
+                    float scale = 0.75f;
 
                     float sep = 0.025f * scale;
                     vec2 size = vec2(0.33f, 1.0f) * scale;
@@ -192,8 +192,6 @@ void Input_system::call() {
 
                     uint32_t prev_entity = NULL_ENTITY;
                     uint32_t first_entity;
-
-                    //Featherstone_constraint fc;
 
                     for(int i = 0; i < num_links; ++i) {    
                         uint32_t capsule = ecs.insert_entity();
@@ -291,7 +289,7 @@ void Input_system::call() {
                 } else if(key_map[GLFW_KEY_LEFT_CONTROL]) {
                     Physics_system& ps = ecs.get_system<Physics_system>();
 
-                    vec2 size = vec2(1.0f, 24.0f);
+                    vec2 size = vec2(1.0f, 24.0f) * 0.125f;
 
                     Transform t;
                     t.position = world_cursor_pos;
@@ -401,7 +399,7 @@ void Input_system::call() {
 
                         mat2 orientation = rotate(core.random(), vec3(0.0f, 0.0f, 1.0f));
 
-                        float s = 1.0f;
+                        float s = 0.5f;
 
                         uint32_t square_size = 8;
                         float separation = s * 0.25f;

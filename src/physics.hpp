@@ -89,6 +89,8 @@ struct col_constraint {
     float lambdaN = 0.0f;
     float lambdaT = 0.0f;
 
+    float pos_lambdaN = 0.0f;
+
     float inertiaNa = 0.0f;
     float inertiaNb = 0.0f;
 
@@ -129,8 +131,9 @@ struct pos_constraint {
     std::vector<float> inertia_b;
     std::vector<float> baumgarte;
     std::vector<float> lambda;
+    std::vector<float> pos_lambda;
     
-    float compliance = 0.00001f;
+    float compliance = 0.0001f;
 
     bool is_hold = false;
 };
@@ -222,9 +225,10 @@ also the compliances scale with fps, so turn the compliances up when using a hig
 struct Physics_system : System {
     // parameters
     float fps = 60.0f;
-    uint32_t iterations = 8;
-    uint32_t substeps = 1;
-    float contact_sep = 0.025f;
+    uint32_t velocity_iterations = 4;
+    uint32_t position_iterations = 0;
+    uint32_t substeps = 4;
+    float contact_sep = 0.005f;
     float static_dist = 0.01f;
     float penetration_threshold = FLT_MAX;
     uint32_t iteration_threshold = 3;
@@ -280,6 +284,8 @@ struct Physics_system : System {
 
     static void apply_impulse(Collider* c, vec2 impulse, vec2 point);
     static void apply_position(Collider* c, Transform* t, vec2 impulse, vec2 point);
+
+    void integrate();
 
     void physics_loop();
 

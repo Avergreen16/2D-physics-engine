@@ -74,120 +74,120 @@ CMakeFiles/Engine_files.dir/src/wrapper.cpp.obj: CMakeFiles/Engine_files.dir/inc
 CMakeFiles/Engine_files.dir/src/wrapper.cpp.obj: src/wrapper.cpp
 CMakeFiles/Engine_files.dir/src/wrapper.cpp.obj: CMakeFiles/Engine_files.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/Engine_files.dir/src/wrapper.cpp.obj"
-	C:/msys64/ucrt64/bin/clang++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Engine_files.dir/src/wrapper.cpp.obj -MF CMakeFiles/Engine_files.dir/src/wrapper.cpp.obj.d -o CMakeFiles/Engine_files.dir/src/wrapper.cpp.obj -c C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/wrapper.cpp
+	C:/msys64/ucrt64/bin/x86_64-w64-mingw32-g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Engine_files.dir/src/wrapper.cpp.obj -MF CMakeFiles/Engine_files.dir/src/wrapper.cpp.obj.d -o CMakeFiles/Engine_files.dir/src/wrapper.cpp.obj -c C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/wrapper.cpp
 
 CMakeFiles/Engine_files.dir/src/wrapper.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/Engine_files.dir/src/wrapper.cpp.i"
-	C:/msys64/ucrt64/bin/clang++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/wrapper.cpp > CMakeFiles/Engine_files.dir/src/wrapper.cpp.i
+	C:/msys64/ucrt64/bin/x86_64-w64-mingw32-g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/wrapper.cpp > CMakeFiles/Engine_files.dir/src/wrapper.cpp.i
 
 CMakeFiles/Engine_files.dir/src/wrapper.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/Engine_files.dir/src/wrapper.cpp.s"
-	C:/msys64/ucrt64/bin/clang++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/wrapper.cpp -o CMakeFiles/Engine_files.dir/src/wrapper.cpp.s
+	C:/msys64/ucrt64/bin/x86_64-w64-mingw32-g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/wrapper.cpp -o CMakeFiles/Engine_files.dir/src/wrapper.cpp.s
 
 CMakeFiles/Engine_files.dir/src/core.cpp.obj: CMakeFiles/Engine_files.dir/flags.make
 CMakeFiles/Engine_files.dir/src/core.cpp.obj: CMakeFiles/Engine_files.dir/includes_CXX.rsp
 CMakeFiles/Engine_files.dir/src/core.cpp.obj: src/core.cpp
 CMakeFiles/Engine_files.dir/src/core.cpp.obj: CMakeFiles/Engine_files.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/Engine_files.dir/src/core.cpp.obj"
-	C:/msys64/ucrt64/bin/clang++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Engine_files.dir/src/core.cpp.obj -MF CMakeFiles/Engine_files.dir/src/core.cpp.obj.d -o CMakeFiles/Engine_files.dir/src/core.cpp.obj -c C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/core.cpp
+	C:/msys64/ucrt64/bin/x86_64-w64-mingw32-g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Engine_files.dir/src/core.cpp.obj -MF CMakeFiles/Engine_files.dir/src/core.cpp.obj.d -o CMakeFiles/Engine_files.dir/src/core.cpp.obj -c C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/core.cpp
 
 CMakeFiles/Engine_files.dir/src/core.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/Engine_files.dir/src/core.cpp.i"
-	C:/msys64/ucrt64/bin/clang++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/core.cpp > CMakeFiles/Engine_files.dir/src/core.cpp.i
+	C:/msys64/ucrt64/bin/x86_64-w64-mingw32-g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/core.cpp > CMakeFiles/Engine_files.dir/src/core.cpp.i
 
 CMakeFiles/Engine_files.dir/src/core.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/Engine_files.dir/src/core.cpp.s"
-	C:/msys64/ucrt64/bin/clang++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/core.cpp -o CMakeFiles/Engine_files.dir/src/core.cpp.s
+	C:/msys64/ucrt64/bin/x86_64-w64-mingw32-g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/core.cpp -o CMakeFiles/Engine_files.dir/src/core.cpp.s
 
 CMakeFiles/Engine_files.dir/src/random.cpp.obj: CMakeFiles/Engine_files.dir/flags.make
 CMakeFiles/Engine_files.dir/src/random.cpp.obj: CMakeFiles/Engine_files.dir/includes_CXX.rsp
 CMakeFiles/Engine_files.dir/src/random.cpp.obj: src/random.cpp
 CMakeFiles/Engine_files.dir/src/random.cpp.obj: CMakeFiles/Engine_files.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/Engine_files.dir/src/random.cpp.obj"
-	C:/msys64/ucrt64/bin/clang++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Engine_files.dir/src/random.cpp.obj -MF CMakeFiles/Engine_files.dir/src/random.cpp.obj.d -o CMakeFiles/Engine_files.dir/src/random.cpp.obj -c C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/random.cpp
+	C:/msys64/ucrt64/bin/x86_64-w64-mingw32-g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Engine_files.dir/src/random.cpp.obj -MF CMakeFiles/Engine_files.dir/src/random.cpp.obj.d -o CMakeFiles/Engine_files.dir/src/random.cpp.obj -c C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/random.cpp
 
 CMakeFiles/Engine_files.dir/src/random.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/Engine_files.dir/src/random.cpp.i"
-	C:/msys64/ucrt64/bin/clang++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/random.cpp > CMakeFiles/Engine_files.dir/src/random.cpp.i
+	C:/msys64/ucrt64/bin/x86_64-w64-mingw32-g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/random.cpp > CMakeFiles/Engine_files.dir/src/random.cpp.i
 
 CMakeFiles/Engine_files.dir/src/random.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/Engine_files.dir/src/random.cpp.s"
-	C:/msys64/ucrt64/bin/clang++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/random.cpp -o CMakeFiles/Engine_files.dir/src/random.cpp.s
+	C:/msys64/ucrt64/bin/x86_64-w64-mingw32-g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/random.cpp -o CMakeFiles/Engine_files.dir/src/random.cpp.s
 
 CMakeFiles/Engine_files.dir/src/ecs.cpp.obj: CMakeFiles/Engine_files.dir/flags.make
 CMakeFiles/Engine_files.dir/src/ecs.cpp.obj: CMakeFiles/Engine_files.dir/includes_CXX.rsp
 CMakeFiles/Engine_files.dir/src/ecs.cpp.obj: src/ecs.cpp
 CMakeFiles/Engine_files.dir/src/ecs.cpp.obj: CMakeFiles/Engine_files.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/Engine_files.dir/src/ecs.cpp.obj"
-	C:/msys64/ucrt64/bin/clang++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Engine_files.dir/src/ecs.cpp.obj -MF CMakeFiles/Engine_files.dir/src/ecs.cpp.obj.d -o CMakeFiles/Engine_files.dir/src/ecs.cpp.obj -c C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/ecs.cpp
+	C:/msys64/ucrt64/bin/x86_64-w64-mingw32-g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Engine_files.dir/src/ecs.cpp.obj -MF CMakeFiles/Engine_files.dir/src/ecs.cpp.obj.d -o CMakeFiles/Engine_files.dir/src/ecs.cpp.obj -c C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/ecs.cpp
 
 CMakeFiles/Engine_files.dir/src/ecs.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/Engine_files.dir/src/ecs.cpp.i"
-	C:/msys64/ucrt64/bin/clang++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/ecs.cpp > CMakeFiles/Engine_files.dir/src/ecs.cpp.i
+	C:/msys64/ucrt64/bin/x86_64-w64-mingw32-g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/ecs.cpp > CMakeFiles/Engine_files.dir/src/ecs.cpp.i
 
 CMakeFiles/Engine_files.dir/src/ecs.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/Engine_files.dir/src/ecs.cpp.s"
-	C:/msys64/ucrt64/bin/clang++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/ecs.cpp -o CMakeFiles/Engine_files.dir/src/ecs.cpp.s
+	C:/msys64/ucrt64/bin/x86_64-w64-mingw32-g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/ecs.cpp -o CMakeFiles/Engine_files.dir/src/ecs.cpp.s
 
 CMakeFiles/Engine_files.dir/src/render.cpp.obj: CMakeFiles/Engine_files.dir/flags.make
 CMakeFiles/Engine_files.dir/src/render.cpp.obj: CMakeFiles/Engine_files.dir/includes_CXX.rsp
 CMakeFiles/Engine_files.dir/src/render.cpp.obj: src/render.cpp
 CMakeFiles/Engine_files.dir/src/render.cpp.obj: CMakeFiles/Engine_files.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/Engine_files.dir/src/render.cpp.obj"
-	C:/msys64/ucrt64/bin/clang++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Engine_files.dir/src/render.cpp.obj -MF CMakeFiles/Engine_files.dir/src/render.cpp.obj.d -o CMakeFiles/Engine_files.dir/src/render.cpp.obj -c C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/render.cpp
+	C:/msys64/ucrt64/bin/x86_64-w64-mingw32-g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Engine_files.dir/src/render.cpp.obj -MF CMakeFiles/Engine_files.dir/src/render.cpp.obj.d -o CMakeFiles/Engine_files.dir/src/render.cpp.obj -c C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/render.cpp
 
 CMakeFiles/Engine_files.dir/src/render.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/Engine_files.dir/src/render.cpp.i"
-	C:/msys64/ucrt64/bin/clang++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/render.cpp > CMakeFiles/Engine_files.dir/src/render.cpp.i
+	C:/msys64/ucrt64/bin/x86_64-w64-mingw32-g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/render.cpp > CMakeFiles/Engine_files.dir/src/render.cpp.i
 
 CMakeFiles/Engine_files.dir/src/render.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/Engine_files.dir/src/render.cpp.s"
-	C:/msys64/ucrt64/bin/clang++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/render.cpp -o CMakeFiles/Engine_files.dir/src/render.cpp.s
+	C:/msys64/ucrt64/bin/x86_64-w64-mingw32-g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/render.cpp -o CMakeFiles/Engine_files.dir/src/render.cpp.s
 
 CMakeFiles/Engine_files.dir/src/input.cpp.obj: CMakeFiles/Engine_files.dir/flags.make
 CMakeFiles/Engine_files.dir/src/input.cpp.obj: CMakeFiles/Engine_files.dir/includes_CXX.rsp
 CMakeFiles/Engine_files.dir/src/input.cpp.obj: src/input.cpp
 CMakeFiles/Engine_files.dir/src/input.cpp.obj: CMakeFiles/Engine_files.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/Engine_files.dir/src/input.cpp.obj"
-	C:/msys64/ucrt64/bin/clang++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Engine_files.dir/src/input.cpp.obj -MF CMakeFiles/Engine_files.dir/src/input.cpp.obj.d -o CMakeFiles/Engine_files.dir/src/input.cpp.obj -c C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/input.cpp
+	C:/msys64/ucrt64/bin/x86_64-w64-mingw32-g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Engine_files.dir/src/input.cpp.obj -MF CMakeFiles/Engine_files.dir/src/input.cpp.obj.d -o CMakeFiles/Engine_files.dir/src/input.cpp.obj -c C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/input.cpp
 
 CMakeFiles/Engine_files.dir/src/input.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/Engine_files.dir/src/input.cpp.i"
-	C:/msys64/ucrt64/bin/clang++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/input.cpp > CMakeFiles/Engine_files.dir/src/input.cpp.i
+	C:/msys64/ucrt64/bin/x86_64-w64-mingw32-g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/input.cpp > CMakeFiles/Engine_files.dir/src/input.cpp.i
 
 CMakeFiles/Engine_files.dir/src/input.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/Engine_files.dir/src/input.cpp.s"
-	C:/msys64/ucrt64/bin/clang++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/input.cpp -o CMakeFiles/Engine_files.dir/src/input.cpp.s
+	C:/msys64/ucrt64/bin/x86_64-w64-mingw32-g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/input.cpp -o CMakeFiles/Engine_files.dir/src/input.cpp.s
 
 CMakeFiles/Engine_files.dir/src/physics.cpp.obj: CMakeFiles/Engine_files.dir/flags.make
 CMakeFiles/Engine_files.dir/src/physics.cpp.obj: CMakeFiles/Engine_files.dir/includes_CXX.rsp
 CMakeFiles/Engine_files.dir/src/physics.cpp.obj: src/physics.cpp
 CMakeFiles/Engine_files.dir/src/physics.cpp.obj: CMakeFiles/Engine_files.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/Engine_files.dir/src/physics.cpp.obj"
-	C:/msys64/ucrt64/bin/clang++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Engine_files.dir/src/physics.cpp.obj -MF CMakeFiles/Engine_files.dir/src/physics.cpp.obj.d -o CMakeFiles/Engine_files.dir/src/physics.cpp.obj -c C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/physics.cpp
+	C:/msys64/ucrt64/bin/x86_64-w64-mingw32-g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Engine_files.dir/src/physics.cpp.obj -MF CMakeFiles/Engine_files.dir/src/physics.cpp.obj.d -o CMakeFiles/Engine_files.dir/src/physics.cpp.obj -c C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/physics.cpp
 
 CMakeFiles/Engine_files.dir/src/physics.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/Engine_files.dir/src/physics.cpp.i"
-	C:/msys64/ucrt64/bin/clang++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/physics.cpp > CMakeFiles/Engine_files.dir/src/physics.cpp.i
+	C:/msys64/ucrt64/bin/x86_64-w64-mingw32-g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/physics.cpp > CMakeFiles/Engine_files.dir/src/physics.cpp.i
 
 CMakeFiles/Engine_files.dir/src/physics.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/Engine_files.dir/src/physics.cpp.s"
-	C:/msys64/ucrt64/bin/clang++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/physics.cpp -o CMakeFiles/Engine_files.dir/src/physics.cpp.s
+	C:/msys64/ucrt64/bin/x86_64-w64-mingw32-g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/physics.cpp -o CMakeFiles/Engine_files.dir/src/physics.cpp.s
 
 CMakeFiles/Engine_files.dir/src/gui.cpp.obj: CMakeFiles/Engine_files.dir/flags.make
 CMakeFiles/Engine_files.dir/src/gui.cpp.obj: CMakeFiles/Engine_files.dir/includes_CXX.rsp
 CMakeFiles/Engine_files.dir/src/gui.cpp.obj: src/gui.cpp
 CMakeFiles/Engine_files.dir/src/gui.cpp.obj: CMakeFiles/Engine_files.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/Engine_files.dir/src/gui.cpp.obj"
-	C:/msys64/ucrt64/bin/clang++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Engine_files.dir/src/gui.cpp.obj -MF CMakeFiles/Engine_files.dir/src/gui.cpp.obj.d -o CMakeFiles/Engine_files.dir/src/gui.cpp.obj -c C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/gui.cpp
+	C:/msys64/ucrt64/bin/x86_64-w64-mingw32-g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Engine_files.dir/src/gui.cpp.obj -MF CMakeFiles/Engine_files.dir/src/gui.cpp.obj.d -o CMakeFiles/Engine_files.dir/src/gui.cpp.obj -c C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/gui.cpp
 
 CMakeFiles/Engine_files.dir/src/gui.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/Engine_files.dir/src/gui.cpp.i"
-	C:/msys64/ucrt64/bin/clang++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/gui.cpp > CMakeFiles/Engine_files.dir/src/gui.cpp.i
+	C:/msys64/ucrt64/bin/x86_64-w64-mingw32-g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/gui.cpp > CMakeFiles/Engine_files.dir/src/gui.cpp.i
 
 CMakeFiles/Engine_files.dir/src/gui.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/Engine_files.dir/src/gui.cpp.s"
-	C:/msys64/ucrt64/bin/clang++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/gui.cpp -o CMakeFiles/Engine_files.dir/src/gui.cpp.s
+	C:/msys64/ucrt64/bin/x86_64-w64-mingw32-g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/src/gui.cpp -o CMakeFiles/Engine_files.dir/src/gui.cpp.s
 
 # Object files for target Engine_files
 Engine_files_OBJECTS = \
