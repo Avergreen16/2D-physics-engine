@@ -167,7 +167,7 @@ void Input_system::call() {
 
                     uint32_t num_links = 12;
 
-                    float scale = 0.75f;
+                    float scale = 0.0625f;
 
                     float sep = 0.025f * scale;
                     vec2 size = vec2(0.33f, 1.0f) * scale;

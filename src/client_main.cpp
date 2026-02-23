@@ -236,7 +236,7 @@ void write(mat4& matrix) {
 }
 
 int main() {
-    create_text_file();
+    //create_text_file();
 
     if(glfwInit() == GLFW_FALSE) {
         std::cout << "ERROR: GLFW failed to load.\n";
@@ -300,7 +300,7 @@ int main() {
     Collider c;
     c.radius = vec2(0.0f);
     c.vertices = square;
-    for(vec2& v : c.vertices) v *= vec2(256, 16);
+    for(vec2& v : c.vertices) v *= vec2(32, 2);
     /*c.radius = planet_radius;
     c.vertices = {
         vec2(0.0f)

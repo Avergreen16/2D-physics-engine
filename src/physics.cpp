@@ -355,10 +355,7 @@ std::vector<Collision_data> Physics_system::collision(Collision_input& input, bo
             for(Simplex_vertex& v : simplex.vertices) {
                 vec2 difference = point_m - v.m;
 
-                if(glm::dot(difference, direction) < limit) {
-                    //std::cout << "ERROR: difference " << direction.x << " " << direction.y << " " << difference.x << " " << difference.y << " " << size << "\n";
-                    return {};
-                }
+                if(glm::dot(difference, direction) < limit) return {};
             }
 
             if(glm::dot(point_m, direction) < limit) return {};
@@ -404,7 +401,9 @@ std::vector<Collision_data> Physics_system::collision(Collision_input& input, bo
 
                     float dist = dot(point_m, r.normal);
 
-                    if(abs(dist - dot(r.vertices[0].m, r.normal)) < limit) {
+                    float limit_2 = 0.001;
+
+                    if(abs(dist - dot(r.vertices[0].m, r.normal)) < limit_2) {
                         vec2 cp_a = r.vertices[0].a * r.weights.x + r.vertices[1].a * r.weights.y;
                         vec2 cp_b = r.vertices[0].b * r.weights.x + r.vertices[1].b * r.weights.y;
                         
@@ -1295,8 +1294,8 @@ void Physics_system::velocity_solve(std::vector<Collision_constraint>& collision
     float spring_constraint = 0.75f;
     float softness_constraint = 0.05f;
 
-    float factor = 1.0f / (physics_step);
-    float factor_constraint = 1.0f / (physics_step);
+    float factor = 1.0f / (sub_dt) * (sub_dt / physics_step);
+    float factor_constraint = 1.0f / (sub_dt) * (sub_dt / physics_step);
 
     for(Collision_constraint& data : collisions) {
         data.ca = &ecs.get_component<Collider>(data.a);
