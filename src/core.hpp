@@ -18,6 +18,8 @@ float smoothstep(float a);
 
 double get_time();
 
+double get_absolute_time();
+
 time_t get_time_t();
 
 struct Window {
@@ -80,6 +82,18 @@ struct Core {
 
     std::vector<Event> events;
 
+    // input handling
+    std::unordered_map<int, bool> key_map;
+    std::unordered_set<GLenum> pressed_buttons;
+    std::unordered_set<GLenum> released_buttons;
+    std::unordered_set<GLenum> repeat_buttons;
+    
+    vec2 cursor_pos = vec2(0.0f);
+    vec2 cursor_delta;
+    float scroll_delta;
+
+    std::string char_delta;
+
     // matrices
     glm::mat4 view = glm::identity<mat4>();
     glm::mat4 proj = glm::identity<mat4>();
@@ -97,6 +111,8 @@ struct Core {
     double get_delta_time();
 
     bool time_step(double step);
+
+    void handle_events();
 };
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);

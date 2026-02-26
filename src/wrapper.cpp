@@ -24,6 +24,28 @@ std::string get_text_from_file(std::string path) {
     file.close();
 }
 
+std::vector<uint8_t> get_bytes_from_file(std::string path) {
+    std::ifstream file;
+    file.open(path, std::ios::in | std::ios::binary);
+
+    if(file.is_open()) {
+        std::vector<uint8_t> ret;
+
+        uint8_t byte;
+        while(file.read((char*)&byte, 1)) {
+            ret.push_back(byte);
+        }
+
+        file.close();
+        return ret;
+    } else {
+        std::cout << "failed to open file " << path << std::endl;
+        file.close();
+
+        return {};
+    }
+}
+
 void Vertices::init() {
     glGenBuffers(1, &vertex_buffer);
     glGenVertexArrays(1, &vertex_array);

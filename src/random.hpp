@@ -543,6 +543,7 @@ vec3 hsv_color(float hue, float saturation, float value);
 batch_int hash_coords(batch_int x, batch_int y, batch_int z);
 int hash_coord(ivec3 v);
 int hash_coord(ivec2 v);
+int hash_uint(uint32_t v);
 
 struct Hash_coord {
     std::size_t operator()(const ivec3& v) const;

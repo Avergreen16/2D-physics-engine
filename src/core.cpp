@@ -4,6 +4,10 @@ double get_time() {
     return (double)std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count() / 1000000000;
 }
 
+double get_absolute_time() {
+    return (double)std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count() / 1000000;
+}
+
 time_t get_time_t() {
     return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 }
@@ -85,3 +89,73 @@ bool Core::time_step(double step) {
 Core::Core(int num_threads) {};
 
 Core core(10);
+
+void Core::handle_events() {
+    cursor_delta = glm::vec2(0.0f);
+    scroll_delta = 0.0f;
+    char_delta = "";
+
+    pressed_buttons.clear();
+    repeat_buttons.clear();
+    released_buttons.clear();
+
+    for(Event& e : core.events) {
+        switch(e.index()) {
+            case 0: {
+                Key_event& k = std::get<Key_event>(e);
+
+                if(k.action == GLFW_PRESS) {
+                    pressed_buttons.emplace(k.key);
+                    key_map[k.key] = true;
+                }
+                if(k.action == GLFW_RELEASE) {
+                    released_buttons.emplace(k.key);
+                    key_map[k.key] = false;
+                }
+                if(k.action == GLFW_REPEAT) {
+                    repeat_buttons.emplace(k.key);
+                }
+
+                break;
+            }
+            case 1: {
+                Mouse_button_event& m = std::get<Mouse_button_event>(e);
+                
+                if(m.action == GLFW_PRESS) {
+                    pressed_buttons.emplace(m.button);
+                    key_map[m.button] = true;
+                }
+                if(m.action == GLFW_RELEASE) {
+                    released_buttons.emplace(m.button);
+                    key_map[m.button] = false;
+                }
+                if(m.action == GLFW_REPEAT) {
+                    repeat_buttons.emplace(m.button);
+                }
+
+                break;
+            }
+            case 2: {
+                Scroll_event& s = std::get<Scroll_event>(e);
+                scroll_delta += s.y;
+
+                break;
+            }
+            case 3: {
+                Cursor_event& c = std::get<Cursor_event>(e);
+                glm::vec2 new_cursor_pos = {c.xpos, core.window.screen_size.y - c.ypos - 1};
+                cursor_delta += new_cursor_pos - cursor_pos;
+                cursor_pos = new_cursor_pos;
+
+                break;
+            } case 4: {
+                Text_event& t = std::get<Text_event>(e);
+
+                char c = t.codepoint;
+                char_delta += c;
+
+                break;
+            }
+        }
+    }
+}

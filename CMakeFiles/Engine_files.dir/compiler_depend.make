@@ -2681,7 +2681,9 @@ CMakeFiles/Engine_files.dir/src/gui.cpp.obj: src/gui.cpp \
   include/xsimd/types/xsimd_batch.hpp \
   include/xsimd/types/xsimd_traits.hpp \
   src/input.hpp \
-  src/physics.hpp
+  src/physics.hpp \
+  src/render.hpp \
+  src/erosion.hpp
 
 CMakeFiles/Engine_files.dir/src/input.cpp.obj: src/input.cpp \
   src/input.hpp \
@@ -3420,6 +3422,7 @@ CMakeFiles/Engine_files.dir/src/input.cpp.obj: src/input.cpp \
   src/render.hpp \
   src/gui.hpp \
   src/physics.hpp \
+  src/erosion.hpp \
   include/stb_image.h \
   include/stb_image_write.h
 

@@ -43,6 +43,7 @@ using ulvec3 = vec<3, uint64_t>;
 std::ostream& operator<<(std::ostream& c, glm::vec3 v);
 
 std::string get_text_from_file(std::string path);
+std::vector<uint8_t> get_bytes_from_file(std::string path);
 
 struct Vertices {
     uint32_t vertex_buffer;
