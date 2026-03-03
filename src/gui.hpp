@@ -159,6 +159,7 @@ struct GUI_system : System {
     vec4 text_range = vec4(0.0f);
     uint32_t text_lines = 0;
     std::vector<uint32_t> text_line_indices;
+    std::vector<int> text_line_origins;
 
     Alignment alignment = ALIGN_LEFT;
 
@@ -177,17 +178,18 @@ struct GUI_system : System {
     void insert_vertices();
     void window_capture();
 
+    std::vector<UI_vertex> mesh_text(Font& f, std::string text, uint32_t width = 0xFFFFFFFF, ivec2 select_range = {-1, -1}, Alignment alignment = ALIGN_LEFT);
+
     void call();
     
     void toggle_button(vec2 position, vec2 size, ivec4 icon, bool& active);
     void button(std::string name, std::string text, vec2 size, bool& active);
     void window(std::string name, bool& close_window);
-    void text(std::string name, std::string text, uint32_t pixels = 0xFFFFFFFF);
+    void text(std::string name, std::string text, uint32_t width = 0xFFFFFFFF);
     void slider(std::string name, std::string text, ivec2 bounds, int& value, vec2 size, float slider_width);
     void slider(std::string name, std::string text, vec2 bounds, float& value, vec2 size, float slider_width);
 };
 
-std::vector<UI_vertex> mesh_text(Font& f, std::string text, uint32_t width = 0xFFFFFFFF, ivec2 select_range = {-1, -1});
 
 std::string to_base(int32_t num, int base, bool use_i2 = false);
 

@@ -26,7 +26,7 @@ ivec4 clip(ivec4 range_a, ivec4 range_b) {
 void GUI_system::insert_window(std::string label, Window_state state) {
     state.priority = 0;
     for(auto& [name, ws] : window_state) {
-        ++ws.priority;
+        if(name != "") ++ws.priority;
     }
     window_state.emplace(label, state);
 }
@@ -34,15 +34,15 @@ void GUI_system::insert_window(std::string label, Window_state state) {
 void GUI_system::remove_window(std::string label) {
     Window_state& main_state = window_state[label];
     for(auto& [name, ws] : window_state) {
-        if(ws.priority > main_state.priority) --ws.priority;
+        if(name != "" && ws.priority > main_state.priority) --ws.priority;
     }
     window_state.erase(label);
 }
 
 void GUI_system::make_priority(std::string window) {
     Window_state& main_state = window_state[window];
-    for(auto& [label, state] : window_state) {
-        if(state.priority < main_state.priority) ++state.priority;
+    for(auto& [name, state] : window_state) {
+        if(name != "" && state.priority < main_state.priority) ++state.priority;
     }
 
     main_state.priority = 0;
@@ -87,7 +87,7 @@ void GUI_system::window_capture() {
     for(auto& [name, ws] : window_state) {
         ivec4 range = {ivec2(ws.position) + ivec2(0, -ws.size.y - header) - ivec2(buffer), ivec2(ws.position) + ivec2(ws.size.x, 0) + ivec2(buffer)};
 
-        if(includes(core.cursor_pos, range)) {
+        if(name != "" && includes(core.cursor_pos, range)) {
             if(min_priority > ws.priority) {
                 min_priority = ws.priority;
                 min_name = name;
@@ -96,7 +96,6 @@ void GUI_system::window_capture() {
     }
 
     capture_window = min_name;
-    //std::cout << min_name << " " << min_priority << "\n";
 }
 
 /*
@@ -302,10 +301,17 @@ int from_base(std::string num, int base) {
     return ret;
 }
 
-std::vector<UI_vertex> mesh_text(Font& f, std::string text, uint32_t width, ivec2 select_range) {
+std::vector<UI_vertex> GUI_system::mesh_text(Font& f, std::string text, uint32_t width, ivec2 select_range, Alignment alignment) {
     GUI_system& gui_system = ecs.get_system<GUI_system>();
-    gui_system.text_line_indices = {0};
-    uint32_t prev_word_index = 0;
+    gui_system.text_line_indices.clear();
+    gui_system.text_line_origins.clear();
+
+    uint32_t line_start_index = 0;
+    uint32_t word_start_index = 0;
+
+    bool accept_index = false;
+
+    int i = 0;
 
     std::vector<UI_vertex> ret;
     vec2 pos = vec2(0.0f);
@@ -318,28 +324,52 @@ std::vector<UI_vertex> mesh_text(Font& f, std::string text, uint32_t width, ivec
     float italic_factor = 1.0f / 3.5f;
     float bold_factor = 1.0f;
 
-    uint32_t num_lines = 1;
+    uint32_t num_lines = 0;
 
     std::vector<UI_vertex> word_ret;
     vec2 word_pos = vec2(0.0f);
+    
+    std::vector<UI_vertex> line_ret;
+
+    auto insert_line = [&]() {
+        int line_width = pos.x;
+        int offset;
+
+        if(alignment == ALIGN_LEFT) offset = widget_sep;
+        else if(alignment == ALIGN_CENTER) offset = round(float(int(width) - line_width) / 2);
+        else if(alignment == ALIGN_RIGHT) offset = int(width) - line_width;
+
+        for(UI_vertex& v : line_ret) {
+            v.pos.x += offset;
+        }
+        
+        ret.insert(ret.end(), line_ret.begin(), line_ret.end());
+        
+        line_ret.clear();
+
+        pos.x = 0;
+        pos.y -= f.line_height;
+        ++num_lines;
+        
+        gui_system.text_line_indices.push_back(line_start_index);
+        gui_system.text_line_origins.push_back(offset);
+    };
 
     auto insert_word = [&]() {
         uint32_t end = pos.x + word_pos.x;
 
         if(end > width) {
-            pos.x = 0;
-            pos.y -= f.line_height;
-            ++num_lines;
-
-            gui_system.text_line_indices.push_back(prev_word_index);
+            insert_line();
         }
+        
+        if(line_ret.size() == 0) line_start_index = word_start_index;
 
         // insert word
         for(UI_vertex& v : word_ret) {
             v.pos += pos;
         }
         
-        ret.insert(ret.end(), word_ret.begin(), word_ret.end());
+        line_ret.insert(line_ret.end(), word_ret.begin(), word_ret.end());
 
         word_ret.clear();
         
@@ -347,17 +377,98 @@ std::vector<UI_vertex> mesh_text(Font& f, std::string text, uint32_t width, ivec
         word_pos = vec2(0.0f);  
     };
 
-    for(int i = 0; i < text.size(); ++i) {
+    auto insert_selection = [&](ivec2 pos, ivec2 size) {
+        if(word_ret.size() == 0) word_start_index = i;
+
+        UI_vertex a = {vec2(0.0f, 0.0f), vec2(0.0f, 0.0f), vec4(1.0f)};
+        UI_vertex b = {vec2(1.0f, 0.0f), vec2(1.0f, 0.0f), vec4(1.0f)};
+        UI_vertex c = {vec2(0.0f, 1.0f), vec2(0.0f, 1.0f), vec4(1.0f)};
+        UI_vertex d = {vec2(1.0f, 1.0f), vec2(1.0f, 1.0f), vec4(1.0f)};
+
+        std::vector<UI_vertex> r = {a, b, d, a, d, c};
+        for(UI_vertex& v : r) {
+            v.pos = vec2(pos) + v.pos * vec2(size);
+            v.tex_pos = vec2(1.0f, 63.0f);
+            v.color = vec4(1.0f, 1.0f, 1.0f, 0.35f);
+            v.data = 1;
+        }
+        word_ret.insert(word_ret.end(), r.begin(), r.end());
+    };
+
+    auto insert_char = [&](char c) {
+        Glyph_data& gd = f.at(c);
+
+        float stride = gd.stride;
+
+        if(!gd.visible) {
+            if(alignment == ALIGN_LEFT) {
+                if(i >= select_range.x && i < select_range.y) insert_selection(word_pos, {gd.stride, f.line_height});
+                word_pos.x += stride;
+                
+                insert_word();
+            } else if(alignment == ALIGN_CENTER) {
+                insert_word();
+
+                if(i >= select_range.x && i < select_range.y) insert_selection(word_pos, {gd.stride, f.line_height});
+                word_pos.x += stride;
+
+                insert_word();
+            } else if(alignment == ALIGN_RIGHT) {
+                insert_word();
+
+                if(i >= select_range.x && i < select_range.y) insert_selection(word_pos, {gd.stride, f.line_height});
+                word_pos.x += stride;
+            }
+        } else {
+            if(word_ret.size() == 0) word_start_index = i;
+
+            std::vector<UI_vertex> vs = create_char(gd);
+
+            for(UI_vertex& v : vs) {
+                v.pos += word_pos;
+            }
+
+            for(UI_vertex& v : vs) {
+                if(italic) {
+                    v.pos.x += float(v.pos.y - word_pos.y - f.line_height * 0.5f) * italic_factor;
+                }
+
+                v.color = color;
+            }
+
+            word_ret.insert(word_ret.end(), vs.begin(), vs.end());
+
+            if(bold) {
+                for(UI_vertex& v : vs) {
+                    v.pos.x += bold_factor;
+                }
+                stride += bold_factor;
+                
+                word_ret.insert(word_ret.end(), vs.begin(), vs.end());
+            }
+            
+            if(i >= select_range.x && i < select_range.y) insert_selection(word_pos, {gd.stride, f.line_height});
+
+            word_pos.x += stride;
+        }
+    };
+
+    for(i = 0; i < text.size(); ++i) {
         char c = text[i];
 
         if(c == '\n') {
             insert_word();
+            insert_line();
+            word_start_index = i;
+            line_start_index = i;
+            
+            if(i >= select_range.x && i < select_range.y && (text[i + 1] == '\n' || i == text.size() - 1)) {
+                if(alignment == ALIGN_LEFT) insert_selection(word_pos, {6, f.line_height});
+                else if(alignment == ALIGN_CENTER) insert_selection(word_pos - vec2(3, 0), {6, f.line_height});
+                else if(alignment == ALIGN_RIGHT) insert_selection(word_pos - vec2(6, 0), {6, f.line_height});
+            }
 
-            pos.x = 0.0f;
-            pos.y -= f.line_height;
-            ++num_lines;
-
-            gui_system.text_line_indices.push_back(i + 1);
+            continue;
         } else {
             if(c == '\\') {
                 if(i + 1 < text.size()) {
@@ -398,82 +509,12 @@ std::vector<UI_vertex> mesh_text(Font& f, std::string text, uint32_t width, ivec
                 }
             } 
             
-            Glyph_data& gd = f.at(c);
-
-            float stride = gd.stride;
-
-            if(!gd.visible) {
-                insert_word();
-                
-                if(i >= select_range.x && i < select_range.y) {
-                    UI_vertex a = {vec2(0.0f, 0.0f), vec2(0.0f, 0.0f), vec4(1.0f)};
-                    UI_vertex b = {vec2(1.0f, 0.0f), vec2(1.0f, 0.0f), vec4(1.0f)};
-                    UI_vertex c = {vec2(0.0f, 1.0f), vec2(0.0f, 1.0f), vec4(1.0f)};
-                    UI_vertex d = {vec2(1.0f, 1.0f), vec2(1.0f, 1.0f), vec4(1.0f)};
-
-                    std::vector<UI_vertex> r = {a, b, d, a, d, c};
-                    for(UI_vertex& v : r) {
-                        v.pos = pos + v.pos * vec2(gd.stride, f.line_height);
-                        v.tex_pos = vec2(1.0f, 63.0f);
-                        v.color = vec4(1.0f, 1.0f, 1.0f, 0.35f);
-                        v.data = 1;
-                    }
-                    ret.insert(ret.end(), r.begin(), r.end());
-                }
-                
-                pos.x += stride;
-            } else {
-                if(word_ret.size() == 0) prev_word_index = i;
-                
-                std::vector<UI_vertex> vs = create_char(gd);
-
-                for(UI_vertex& v : vs) {
-                    v.pos += word_pos;
-                }
-
-                for(UI_vertex& v : vs) {
-                    if(italic) {
-                        v.pos.x += float(v.pos.y - word_pos.y - f.line_height * 0.5f) * italic_factor;
-                    }
-
-                    v.color = color;
-                }
-
-                word_ret.insert(word_ret.end(), vs.begin(), vs.end());
-
-                if(bold) {
-                    for(UI_vertex& v : vs) {
-                        v.pos.x += bold_factor;
-                    }
-                    stride += bold_factor;
-                    
-                    word_ret.insert(word_ret.end(), vs.begin(), vs.end());
-                }
-                
-                if(i >= select_range.x && i < select_range.y) {
-                    std::vector<UI_vertex> total_ret;
-
-                    UI_vertex a = {vec2(0.0f, 0.0f), vec2(0.0f, 0.0f), vec4(1.0f)};
-                    UI_vertex b = {vec2(1.0f, 0.0f), vec2(1.0f, 0.0f), vec4(1.0f)};
-                    UI_vertex c = {vec2(0.0f, 1.0f), vec2(0.0f, 1.0f), vec4(1.0f)};
-                    UI_vertex d = {vec2(1.0f, 1.0f), vec2(1.0f, 1.0f), vec4(1.0f)};
-
-                    std::vector<UI_vertex> ret = {a, b, d, a, d, c};
-                    for(UI_vertex& v : ret) {
-                        v.pos = word_pos + v.pos * vec2(gd.stride, f.line_height);
-                        v.tex_pos = vec2(1.0f, 63.0f);
-                        v.color = vec4(1.0f, 1.0f, 1.0f, 0.35f);
-                        v.data = 1;
-                    }
-                    word_ret.insert(word_ret.end(), ret.begin(), ret.end());
-                }
-
-                word_pos.x += stride;
-            }
+            insert_char(c);
         }
     }
 
     insert_word();
+    insert_line();
 
     for(UI_vertex& v : ret) {
         range.x = min(range.x, v.pos.x);
@@ -499,6 +540,8 @@ void GUI_system::call() {
         capture_widget = "";
         capture_window = "";
     }
+    active_window = "";
+
     window_capture();
 
     if(capture == 0xFFFFFFFF) {
@@ -595,7 +638,8 @@ Phasellus ac felis ut velit tempor cursus. Phasellus at leo semper, mattis sem a
 
 Suspendisse vitae laoreet elit, in sodales risus. Mauris suscipit, nibh ut hendrerit condimentum, quam diam venenatis justo, nec ultricies nibh nulla non dolor. Nam blandit, odio ac mollis mollis, est dui mollis neque, eu scelerisque sem urna in sapien. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis laoreet.)";
 
-        text("lorem_ipsum_dolor", lorem_ipsum_string, window_state[active_window].space.z - window_state[active_window].space.x - widget_sep * 2);
+        alignment = ALIGN_LEFT;
+        text("lorem_ipsum_dolor", lorem_ipsum_string);
     }
 
     static std::string frame_string = "";
@@ -621,6 +665,7 @@ Suspendisse vitae laoreet elit, in sodales risus. Mauris suscipit, nibh ut hendr
             open_stats = false;
         }
         
+        alignment = ALIGN_LEFT;
         text("frame_text", frame_string);
 
         Input_system& input_system = ecs.get_system<Input_system>();
@@ -632,7 +677,7 @@ Suspendisse vitae laoreet elit, in sodales risus. Mauris suscipit, nibh ut hendr
         if(pos.x >= 0 && pos.x < erosion_system.size.x && pos.y >= 0 && pos.y < erosion_system.size.y) {
             terrain_tile& tile = erosion_system.tiles[pos.x + pos.y * erosion_system.size.x];
             float elevation = tile.elevation;
-            elev_text += "\nElevation: " + to_base(elevation, 10, 8) + "\nNeighbors: " + to_base(int(tile.upstream.size()), 10) + "\nFlow:" + to_base(tile.flow, 10, 4) + "\nWater Level:" + to_base(tile.water, 10, 4) + " -> " + to_base(tile.water + tile.elevation, 10, 10);
+            elev_text += "\nElevation: " + to_base(elevation, 10, 8) + "\nSediment: " + to_base(tile.sediment, 10, 8) + "\nWater: " + to_base(tile.water, 10, 8) + "\nWater Velocity: " + to_base(tile.water_velocity.x, 10, 8) + " " + to_base(tile.water_velocity.y, 10, 8) + "\nNeighbors: " + to_base(int(tile.upstream.size()), 10) + "\nFlow:" + to_base(tile.flow, 10, 4);
         } else {
             elev_text += "\nOUT OF BOUNDS";
         }
@@ -704,8 +749,10 @@ void GUI_system::window(std::string name, bool& close_window) {
 
     ivec4 scrollbar_range;
 
-    int y_size = ws.current_pos.y - (position.y - header);
+    int y_size = (ws.current_pos.y - widget_sep) - (position.y - header);
     int height = abs(y_size - ws.scroll_pos);
+
+    ws.scroll_pos = clamp(ws.scroll_pos, 0, max(0, height - int(ws.size.y)));
 
     if(height > ws.size.y) {
         scrollbar = true;
@@ -907,18 +954,16 @@ void GUI_system::window(std::string name, bool& close_window) {
                 }
             }
         }
-        
-        if(operation == 0xFFFFFFFF) {
-            if(includes(core.cursor_pos, hover_range)) {
-                if(scrollbar && capture_widget == "") {
-                    ws.scroll_pos = clamp(ws.scroll_pos + core.scroll_delta * scroll_speed * -1.0f, 0.0f, (height - ws.size.y));
-                }
+    }
+    
+    if(includes(core.cursor_pos, hover_range) && capture_window == name) {
+        if(scrollbar && capture_window == name) {
+            ws.scroll_pos = clamp(ws.scroll_pos + core.scroll_delta * scroll_speed * -1.0f, 0.0f, (height - ws.size.y));
+        }
 
-                if(core.pressed_buttons.contains(GLFW_MOUSE_BUTTON_LEFT)) {
-                    capture = 4;
-                    make_priority(name);
-                }
-            }
+        if(core.pressed_buttons.contains(GLFW_MOUSE_BUTTON_LEFT)) {
+            capture = 4;
+            make_priority(name);
         }
     }
 
@@ -1150,28 +1195,32 @@ void GUI_system::window(std::string name, bool& close_window) {
 }
 
 void GUI_system::text(std::string name, std::string text, uint32_t width) {
+    if(width = 0xFFFFFFFF) {
+        width = (window_state[active_window].space.z - window_state[active_window].space.x) - widget_sep * 2;
+    }
+
     Font& f = fonts["default mono"];
 
     ivec2 select_range = {-1, -1};
 
     if(window_state[active_window].select_widget == name) select_range = {min(window_state[active_window].select_position, window_state[active_window].select_anchor), max(window_state[active_window].select_position, window_state[active_window].select_anchor)};
 
-    std::vector<UI_vertex> ret = mesh_text(f, text, width, select_range);
+    std::vector<UI_vertex> ret = mesh_text(f, text, width, select_range, alignment);
+    
+    int boundary = (window_state[active_window].space.z - window_state[active_window].space.x) - width;
 
-    vec2 origin = window_state[active_window].current_pos + vec2(widget_sep, 0.0f);
+    vec2 origin = window_state[active_window].current_pos + vec2(boundary * 0.5f, 0);
 
     for(UI_vertex& v : ret) {
         v.pos = origin + v.pos * float(text_scale) + vec2(0.0f, -f.line_height * float(text_scale));
         v.range = current_range;
     }
     
-
     window_state[active_window].current_pos.y -= float(text_lines * text_scale * f.line_height);
-    window_state[active_window].current_pos.y -= widget_sep;
 
     // selection
 
-    if(active_window == capture_window && includes(core.cursor_pos, window_state[active_window].space)) {
+    if((active_window == capture_window && includes(core.cursor_pos, window_state[active_window].space)) || (capture_widget == name && core.key_map[GLFW_MOUSE_BUTTON_LEFT])) {
         vec2 rel_pos = core.cursor_pos - origin;
 
         int line = floor(-rel_pos.y / (f.line_height * float(text_scale)));
@@ -1181,10 +1230,15 @@ void GUI_system::text(std::string name, std::string text, uint32_t width) {
             window_state[active_window].select_anchor = -1;
             window_state[active_window].select_widget = "";
         }
-
-        if(window_state[active_window].select_widget == name && core.key_map[GLFW_MOUSE_BUTTON_LEFT] && capture_widget == name) line = clamp(line, 0, int(text_lines - 1));
+        
+        if(capture_widget == name && (core.cursor_pos.x > window_state[active_window].space.z || core.cursor_pos.x < window_state[active_window].space.x) && line != clamp(line, 0, int(text_lines - 1))) {
+            if(line < 0) window_state[active_window].select_position = 0;
+            else window_state[active_window].select_position = text.size();
+        } else if(window_state[active_window].select_widget == name && core.key_map[GLFW_MOUSE_BUTTON_LEFT] && capture_widget == name) line = clamp(line, 0, int(text_lines - 1));
+        
 
         if(line >= 0 && line < text_lines) {
+            rel_pos.x -= text_line_origins[line];
             uint32_t start_index = text_line_indices[line];
             uint32_t end_index;
             if(text_line_indices.size() <= line + 1) end_index = text.size();
@@ -1258,6 +1312,12 @@ void GUI_system::text(std::string name, std::string text, uint32_t width) {
                     }
                     break;
                 }
+                
+                if(c == '\n') {
+                    index = i;
+                    break;
+                }
+
                 if(i == str.size() - 1) index = i + 1;
                 pixel = new_pixel;
             }
@@ -1279,11 +1339,11 @@ void GUI_system::text(std::string name, std::string text, uint32_t width) {
                 capture_widget = name;
             }
 
-            cursor_mode = CURSOR_TEXT;
+            if(capture_widget == name || capture_widget == "") cursor_mode = CURSOR_TEXT;
         }
     }
 
-    if(window_state[active_window].select_widget == name) {
+    if(window_state[active_window].select_widget == name && window_state[active_window].select_position == window_state[active_window].select_anchor) {
         int32_t start_pos = 0;
         int32_t line = 0;
         for(int i = 0; i < text_lines; ++i) {
@@ -1348,7 +1408,7 @@ void GUI_system::text(std::string name, std::string text, uint32_t width) {
 
         float yy = (line + 1) * float(f.line_height) * float(text_scale);
         float yyy = line * float(f.line_height) * float(text_scale);
-        ivec4 range = ivec4(origin.x + pixel - 2, origin.y - yy, origin.x + pixel + 2 - 2, origin.y - yyy);
+        ivec4 range = ivec4(origin.x + pixel - 2 + text_line_origins[line], origin.y - yy, origin.x + pixel + 2 - 2 + text_line_origins[line], origin.y - yyy);
 
         std::vector<UI_vertex> total_ret;
 
@@ -1375,9 +1435,14 @@ void GUI_system::text(std::string name, std::string text, uint32_t width) {
 void GUI_system::slider(std::string name, std::string text, ivec2 bounds, int& value, vec2 size, float slider_width) {
     vec4 range;
 
-    if(alignment == ALIGN_LEFT) range = {window_state[active_window].current_pos + vec2(widget_sep, -size.y), window_state[active_window].current_pos + vec2(widget_sep + size.x, 0.0f)};
-    else if(alignment == ALIGN_CENTER) {
+    if(alignment == ALIGN_LEFT) {
+        int x_pos = widget_sep;
+        range = {window_state[active_window].current_pos + vec2(x_pos, -size.y), window_state[active_window].current_pos + vec2(x_pos + size.x, 0.0f)};
+    } else if(alignment == ALIGN_CENTER) {
         int x_pos = ((current_range.z - current_range.x) * 0.5f - size.x * 0.5f);
+        range = {window_state[active_window].current_pos + vec2(x_pos, -size.y), window_state[active_window].current_pos + vec2(x_pos + size.x, 0.0f)};
+    } else if(alignment == ALIGN_RIGHT) {
+        int x_pos = ((current_range.z - current_range.x) - size.x - widget_sep);
         range = {window_state[active_window].current_pos + vec2(x_pos, -size.y), window_state[active_window].current_pos + vec2(x_pos + size.x, 0.0f)};
     }
 
@@ -1452,9 +1517,14 @@ void GUI_system::slider(std::string name, std::string text, ivec2 bounds, int& v
 void GUI_system::slider(std::string name, std::string text, vec2 bounds, float& value, vec2 size, float slider_width) {
     vec4 range;
 
-    if(alignment == ALIGN_LEFT) range = {window_state[active_window].current_pos + vec2(widget_sep, -size.y), window_state[active_window].current_pos + vec2(widget_sep + size.x, 0.0f)};
-    else if(alignment == ALIGN_CENTER) {
+    if(alignment == ALIGN_LEFT) {
+        int x_pos = widget_sep;
+        range = {window_state[active_window].current_pos + vec2(x_pos, -size.y), window_state[active_window].current_pos + vec2(x_pos + size.x, 0.0f)};
+    } else if(alignment == ALIGN_CENTER) {
         int x_pos = ((current_range.z - current_range.x) * 0.5f - size.x * 0.5f);
+        range = {window_state[active_window].current_pos + vec2(x_pos, -size.y), window_state[active_window].current_pos + vec2(x_pos + size.x, 0.0f)};
+    } else if(alignment == ALIGN_RIGHT) {
+        int x_pos = ((current_range.z - current_range.x) - size.x - widget_sep);
         range = {window_state[active_window].current_pos + vec2(x_pos, -size.y), window_state[active_window].current_pos + vec2(x_pos + size.x, 0.0f)};
     }
 
@@ -1527,9 +1597,14 @@ void GUI_system::slider(std::string name, std::string text, vec2 bounds, float& 
 void GUI_system::button(std::string name, std::string text, vec2 size, bool& active) {
     vec4 range;
     
-    if(alignment == ALIGN_LEFT) range = {window_state[active_window].current_pos + vec2(widget_sep, -size.y), window_state[active_window].current_pos + vec2(widget_sep + size.x, 0.0f)};
-    else if(alignment == ALIGN_CENTER) {
-        float x_pos = round((window_state[active_window].space.z - window_state[active_window].space.x) * 0.5f - size.x * 0.5f);
+    if(alignment == ALIGN_LEFT) {
+        int x_pos = widget_sep;
+        range = {window_state[active_window].current_pos + vec2(x_pos, -size.y), window_state[active_window].current_pos + vec2(x_pos + size.x, 0.0f)};
+    } else if(alignment == ALIGN_CENTER) {
+        int x_pos = ((current_range.z - current_range.x) * 0.5f - size.x * 0.5f);
+        range = {window_state[active_window].current_pos + vec2(x_pos, -size.y), window_state[active_window].current_pos + vec2(x_pos + size.x, 0.0f)};
+    } else if(alignment == ALIGN_RIGHT) {
+        int x_pos = ((current_range.z - current_range.x) - size.x - widget_sep);
         range = {window_state[active_window].current_pos + vec2(x_pos, -size.y), window_state[active_window].current_pos + vec2(x_pos + size.x, 0.0f)};
     }
 
@@ -1562,7 +1637,7 @@ void GUI_system::button(std::string name, std::string text, vec2 size, bool& act
     
     insert_vertices(total_ret);
 
-    if(capture_window == active_window && includes(core.cursor_pos, range)) {
+    if(capture_window == active_window && includes(core.cursor_pos, current_range) && includes(core.cursor_pos, range)) {
         if(core.pressed_buttons.contains(GLFW_MOUSE_BUTTON_LEFT)) {
             capture = 8;
             capture_widget = name;

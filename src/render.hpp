@@ -53,5 +53,7 @@ struct Render_system : System {
 
     void render_background(uint32_t camera);
 
+    void render_path(uint32_t camera);
+
     void call();
 };

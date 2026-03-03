@@ -387,6 +387,54 @@ void Render_system::render_map(uint32_t camera) {
     vv->draw_vertices(GL_TRIANGLES);
 }
 
+void Render_system::render_path(uint32_t camera) {
+    Erosion_system& es = ecs.get_system<Erosion_system>();
+
+    vec2 pos = vec2(0.0f, 0.0f);
+    vec2 size = es.size;
+
+    std::vector<vec3> path;
+
+    for(int i = 0; i < int(es.path.size()) - 1; ++i) {
+        vec3 i0 = vec3((es.path[i] * 2 - es.size) + 1, 0.5f);
+        vec3 i1 = vec3((es.path[i + 1] * 2 - es.size) + 1, 0.5f);
+
+        path.push_back(i0);
+        path.push_back(i1);
+    }
+
+    vv->vertex_buffer_data(path.data(), path.size(), sizeof(float) * 3, GL_STREAM_DRAW);
+    vv->add_vertex_attribute(0, 3, GL_FLOAT, false, sizeof(float) * 3, 0);
+
+    Transform& ct = ecs.get_component<Transform>(camera);
+    Camera& cc = ecs.get_component<Camera>(camera);
+
+    Input_system& is = ecs.get_system<Input_system>();
+
+    mat4 inv_rot = mat4(transpose(ct.orientation));
+
+    mat4 view = inv_rot * scale(vec3(cc.scale, cc.scale, 1.0f)) * translate(vec3(-ct.position, 0.0f));
+    mat4 model = translate(vec3(pos, 0.0f));
+
+    float aspect_ratio = float(core.window.screen_size.y) / core.window.screen_size.x;
+    mat4 proj = scale(vec3(1.0f, 1.0f / aspect_ratio, 1.0f));
+
+    core.shaders["color_shader"]->use();
+
+    es.map_texture->bind(0);
+    
+    vv->bind();
+
+    glUniformMatrix4fv(0, 1, false, &view[0][0]);
+    glUniformMatrix4fv(1, 1, false, &proj[0][0]);
+    glUniformMatrix4fv(2, 1, false, &model[0][0]);
+    glUniform4f(3, 0.0f, 0.0f, 0.0f, 1.0f);
+
+    glLineWidth(1);
+
+    vv->draw_vertices(GL_LINES);
+}
+
 void Render_system::render_marker(vec2 pos, vec2 normal, uint32_t camera) {
     Transform ct = ecs.get_component<Transform>(camera);
     Camera& cc = ecs.get_component<Camera>(camera);
@@ -538,6 +586,8 @@ void Render_system::call() {
             render_marker(v, normal, camera);
             ++i;
         }
+
+        render_path(camera);
     }
 
 
