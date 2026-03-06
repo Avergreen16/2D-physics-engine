@@ -2,6 +2,7 @@
 #include "random.hpp"
 #include "core.hpp"
 #include "input.hpp"
+#include "gui.hpp"
 
 mat3 rotate_to(vec3 a, vec3 b) {
     vec3 cross_p = cross(a, b);
@@ -43,65 +44,16 @@ vec3 lcolor(float f) {
 Erosion_system::Erosion_system() {
     size = ivec2(256, 256);
 
-    tiles.resize(size.x * size.y);
+    init_map(size);
 
     for(int y = 0; y < size.y; ++y) {
         for(int x = 0; x < size.x; ++x) {
-            int i = x + y * size.x;
-            vec2 position = vec2(x, y);
-
-            terrain_tile tile;
-            tile.self = {x, y};
-            tile.elevation = Noise_gen::perlin_noise(vec3(position, 0.0f), 256, 3, 0x120, 0.5f) + Noise_gen::perlin_noise(vec3(position, 0.0f), 24, 3, 0x16, 0.425f) * 0.125f;
-
-            /*
-            std::vector<ivec2> neighbors = {
-                ivec2(x - 1, y),
-                ivec2(x + 1, y),
-                ivec2(x, y - 1),
-                ivec2(x, y + 1),
-            };*/
+            vec2 position = {x, y};
+            terrain_tile& tile = tiles[x + y * size.x];
             
-            /*
-            std::vector<ivec2> neighbors = {
-                ivec2(x - 1, y - 1),
-                ivec2(x, y - 1),
-                ivec2(x + 1, y - 1),
-                ivec2(x - 1, y),
-                ivec2(x + 1, y),
-                ivec2(x - 1, y + 1),
-                ivec2(x, y + 1),
-                ivec2(x + 1, y + 1),
-            };
-            std::vector<float> distances = {
-                1.414f,
-                1.0f,
-                1.414f,
-                1.0f,
-                1.0f,
-                1.414f, 
-                1.0f, 
-                1.414f
-            };
-            */
-           
-            std::vector<ivec2> neighbors = {
-                ivec2(x, y - 1),
-                ivec2(x - 1, y),
-                ivec2(x + 1, y),
-                ivec2(x, y + 1),
-            };
-            std::vector<float> distances = {
-                1.0f,
-                1.0f,
-                1.0f,
-                1.0f, 
-            };
-
-            tile.neighbors = neighbors;
-            tile.distances = distances;
-
-            tiles[i] = tile;
+            vec2 offset = vec2(0.0f);//vec2{Noise_gen::perlin_noise(vec3(position, 0.0f), 64, 3, 0x80, 0.5f), Noise_gen::perlin_noise(vec3(position, 0.0f), 64, 3, 0x120, 0.5f)} * 20.0f;
+            tile.elevation = Noise_gen::perlin_noise(vec3(position + offset, 0.0f), 256, 8, 0xF1, 0.5f);
+            tile.elevation *= 1.0f;
         }
     }
 
@@ -173,6 +125,14 @@ void Erosion_system::call() {
             update_texture();
         }
     }
+
+    if(core.pressed_buttons.contains(GLFW_KEY_F8)) {
+        write_heightmap();
+    } 
+
+    if(core.pressed_buttons.contains(GLFW_KEY_F9)) {
+        read_heightmap();
+    }
 }
 
 struct less {
@@ -201,7 +161,7 @@ void Erosion_system::update_texture() {
                 int i = x + y * size.x;
                 terrain_tile& tt = tiles[i];
 
-                float c = clamp(tiles[i].elevation, 0.0f, 1.0f);
+                float c = tiles[i].elevation;//clamp(tiles[i].elevation, 0.0f, 1.0f);
 
                 vec3 color = lcolor(c * 6.0f) * 0.5f + 0.35f;
 
@@ -255,7 +215,7 @@ void Erosion_system::update_texture() {
 
                 terrain_tile& tt = tiles[i];
 
-                tt.water = 0.0f;
+                tt.flow_water = 0.0f;
                 tt.basin = 0xFFFFFFFF;
                 tt.upstream.clear();
             }
@@ -273,7 +233,7 @@ void Erosion_system::update_texture() {
                 open.pop();
 
                 if(current->elevation < water_elev) {
-                    current->water = water_elev - current->elevation;
+                    current->flow_water = water_elev - current->elevation;
 
                     lake_vs.insert(current->self);
                     for(ivec2 n : current->neighbors) {
@@ -447,7 +407,7 @@ void Erosion_system::update_texture() {
 
             float volume_limit = vt.flow * 0.0002f;
 
-            if(create_lake && vt.water == 0.0f) {
+            if(create_lake && vt.flow_water == 0.0f) {
                 ++b;
 
                 float max_elev = vt.elevation;
@@ -561,7 +521,7 @@ void Erosion_system::update_texture() {
                 }
             }   
             */
-            std::cout << i << " / " << basins_from.size() << "\n";
+            //std::cout << i << " / " << basins_from.size() << "\n";
             ++i;
         }
 
@@ -618,7 +578,7 @@ void Erosion_system::update_texture() {
 
                 vec3 color = lcolor(float(hash(uint64_t(tt.basin * 7)) & 0xFFFFFFFF) / 0xFFFFFFFF) * 0.4f + 0.6f;
 
-                if(tt.basin == 0xFFFFFFFF || tt.water != 0.0f) color = ocean_color;
+                if(tt.basin == 0xFFFFFFFF || tt.flow_water != 0.0f) color = ocean_color;
                 else {
                     color = mix(color, river_color, clamp(tt.flow / 1024.0f, 0.0f, 1.0f));
                 }
@@ -646,13 +606,62 @@ void Erosion_system::update_texture() {
                 int i = x + y * size.x;
                 terrain_tile& tt = tiles[i];
 
-                vec3 normal = vec3(0, 0, 1);
+                vec3 normal = vec3(0, 0, 2.0f);
                 
                 for(ivec2 n : tt.neighbors) {
                     if(is_valid(n)) {
                         terrain_tile& nt = tiles[n.x + n.y * size.x];
 
-                        normal += vec3(n - tt.self, 0.0f) * ((tt.elevation + tt.sediment) - (nt.elevation + nt.sediment)) * 80.0f;
+                        normal += vec3(n - tt.self, 0.0f) * ((tt.elevation) - (nt.elevation)) * 80.0f;
+                    }
+                }
+
+                float l = dot(light, normalize(normal));
+
+                float c = clamp(tiles[i].elevation, 0.0f, 1.0f);
+
+                vec3 high_color = vec3(145, 60, 28) / 255.0f;
+                vec3 low_color = vec3(0.9f);
+
+                vec3 color = low_color;//mix(low_color, high_color, clamp(difference * 25.0f, 0.0f, 1.0f));
+                color *= clamp(l, 0.0f, 1.0f) * 0.4f + 0.6f;
+
+                color = mix(color, vec3(1.0f, 0.125f, 1.0f), clamp(tt.water / 0.001f, 0.0f, 1.0f));
+
+                //if(tt.elevation < water_level || tt.water != 0.0f) color = ocean_color;
+
+                if(tt.mark) color = mix(vec3(1.0f, 0.35f, 0.35f), color, 0.5f);
+
+                vec<4, uint8_t> bit_color = {color * 255.0f, 255};
+
+                texture[i * 4] = bit_color[0];
+                texture[i * 4 + 1] = bit_color[1];
+                texture[i * 4 + 2] = bit_color[2];
+                texture[i * 4 + 3] = bit_color[3];
+            }
+        }
+
+        if(map_texture) {
+            map_texture.reset();
+        }
+
+        map_texture = std::shared_ptr<Texture>(new Texture(texture.data(), ivec3(size, 1), GL_TEXTURE_2D, {GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE}, 0));
+    } else if(mode == MAP_MODE_SHADE) {
+        vec3 light = normalize(vec3(-0.5f, 1.0f, 1.0f));
+
+        for(int y = 0; y < size.y; ++y) {
+            for(int x = 0; x < size.x; ++x) {
+                ivec2 ii = {x, y};
+                int i = x + y * size.x;
+                terrain_tile& tt = tiles[i];
+
+                vec3 normal = vec3(0, 0, 2.0f);
+                
+                for(ivec2 n : tt.neighbors) {
+                    if(is_valid(n)) {
+                        terrain_tile& nt = tiles[n.x + n.y * size.x];
+
+                        normal += vec3(n - tt.self, 0.0f) * ((tt.elevation) - (nt.elevation)) * 80.0f;
                     }
                 }
 
@@ -694,7 +703,17 @@ void Erosion_system::sim_step() {
         return v.x >= 0 && v.y >= 0 && v.x < size.x && v.y < size.x;
     };
 
-    std::vector<float> inverse_index = {3, 2, 1, 0};
+    std::vector<float> inverse_index = {7, 6, 5, 4, 3, 2, 1, 0};
+    std::vector<vec2> vs = {
+        vec2(-0.707f, -0.707f),
+        vec2(0.0f, -1.0f),
+        vec2(0.707f, -0.707f),
+        vec2(-1.0f, 0.0f),
+        vec2(1.0f, 0.0f),
+        vec2(-0.707f, 0.707f),
+        vec2(0.0f, 1.0f),
+        vec2(0.707f, 0.707f),
+    };
 
     float precipitation = 0.000005f;
 
@@ -705,13 +724,11 @@ void Erosion_system::sim_step() {
             
             terrain_tile& t = tiles[i];
             t.water += precipitation;
-            t.outflow.resize(4);
-            std::fill(t.outflow.begin(), t.outflow.end(), 0.0f);
         }
     }
 
     // compute outflow
-    float outflow_factor = 0.125f;
+    float outflow_factor = 1.0f;
     for(int y = 0; y < size.y; ++y) {
         for(int x = 0; x < size.x; ++x) {
             int i = x + y * size.x;
@@ -728,10 +745,11 @@ void Erosion_system::sim_step() {
 
                     terrain_tile& t_n = tiles[i_n];
 
-                    float difference = t.elevation - (t_n.elevation);
+                    float difference = (t.elevation) - (t_n.elevation);
+                    //float difference = (t.elevation) - (t_n.elevation);
 
-                    float of = max(0.0f, t.outflow[j] + difference * outflow_factor * t.distances[j] * outflow_factor);
-                    outflows[j] = of - t.outflow[j];
+                    float of = max(0.0f, t.outflow[j] + difference * 0.1f);
+                    outflows[j] = of;
 
                     ++j;
                 }
@@ -740,14 +758,44 @@ void Erosion_system::sim_step() {
             float sum = 0.0f;
             for(float f : outflows) sum += f;
 
-            float K = min(1.0f, t.water / sum);
-            if(isnan(K)) K = 1.0f;
+            int ii = 0;
+            float of = 0.0f;
+            for(int i = 0; i < outflows.size(); ++i) {
+                float of0 = outflows[i];
+
+                if(of0 > of) {
+                    of = of0;
+                    ii = i;
+                }
+            }
+            
+            for(int i = 0; i < outflows.size(); ++i) {
+                //if(i != ii) outflows[i] = 0.0f;
+            }
+
+            /*
+            for(float& f : outflows) f /= sum;
+            
+            float psum = 0.0f;
+            for(float& f : outflows) {
+                f = pow(f, 10.0f);
+                psum += f;
+            }
+            for(float& f : outflows) {
+                f *= sum / psum;
+
+                if(isnan(f)) f = 0.0f;
+            }
+            */
+
+
+            float K = min(1.0f, (t.water * outflow_factor) / sum);
 
             for(float& f : outflows) f *= K;
             
             j = 0;
             for(ivec2 v : t.neighbors) {
-                t.outflow[j] += outflows[j];
+                t.outflow[j] = outflows[j];
                 
                 ++j;
             }
@@ -765,35 +813,34 @@ void Erosion_system::sim_step() {
 
             // outflow
             for(float f : t.outflow) flow_out += f;
-            std::vector<float> inflow(4, 0.0f);
+            std::vector<float> inflow(t.neighbors.size(), 0.0f);
 
             // inflow
-            for(int i = 0; i < 4; ++i) {
-                ivec2 i_n = t.neighbors[i];
+            for(int j = 0; j < t.neighbors.size(); ++j) {
+                ivec2 i_n = t.neighbors[j];
                 
                 if(is_valid(i_n)) {
                     terrain_tile& t_n = tiles[i_n.x + i_n.y * size.x];
 
-                    int inv_index = inverse_index[i];
+                    int inv_index = inverse_index[j];
 
                     flow_in += t_n.outflow[inv_index];
 
-                    inflow[i] = t_n.outflow[inv_index];
+                    inflow[j] = t_n.outflow[inv_index];
                 }
             }
-
-            t.water_velocity = {
-                -t.outflow[1] + t.outflow[2] + inflow[1] - inflow[2],
-                -t.outflow[3] + t.outflow[0] + inflow[3] - inflow[0]
-            };
-
-            t.water_velocity *= 3.0f;
+            
+            vec2 water_vel = vec2(0.0f);
+            for(int j = 0; j < t.neighbors.size(); ++j) {
+                water_vel += vs[j] * (inflow[j] - t.outflow[j]);
+            }
+            t.water_velocity = water_vel;
 
             float delta_flow = flow_in - flow_out;
 
             t.delta_flow = delta_flow;
 
-            t.water_temp = t.water + delta_flow;
+            t.water_temp = max(0.0f, t.water + delta_flow);
         }
     }
 
@@ -809,13 +856,15 @@ void Erosion_system::sim_step() {
                 if(is_valid(i_n)) {
                     terrain_tile& t_n = tiles[i_n.x + i_n.y * size.x];
 
-                    float slope = (t.elevation + t.sediment) - (t_n.elevation + t_n.sediment);
+                    float slope = (t.elevation) - (t_n.elevation);
 
                     max_slope = max(max_slope, slope);
                 }
             }
 
-            float carry_capacity = max_slope * length(t.water_velocity) * 100.0f;
+            float carry_capacity = max_slope * length(t.water_velocity) * 1000.0f;
+
+            t.carry_capacity = carry_capacity;
 
             float erosion_amount = carry_capacity - t.sediment;
 
@@ -832,6 +881,29 @@ void Erosion_system::sim_step() {
             new_sediment = max(0.0f, new_sediment);
             float delta = new_sediment - t.sediment;
             //std::cout << delta << " ";
+            
+            //float min_slope = 0.0f;
+            //float max_slope = 0.0f;
+            float min_slope = -FLT_MAX;
+            float max_slope = FLT_MAX;
+            for(ivec2 i_n : t.neighbors) {
+                if(is_valid(i_n)) {
+                    terrain_tile& t_n = tiles[i_n.x + i_n.y * size.x];
+
+                    float slope = t.elevation - t_n.elevation;
+                    
+                    if(slope > 0.0f) max_slope = min(max_slope, slope);
+                    if(slope < 0.0f) min_slope = max(min_slope, slope);
+                    //min_slope = min(min_slope, slope);
+                    //max_slope = max(max_slope, slope);
+                }
+            }
+
+            if(min_slope == -FLT_MAX) min_slope = 0.0f;
+            if(max_slope == FLT_MAX) max_slope = 0.0f;
+
+            delta = clamp(delta, min_slope, max_slope);
+            //delta = 0.0f;
 
             t.sediment_temp = t.sediment + delta;
             t.elevation_temp = t.elevation - delta;
@@ -845,11 +917,11 @@ void Erosion_system::sim_step() {
             int i = x + y * size.x;
             terrain_tile& t = tiles[i];
 
-            for(int i = 0; i < t.neighbors.size(); ++i) {
-                float outflow = t.outflow[i];
+            for(int j = 0; j < t.neighbors.size(); ++j) {
+                float outflow = t.outflow[j];
                 float ratio = outflow / t.water;
 
-                ivec2 i_n = t.neighbors[i];
+                ivec2 i_n = t.neighbors[j];
                 if(is_valid(i_n)) {
                     terrain_tile& t_n = tiles[i_n.x + i_n.y * size.x];
 
@@ -859,8 +931,8 @@ void Erosion_system::sim_step() {
             }
 
             /*
-            float x_ratio = float(t.self.x) - t.water_velocity.x * 50.0f;
-            float y_ratio = float(t.self.y) - t.water_velocity.y * 50.0f;
+            float x_ratio = float(t.self.x) - t.water_velocity.x * 100.0f;
+            float y_ratio = float(t.self.y) - t.water_velocity.y * 100.0f;
 
             int x_0 = floor(x_ratio);
             int y_0 = floor(y_ratio);
@@ -895,17 +967,170 @@ void Erosion_system::sim_step() {
             t.water = t.water_temp;
             t.elevation = t.elevation_temp;
             
-            for(int i = 0; i < 4; ++i) {
-                ivec2 i_n = t.neighbors[i];
+            for(int j = 0; j < t.neighbors.size(); ++j) {
+                ivec2 i_n = t.neighbors[j];
 
                 if(is_valid(i_n)) {
                     terrain_tile& t_n = tiles[i_n.x + i_n.y * size.x];
                 }
             }
 
-            t.water *= 0.8f;
+            t.water *= 0.995f;
         }
     }
+
+    update_texture();
+}
+
+void Erosion_system::init_map(ivec2 size) {
+    tiles.resize(size.x * size.y);
+
+    for(int y = 0; y < size.y; ++y) {
+        for(int x = 0; x < size.x; ++x) {
+            int i = x + y * size.x;
+            vec2 position = vec2(x, y);
+
+            terrain_tile tile;
+            tile.self = {x, y};
+            
+            std::vector<ivec2> neighbors = {
+                ivec2(x - 1, y - 1),
+                ivec2(x, y - 1),
+                ivec2(x + 1, y - 1),
+                ivec2(x - 1, y),
+                ivec2(x + 1, y),
+                ivec2(x - 1, y + 1),
+                ivec2(x, y + 1),
+                ivec2(x + 1, y + 1),
+            };
+            std::vector<float> distances = {
+                1.414f,
+                1.0f,
+                1.414f,
+                1.0f,
+                1.0f,
+                1.414f, 
+                1.0f, 
+                1.414f
+            };
+            
+            /*
+            std::vector<ivec2> neighbors = {
+                ivec2(x, y + 1),
+                ivec2(x - 1, y),
+                ivec2(x + 1, y),
+                ivec2(x, y - 1),
+            };
+            std::vector<float> distances = {
+                1.0f,
+                1.0f,
+                1.0f,
+                1.0f, 
+            };
+            */
+
+            tile.neighbors = neighbors;
+            tile.distances = distances;
+            
+            tile.outflow = std::vector<float>(8, 0.0f);
+
+            tiles[i] = tile;
+        }
+    }
+}
+
+void Erosion_system::write_heightmap() {
+    std::string filepath = "output/heightmap" + to_base(int64_t(get_absolute_time() * 10), 10, true) + ".amap";
+    std::ofstream file(filepath, std::ios::out | std::ios::binary);
+
+    auto insert_bytes = [](std::vector<uint8_t>& vector, uint8_t* ptr, uint32_t num_bytes) {
+        for(int i = 0; i < num_bytes; ++i) {
+            vector.push_back(ptr[i]);
+        }
+    };
+
+    if(file.is_open()) {
+        std::vector<uint8_t> values;
+        
+        uint16_t sx = size.x;
+        uint16_t sy = size.y;
+    
+        insert_bytes(values, (uint8_t*)&sx, 2);
+        insert_bytes(values, (uint8_t*)&sy, 2);
+
+        for(int y = 0; y < size.y; ++y) {
+            for(int x = 0; x < size.y; ++x) {
+                terrain_tile& tile = tiles[x + y * size.x];
+
+                float elevation = tile.elevation;
+                float sediment = tile.sediment;
+                float water = tile.water;
+
+                insert_bytes(values, (uint8_t*)&elevation, 4);
+                insert_bytes(values, (uint8_t*)&sediment, 4);
+                insert_bytes(values, (uint8_t*)&water, 4);
+            }
+        }
+
+        file.write((const char*)values.data(), values.size());
+        
+        std::cout << "wrote file " << filepath << "\n";
+    } else std::cout << "ERROR: write_heightmap failed to open file\n";
+
+    file.close();
+
+    prev_filepath = filepath;
+}
+
+void Erosion_system::read_heightmap() {
+    std::ifstream file(prev_filepath, std::ios::in | std::ios::binary);
+
+    if(file.is_open()) {
+        // read all bytes
+        std::vector<uint8_t> bytes;
+        uint8_t byte;
+        while(file.read((char*)&byte, 1)) {
+            bytes.push_back(byte);
+        }
+
+        // read lambda function
+        uint32_t pos = 0;
+        auto read = [&](void* dst, uint32_t num_bytes) {
+            memcpy(dst, &bytes[pos], num_bytes);
+            pos += num_bytes;
+        };
+
+        uint16_t size_x;
+        uint16_t size_y;
+        read(&size_x, 2);
+        read(&size_y, 2);
+
+        size.x = size_x;
+        size.y = size_y;
+
+        init_map(size);
+
+        for(int y = 0; y < size.y; ++y) {
+            for(int x = 0; x < size.x; ++x) {
+                float elevation;
+                float sediment;
+                float water;
+
+                read(&elevation, 4);
+                read(&sediment, 4);
+                read(&water, 4);
+
+                terrain_tile& tile = tiles[x + y * size.x];
+                tile.elevation = elevation;
+                tile.sediment = sediment;
+                tile.water = water;
+            }
+        }
+
+        std::cout << "read file " << prev_filepath << "\n";
+    } else std::cout << "ERROR: read_heightmap failed to open file\n";
+    
+    file.close();
 
     update_texture();
 }

@@ -602,14 +602,17 @@ void GUI_system::call() {
         std::string str;
         map_mode next;
         if(es.mode == MAP_MODE_ELEVATION) {
+            next = MAP_MODE_SHADE;
+            str = "Map Mode: \\b\\cF44ELEVATION";
+        } else if(es.mode == MAP_MODE_SHADE) {
             next = MAP_MODE_FLOW;
-            str = "Map Mode: \\b\\cF44Elevation";
+            str = "Map Mode: \\b\\cF4FSHADE";
         } else if(es.mode == MAP_MODE_FLOW) {
             next = MAP_MODE_BASIN;
-            str = "Map Mode: \\b\\c44FFlow";
+            str = "Map Mode: \\b\\c44FFLOW";
         } else if(es.mode == MAP_MODE_BASIN) {
             next = MAP_MODE_ELEVATION;
-            str = "Map Mode: \\b\\c4F4Basins";
+            str = "Map Mode: \\b\\c4F4BASINS";
         }
 
         alignment = ALIGN_CENTER;
@@ -673,6 +676,19 @@ Suspendisse vitae laoreet elit, in sodales risus. Mauris suscipit, nibh ut hendr
         ivec2 pos = ivec2((floor(input_system.world_cursor_pos) + vec2(erosion_system.size)) / 2.0f);
 
         std::string elev_text = std::to_string(pos.x) + " " + std::to_string(pos.y);
+
+        std::string total_mass_string;
+        float total_mass = 0.0f;
+        for(int y = 0; y < erosion_system.size.y; ++y) {
+            for(int x = 0; x < erosion_system.size.x; ++x) {
+                terrain_tile& tile = erosion_system.tiles[x + y * erosion_system.size.x];
+
+                 total_mass += tile.elevation + tile.sediment;
+            }
+        }
+        total_mass_string = to_base(total_mass, 16, 8); 
+        
+        text("mass_text", total_mass_string);
 
         if(pos.x >= 0 && pos.x < erosion_system.size.x && pos.y >= 0 && pos.y < erosion_system.size.y) {
             terrain_tile& tile = erosion_system.tiles[pos.x + pos.y * erosion_system.size.x];
