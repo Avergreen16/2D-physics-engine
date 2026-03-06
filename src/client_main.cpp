@@ -161,7 +161,7 @@ void Core::init() {
     shaders.emplace("screen_shader", std::make_shared<Shader>(Shader("src/shaders/screen.vert", "src/shaders/screen.frag")));
     shaders.emplace("gui_shader", std::make_shared<Shader>(Shader("src/shaders/ui.vert", "src/shaders/ui.frag")));
     shaders.emplace("background", std::make_shared<Shader>(Shader("src/shaders/background.vert", "src/shaders/background.frag")));
-    textures.emplace("gui_texture", std::make_shared<Texture>(Texture("res/textures/gui.png", {GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE}, 4)));
+    textures.emplace("icons", std::make_shared<Texture>(Texture("res/textures/icons.png", {GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE}, 4)));
     textures.emplace("text_texture", std::make_shared<Texture>(Texture("res/textures/text_mono.png", {GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE}, 4)));
 
     // create 3d noise map
@@ -263,14 +263,6 @@ int main() {
     ecs.register_component<Transform>();
     ecs.register_component<Camera>();
     ecs.register_component<Collider>();
-    ecs.register_component<Widget>();
-    ecs.register_component<Window_widget>();
-    ecs.register_component<Text>();
-    ecs.register_component<Button>();
-    ecs.register_component<Tab>();
-    ecs.register_component<Panel>();
-    ecs.register_component<Text_input>();
-    ecs.register_component<Scrollbar>();
 
     ecs.register_system<Input_system>();
     ecs.register_system<GUI_system>();
@@ -330,24 +322,7 @@ int main() {
 
     ecs.insert_component(entity, t);
     ecs.insert_component(entity, cc);
-
-    // widgets
-
-    GUI_system& gui_system = ecs.get_system<GUI_system>();
-
-    gui_system.add_window(ivec2(20, 20), ivec2(80, 60), "Test Window");
-    gui_system.add_text(fps_callback);
-    gui_system.add_text(physics_callback);
-
-    /*gui_system.add_scrollbar(10, 20);
-    for(int i = 0; i < 100; ++i) {
-        std::string string = std::to_string(i);
-        gui_system.add_tab(ivec2(60, 15), "TAB" + string, true);
-        gui_system.widget_return();
-    }
-    gui_system.widget_return();*/
     
-
     glfwSetInputMode(core.window.window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
     Time time;
@@ -364,6 +339,8 @@ int main() {
         core.delta_time = core.get_delta_time();
         
         glfwPollEvents();
+
+        core.handle_events();
 
         double time = get_time();
 

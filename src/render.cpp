@@ -504,7 +504,7 @@ void Render_system::call() {
     
     GUI_system& gui_system = ecs.get_system<GUI_system>();
 
-    gui_system.render();
+    render_gui();
 
     render_cursor();
     
@@ -513,6 +513,41 @@ void Render_system::call() {
 
 
     glfwSwapBuffers(core.window.window);
+}
+
+void Render_system::render_gui() {
+    GUI_system& gui_system = ecs.get_system<GUI_system>();
+    
+    if(!vv->initialized) vv->init();
+    vv->vertex_buffer_data(gui_system.vertices.data(), gui_system.vertices.size(), sizeof(UI_vertex), GL_STREAM_DRAW);
+
+    vv->add_vertex_attribute(0, 2, GL_FLOAT, false, sizeof(UI_vertex), 0);
+    vv->add_vertex_attribute(1, 2, GL_FLOAT, false, sizeof(UI_vertex), 2 * sizeof(float));
+    vv->add_vertex_attribute(2, 4, GL_FLOAT, false, sizeof(UI_vertex), 4 * sizeof(float));
+    vv->add_vertex_attribute(3, 4, GL_FLOAT, false, sizeof(UI_vertex), 8 * sizeof(float));
+    vv->add_vertex_attribute(4, 1, GL_INT, false, sizeof(UI_vertex), 12 * sizeof(float));
+
+    std::shared_ptr<Shader> ui_shader = core.shaders["gui_shader"];
+    std::shared_ptr<Texture> ui_texture = core.textures["icons"];
+    std::shared_ptr<Texture> text_texture = core.textures["text_texture"];
+
+    glm::mat3 view_mat;
+    glm::mat3 trans_mat;
+
+    glm::ivec2 half_viewport_size = core.window.viewport_size / 2;
+
+    view_mat = glm::scale(glm::translate(glm::identity<glm::mat3>(), {-1, -1}), glm::vec2{1.0 / half_viewport_size.x, 1.0 / half_viewport_size.y});
+    trans_mat = glm::identity<glm::mat3>();
+
+    ui_shader->use();
+    text_texture->bind(0);
+    ui_texture->bind(1);
+    vv->bind();
+
+    glUniformMatrix3fv(0, 1, false, &view_mat[0][0]);
+    glUniformMatrix3fv(1, 1, false, &trans_mat[0][0]);
+
+    vv->draw_vertices(GL_TRIANGLES);
 }
 
 
@@ -577,17 +612,18 @@ void Render_system::render_cursor() {
             break;
     }
     
-    vec2 pos = input_system.cursor_pos;
+    vec2 pos = core.cursor_pos;
 
     std::vector<UI_vertex> v = {
-        UI_vertex({0, -size.y, 0.5}, tex_range.xy()),
-        UI_vertex({size.x, -size.y, 0.5}, tex_range.xy() + ivec2(tex_range.z, 0)),
-        UI_vertex({0, 0, 0.5}, tex_range.xy() + ivec2(0, tex_range.w)),
-        UI_vertex({size.x, 0, 0.5}, tex_range.xy() + ivec2(tex_range.z, tex_range.w)),
+        UI_vertex({0, -size.y}, tex_range.xy()),
+        UI_vertex({size.x, -size.y}, tex_range.xy() + ivec2(tex_range.z, 0)),
+        UI_vertex({0, 0}, tex_range.xy() + ivec2(0, tex_range.w)),
+        UI_vertex({size.x, 0}, tex_range.xy() + ivec2(tex_range.z, tex_range.w)),
     };
 
     for(UI_vertex& vv : v) {
-        vv.position += vec3(pos + vec2(rel_pos), 0.0f);
+        vv.pos += vec2(pos + vec2(rel_pos));
+        vv.data = 0x1;
     }
 
     v = {v[0], v[1], v[3], v[0], v[3], v[2]};
@@ -595,14 +631,14 @@ void Render_system::render_cursor() {
     if(!vv->initialized) vv->init();
     vv->vertex_buffer_data(v.data(), v.size(), sizeof(UI_vertex), GL_STREAM_DRAW);
 
-    vv->add_vertex_attribute(0, 3, GL_FLOAT, false, sizeof(UI_vertex), 0);
-    vv->add_vertex_attribute(1, 2, GL_FLOAT, false, sizeof(UI_vertex), 3 * sizeof(float));
-    vv->add_vertex_attribute(2, 4, GL_FLOAT, false, sizeof(UI_vertex), 5 * sizeof(float));
-    vv->add_vertex_attribute(3, 1, GL_INT, false, sizeof(UI_vertex), 9 * sizeof(float));
-    vv->add_vertex_attribute(4, 4, GL_INT, false, sizeof(UI_vertex), 10 * sizeof(float));
+    vv->add_vertex_attribute(0, 2, GL_FLOAT, false, sizeof(UI_vertex), 0);
+    vv->add_vertex_attribute(1, 2, GL_FLOAT, false, sizeof(UI_vertex), 2 * sizeof(float));
+    vv->add_vertex_attribute(2, 4, GL_FLOAT, false, sizeof(UI_vertex), 4 * sizeof(float));
+    vv->add_vertex_attribute(3, 4, GL_FLOAT, false, sizeof(UI_vertex), 8 * sizeof(float));
+    vv->add_vertex_attribute(4, 1, GL_INT, false, sizeof(UI_vertex), 12 * sizeof(float));
 
     std::shared_ptr<Shader> ui_shader = core.shaders["gui_shader"];
-    std::shared_ptr<Texture> ui_texture = core.textures["gui_texture"];
+    std::shared_ptr<Texture> ui_texture = core.textures["icons"];
 
     glm::mat3 view_mat;
     glm::mat3 trans_mat;
@@ -613,7 +649,7 @@ void Render_system::render_cursor() {
     trans_mat = glm::identity<glm::mat3>();
 
     ui_shader->use();
-    ui_texture->bind(0);
+    ui_texture->bind(1);
     vv->bind();
 
     glUniformMatrix3fv(0, 1, false, &view_mat[0][0]);

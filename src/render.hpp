@@ -47,6 +47,8 @@ struct Render_system : System {
 
     void render_cursor();
 
+    void render_gui();
+
     void render_background(uint32_t camera);
 
     void call();

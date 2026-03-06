@@ -82,8 +82,8 @@ clean: CMakeFiles/Engine_files.dir/clean
 # Target rules for target CMakeFiles/Engine.dir
 
 # All Build rule for target.
-CMakeFiles/Engine.dir/all: CMakeFiles/Glad.dir/all
 CMakeFiles/Engine.dir/all: CMakeFiles/Engine_files.dir/all
+CMakeFiles/Engine.dir/all: CMakeFiles/Glad.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Engine.dir/build.make CMakeFiles/Engine.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Engine.dir/build.make CMakeFiles/Engine.dir/build
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=C:/Users/plane/OneDrive/Documents/GitHub/2D-physics-engine/CMakeFiles --progress-num=1,2 "Built target Engine"

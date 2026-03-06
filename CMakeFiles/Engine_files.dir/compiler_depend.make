@@ -1947,7 +1947,8 @@ CMakeFiles/Engine_files.dir/src/gui.cpp.obj: src/gui.cpp \
   include/xsimd/types/xsimd_batch.hpp \
   include/xsimd/types/xsimd_traits.hpp \
   src/input.hpp \
-  src/physics.hpp
+  src/physics.hpp \
+  src/render.hpp
 
 CMakeFiles/Engine_files.dir/src/input.cpp.obj: src/input.cpp \
   src/input.hpp \
