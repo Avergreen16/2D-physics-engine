@@ -264,8 +264,8 @@ int main() {
     ecs.register_component<Camera>();
     ecs.register_component<Collider>();
 
-    ecs.register_system<Input_system>();
     ecs.register_system<GUI_system>();
+    ecs.register_system<Input_system>();
     ecs.register_system<Physics_system>();
     ecs.register_system<Render_system>();
 
@@ -292,7 +292,7 @@ int main() {
     Collider c;
     c.radius = vec2(0.0f);
     c.vertices = square;
-    for(vec2& v : c.vertices) v *= vec2(32, 2);
+    for(vec2& v : c.vertices) v *= vec2(256, 4);
     /*c.radius = planet_radius;
     c.vertices = {
         vec2(0.0f)

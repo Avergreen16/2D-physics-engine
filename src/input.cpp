@@ -98,11 +98,11 @@ void Input_system::call() {
                 std::set<uint32_t> non_colliding;
                 Physics_system& ps = ecs.get_system<Physics_system>();
 
-                uint32_t num_links = 12;
+                uint32_t num_links = 8;
 
-                float scale = 0.75f;
+                float scale = 1.0f;
 
-                float sep = 0.025f * scale;
+                float sep = 0.05f * scale;
                 vec2 size = vec2(0.33f, 1.0f) * scale;
 
                 Transform t;
@@ -332,9 +332,9 @@ void Input_system::call() {
 
                     mat2 orientation = rotate(core.random(), vec3(0.0f, 0.0f, 1.0f));
 
-                    float s = 0.5f;
+                    float s = 1.0f;
 
-                    uint32_t square_size = 8;
+                    uint32_t square_size = 16;
                     float separation = s * 0.25f;
                     vec2 max_size = vec2(s);
                     vec2 min_size = vec2(s);

@@ -973,7 +973,7 @@ void Physics_system::physics_loop() {
 
         velocity_solve(collision_constraints);
         
-        position_solve(collision_constraints);
+        //position_solve(collision_constraints);
 
         /*
         for(uint32_t a : collectors[0].entities) {
