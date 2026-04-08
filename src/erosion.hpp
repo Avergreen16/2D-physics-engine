@@ -36,6 +36,8 @@ struct terrain_tile {
 enum map_mode{MAP_MODE_ELEVATION, MAP_MODE_SHADE, MAP_MODE_FLOW, MAP_MODE_BASIN};
 
 struct Erosion_system : System {
+    bool run_sim = false;
+    
     std::vector<terrain_tile> tiles;
     ivec2 size;
     std::shared_ptr<Texture> map_texture;

@@ -5,15 +5,8 @@
 
 #include <string>
 
-extern std::string integers;
-
-std::string message_callback();
-std::string null_callback();
-void button_callback();
-std::string fps_callback();
-std::string position_callback();
-std::string physics_callback();
-std::string mode_callback();
+const std::string integers = "0123456789\x80\x81\x82\x83\x84\x85\x86\x87\x88\x89";  
+const std::string integers_letters = "0123456789ABCDEF";
 
 struct UI_vertex {
     vec2 pos;
@@ -114,23 +107,67 @@ struct Font {
 
 enum cursor_mode{CURSOR_CLICK, CURSOR_RESIZE_T, CURSOR_RESIZE_TR, CURSOR_RESIZE_R, CURSOR_RESIZE_BR, CURSOR_RESIZE_B, CURSOR_RESIZE_BL, CURSOR_RESIZE_L, CURSOR_RESIZE_TL, CURSOR_TEXT};
 
+enum panel_split{SPLIT_X, SPLIT_Y, SPLIT_LEAF};
+
+struct Panel_node {
+    panel_split split = SPLIT_LEAF;
+    int split_value;
+    ivec2 current_pos;
+
+    uint32_t parent = 0xFFFFFFFF;
+    uint32_t self = 0;
+    uint32_t child_a = 0xFFFFFFFF;
+    uint32_t child_b = 0xFFFFFFFF;
+
+    std::string name = "%EMPTY0";
+    ivec4 space;
+    ivec4 prev_space;
+    int scroll_pos = 0;
+    bool activated = false;
+
+    bool scrollbar = false;
+    bool bottom_lock = false;
+};
+
 struct Window_state {
     vec2 position;
     vec2 size;
+    vec2 scrollbar_r = vec2(-1, -1);
+
+    vec4 display_offsets;
     std::string label;
     uint32_t priority = 0xFFFFFFFF;
     std::vector<UI_vertex> vertices;
     uint32_t scrollbar_width = 6;
     
-    vec2 current_pos = vec2(0.0f);
+    ivec2 current_pos = ivec2(0);
     int scroll_pos = 0;
     ivec4 space;
 
     // text select
     std::string select_widget;
-    int32_t select_anchor;
-    int32_t select_position;
-    int32_t select_position_line;
+    int32_t select_anchor = 0;
+    int32_t select_position = 0;
+    int32_t select_position_line = 0;
+    bool clear_selection = false;
+
+    uint32_t current_panel = 0xFFFFFFFF;
+    std::unordered_set<uint32_t> visited;
+    std::vector<Panel_node> panels;
+
+    bool panel_active(uint32_t id);
+    bool panel_valid(uint32_t id);
+};
+
+struct Chat_message {
+    std::string sender;
+    std::string message;
+};
+
+struct Chat {
+    std::string self_sender;
+    std::string input;
+    std::vector<Chat_message> messages;
 };
 
 enum Alignment{ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT};
@@ -140,6 +177,7 @@ struct GUI_system : System {
     std::vector<UI_vertex> vertices;
 
     std::unordered_map<std::string, Window_state> window_state = {{"", Window_state()}};
+    Chat chat;
 
     cursor_mode cursor_mode = CURSOR_CLICK;
 
@@ -150,6 +188,7 @@ struct GUI_system : System {
     float capture_position;
 
     std::string active_window = "";
+    std::string current_widget = "";
 
     vec4 current_range = vec4(-FLT_MAX, -FLT_MAX, FLT_MAX, FLT_MAX);
     float widget_sep = 5;
@@ -162,6 +201,11 @@ struct GUI_system : System {
     std::vector<int> text_line_origins;
 
     Alignment alignment = ALIGN_LEFT;
+    Alignment text_alignment = ALIGN_LEFT;
+    
+    bool flag = false;
+
+    bool hex_mode = true;
 
     GUI_system() {
         fonts.emplace("default mono", Font("res/other resources/alter_mono.afont"));
@@ -169,6 +213,8 @@ struct GUI_system : System {
         Signature s = ecs.update_signature<Camera>();
         ecs.update_signature<Transform>(s);
         collectors.push_back(Collector(s));
+
+        chat.self_sender = "avie";
     }
 
     void insert_window(std::string window, Window_state state);
@@ -178,16 +224,33 @@ struct GUI_system : System {
     void insert_vertices();
     void window_capture();
 
-    std::vector<UI_vertex> mesh_text(Font& f, std::string text, uint32_t width = 0xFFFFFFFF, ivec2 select_range = {-1, -1}, Alignment alignment = ALIGN_LEFT);
+    std::vector<UI_vertex> mesh_text(Font& f, std::string text, uint32_t width = 0xFFFFFFFF, ivec2 select_range = {-1, -1}, Alignment alignment = ALIGN_LEFT, bool show_debug = false);
 
     void call();
     
     void toggle_button(vec2 position, vec2 size, ivec4 icon, bool& active);
+    void button(vec2 position, vec2 size, ivec4 icon, bool& active);
     void button(std::string name, std::string text, vec2 size, bool& active);
     void window(std::string name, bool& close_window);
+    void split_panel(std::string name, int& split, panel_split axis);
+    void step_panel();
+    void scrollbar_panel(uint32_t panel_id);
     void text(std::string name, std::string text, uint32_t width = 0xFFFFFFFF);
+    void text(std::string name, std::string text, vec2 position, uint32_t width = 0xFFFFFFFF);
     void slider(std::string name, std::string text, ivec2 bounds, int& value, vec2 size, float slider_width);
-    void slider(std::string name, std::string text, vec2 bounds, float& value, vec2 size, float slider_width);
+    void slider(std::string name, std::string text, vec2 bounds, float& value, vec2 size, float slider_width, float precision = 0.0f);
+    void chat_window();
+    void text_input(std::string name, std::string& text, uint32_t width = 0xFFFFFFFF);
+    
+    ivec4 get_panel_subrange(uint32_t starting_index);
+    void clear_panel(uint32_t root);
+
+    void insert_cursor(std::string text, vec2 origin, bool show_debug = false);
+    vec2 get_text_cursor_pos(std::string text, vec2 origin, bool show_debug = false);
+    void text_navigate(std::string& text, bool edit = false, bool show_debug = false);
+
+    ivec4 get_space();
+    ivec2& get_position();
 };
 
 

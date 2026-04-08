@@ -61,69 +61,10 @@ Erosion_system::Erosion_system() {
 }
 
 void Erosion_system::call() {
-    if(core.pressed_buttons.contains(GLFW_MOUSE_BUTTON_LEFT)) {
-        Input_system& input_system = ecs.get_system<Input_system>();
-        ivec2 pos = ivec2((floor(input_system.world_cursor_pos) + vec2(size)) / 2.0f);
+    if(run_sim) {
+        sim_step();
 
-        if(core.key_map[GLFW_KEY_LEFT_SHIFT]) {
-            path.clear();
-            if(pos.x >= 0 && pos.x < size.x && pos.y >= 0 && pos.y < size.y) {
-                terrain_tile* t = &tiles[pos.x + pos.y * size.x];
-                while(true) {
-                    path.push_back(t->self);
-                    if(t->downstream == ivec2(-1, -1)) break;
-                    else {
-                        t = &tiles[t->downstream.x + t->downstream.y * size.x];
-                    }
-                }
-            }
-        } else if(core.key_map[GLFW_KEY_LEFT_CONTROL]) {
-            for(int y = 0; y < size.y; ++y) {
-                for(int x = 0; x < size.x; ++x) {
-                    tiles[x + y * size.x].mark = false;
-                }
-            }
-
-            if(pos.x >= 0 && pos.x < size.x && pos.y >= 0 && pos.y < size.y) {
-                std::unordered_set<ivec2, Hash_coord> seen;
-                std::vector<ivec2> path = {pos};
-                std::vector<uint32_t> path_i = {0};
-                std::vector<float> flow = {0.0f};
-
-                while(true) {
-                    if(path.size() == 0) break;
-
-                    terrain_tile& current = tiles[path.back().x + path.back().y * size.x];
-                    if(current.upstream.size() <= path_i.back()) {
-                        float f = flow.back();
-                        current.flow = f;
-                        current.mark = true;
-
-                        path.pop_back();
-                        path_i.pop_back();
-                        flow.pop_back();
-
-                        if(flow.size() != 0) flow[flow.size() - 1] += f;
-                        else std::cout << "FLOW: " << f << "\n";
-                    } else {
-                        ivec2 next = current.upstream[path_i.back()];
-                        if(seen.contains(next)) {
-                            ++path_i[path_i.size() - 1];
-                        } else {
-                            seen.insert(next);
-                            ++path_i[path_i.size() - 1];
-
-                            path.push_back(next);
-                            path_i.push_back(0);
-                            flow.push_back(1.0f);
-                        }
-                    }
-                }  
-            }
-
-            mode = MAP_MODE_FLOW;
-            update_texture();
-        }
+        update_texture();
     }
 
     if(core.pressed_buttons.contains(GLFW_KEY_F8)) {

@@ -45,6 +45,9 @@ std::ostream& operator<<(std::ostream& c, glm::vec3 v);
 std::string get_text_from_file(std::string path);
 std::vector<uint8_t> get_bytes_from_file(std::string path);
 
+void copy_to_clipboard(std::string str);
+std::string paste_from_clipboard();
+
 struct Vertices {
     uint32_t vertex_buffer;
     uint32_t vertex_array;

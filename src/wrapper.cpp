@@ -1,7 +1,8 @@
 #include "wrapper.hpp"
-
 #include "stb_image.h"
 #include "stb_image_write.h"
+
+#include <windows.h>
 
 std::ostream& operator<<(std::ostream& c, glm::vec3 v) {
     c << v.x << " " << v.y << " " << v.z;
@@ -44,6 +45,44 @@ std::vector<uint8_t> get_bytes_from_file(std::string path) {
 
         return {};
     }
+}
+
+void copy_to_clipboard(std::string str) {
+    size_t len = str.size() + 1;
+
+    HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, len);
+    memcpy(GlobalLock(hMem), str.c_str(), len);
+    GlobalUnlock(hMem);
+
+    OpenClipboard(NULL);
+    EmptyClipboard();
+    SetClipboardData(CF_TEXT, hMem);
+    CloseClipboard();
+}
+
+std::string paste_from_clipboard() {
+    if (!OpenClipboard(nullptr)) return "";
+
+    HANDLE hData = GetClipboardData(CF_TEXT);
+    if (hData == nullptr)
+    {
+        CloseClipboard();
+        return "";
+    }
+
+    char* pszText = static_cast<char*>(GlobalLock(hData));
+    if (pszText == nullptr)
+    {
+        CloseClipboard();
+        return "";
+    }
+
+    std::string text(pszText);
+
+    GlobalUnlock(hData);
+    CloseClipboard();
+
+    return text;
 }
 
 void Vertices::init() {
