@@ -111,9 +111,12 @@ void Input_system::call() {
                 t.orientation = {up, vec2(-up.y, up.x)};
                 
                 Collider c;
-                c.vertices = {vec2(0, -(size.y - size.x) * 0.5f), vec2(0.0f, (size.y - size.x) * 0.5f)};
-                c.radius = vec2(size.x * 0.5f);
-                c.mass = 0x6 * scale * scale;
+                Collision_shape cs;
+                cs.vertices = {vec2(0, -(size.y - size.x) * 0.5f), vec2(0.0f, (size.y - size.x) * 0.5f)};
+                cs.radius = vec2(size.x * 0.5f);
+                cs.mass = 0x6 * scale * scale;
+                c.shapes.push_back(cs);
+
                 vec2 shift = Physics_system::calculate_inertia(c);
                 t.position += t.orientation * shift;
                 t.position += t.orientation * vec2(0, size.y * 0.5f);
@@ -121,7 +124,7 @@ void Input_system::call() {
 
                 Mesh m;
                 m.color = vec3(0.9f, 0.9f, 0.9f);
-                create_mesh(m, c.vertices, c.radius);
+                create_mesh(m, c);
 
                 uint32_t prev_entity = NULL_ENTITY;
                 uint32_t first_entity;
@@ -163,16 +166,18 @@ void Input_system::call() {
                 float asteroid_radius = 0.5f * scale;
 
                 Collider c2;
-                c2.vertices = {vec2(0, 0)};
-                c2.radius = vec2(asteroid_radius);
-                c2.mass = 0x30 * scale * scale;
+                cs.vertices = {vec2(0, 0)};
+                cs.radius = vec2(asteroid_radius);
+                cs.mass = 0x30 * scale * scale;
+                c2.shapes.push_back(cs);
+
                 shift = Physics_system::calculate_inertia(c2);
                 t.position += t.orientation * shift;
                 t.position += t.orientation * vec2(0, 1.0f);
 
                 Mesh m2;
                 m2.color = vec3(0.9f, 0.9f, 0.9f);
-                create_mesh(m2, c2.vertices, c2.radius);
+                create_mesh(m2, c2);
                 
                 t.position = world_cursor_pos + t.orientation * vec2(0, (size.y + sep) * num_links + asteroid_radius);
 
@@ -220,6 +225,7 @@ void Input_system::call() {
                     ps.constraints.push_back(constraint);
                 }
             } else if(core.key_map[GLFW_KEY_LEFT_CONTROL]) {
+                /*
                 Physics_system& ps = ecs.get_system<Physics_system>();
 
                 vec2 size = vec2(1.0f, 24.0f) * 0.125f;
@@ -230,22 +236,118 @@ void Input_system::call() {
                 t.orientation = {up, vec2(-up.y, up.x)};
                 
                 Collider c;
-                c.vertices = {vec2(0, -(size.y - size.x) * 0.5f), vec2(0.0f, (size.y - size.x) * 0.5f)};
-                c.radius = vec2(size.x * 0.5f);
-                c.mass = 0x6 * size.x * size.y;
+                Collision_shape cs;
+                cs.vertices = {vec2(0, -(size.y - size.x) * 0.5f), vec2(0.0f, (size.y - size.x) * 0.5f)};
+                cs.radius = vec2(size.x * 0.5f);
+                cs.mass = 0x6 * size.x * size.y;
+                c.shapes.push_back(cs);
+
                 vec2 shift = Physics_system::calculate_inertia(c);
                 t.position += t.orientation * shift;
                 t.position += t.orientation * vec2(0, size.y * 0.5f);
 
                 Mesh m;
                 m.color = vec3(0.9f, 0.9f, 0.9f);
-                create_mesh(m, c.vertices, c.radius);
+                create_mesh(m, c);
 
                 uint32_t capsule = ecs.insert_entity();
 
                 ecs.insert_component(capsule, m);
                 ecs.insert_component(capsule, t);
                 ecs.insert_component(capsule, c);
+                */
+
+                uint32_t entity = ecs.insert_entity();
+
+                /*
+                std::vector<vec2> origins = {
+                    vec2(-2, -2),
+                    vec2(-1, -2),
+                    vec2(0, -2),
+                    vec2(1, -2),
+                    vec2(2, -2),
+
+                    vec2(-2, -1),
+                    vec2(-1, -1),
+                    vec2(0, -1),
+                    vec2(1, -1),
+                    vec2(2, -1),
+                    
+                    vec2(-2, 0),
+                    vec2(-1, 0),
+                    vec2(0, 0),
+                    vec2(1, 0),
+                    vec2(2, 0),
+
+                    vec2(-2, 1),
+                    vec2(-1, 1),
+                    vec2(0, 1),
+                    vec2(1, 1),
+                    vec2(2, 1),
+                    
+                    vec2(-2, 2),
+                    vec2(-1, 2),
+                    vec2(0, 2),
+                    vec2(1, 2),
+                    vec2(2, 2),
+                };
+                */
+                vec2 size = vec2(1.5f);
+                std::vector<vec2> origins = {
+                    vec2(-1, -2),
+                    vec2(1, -2),
+
+                    vec2(-1, -1),
+                    vec2(0, -1),
+                    vec2(1, -1),
+                    
+                    vec2(-2, 0),
+                    vec2(-1, 0),
+                    vec2(0, 0),
+                    vec2(1, 0),
+                    vec2(2, 0),
+
+                    vec2(0, 1),
+                    
+                    vec2(0, 2),
+                };
+                
+                Transform t;
+                t.position = world_cursor_pos;
+                t.orientation = identity<mat2>();
+                
+                Collider c;
+
+                Collision_shape cs;
+                cs.vertices = {
+                    vec2(-1, -1),
+                    vec2(1, -1),
+                    vec2(1, 1),
+                    vec2(-1, 1)
+                };
+                for(vec2& v : cs.vertices) v *= size * 0.5f;
+                cs.radius = vec2(0.0f);
+                cs.mass = 40.0f;
+
+                for(vec2 origin : origins) {
+                    cs.position = origin * size;
+                    c.shapes.push_back(cs);
+                }
+
+                //
+
+                vec2 shift = Physics_system::calculate_inertia(c);
+                t.position += shift;
+
+                c.create_BVH();
+
+                Mesh m;
+                m.color = vec3(0.35f);
+                create_mesh(m, c);
+                
+                ecs.insert_component(entity, m);
+                ecs.insert_component(entity, t);
+                ecs.insert_component(entity, c);
             } else {
 
                 auto insert_square = [&](vec2 pos, vec2 size, mat2 ori) {
@@ -257,15 +359,17 @@ void Input_system::call() {
 
                     
                     Collider c;
-                    c.vertices = {
+                    Collision_shape cs;
+                    cs.vertices = {
                         vec2(-1, -1),
                         vec2(1, -1),
                         vec2(1, 1),
                         vec2(-1, 1)
                     };
-                    for(vec2& v : c.vertices) v *= size * 0.5f;
-                    c.radius = vec2(0.0f);
-                    c.mass = size.x * size.y * 25.0f;
+                    for(vec2& v : cs.vertices) v *= size * 0.5f;
+                    cs.radius = vec2(0.0f);
+                    cs.mass = size.x * size.y * 25.0f;
+                    c.shapes.push_back(cs);
                     //c.allow_rotation = false;
 
                     vec2 shift = Physics_system::calculate_inertia(c);
@@ -273,7 +377,7 @@ void Input_system::call() {
 
                     Mesh m;
                     m.color = vec3(0.35f);//get_color(abs(core.random())) * 0.7f + 0.3f;
-                    create_mesh(m, c.vertices, c.radius);
+                    create_mesh(m, c);
                     
                     ecs.insert_component(entity, m);
                     ecs.insert_component(entity, t);
@@ -289,18 +393,20 @@ void Input_system::call() {
 
                     
                     Collider c;
-                    c.vertices = {
+                    Collision_shape cs;
+                    cs.vertices = {
                         vec2(0.0f)
                     };
-                    c.radius = size * 0.5f;
-                    c.mass = size.x * size.y * 25.0f;
+                    cs.radius = size * 0.5f;
+                    cs.mass = size.x * size.y * 25.0f;
+                    c.shapes.push_back(cs);
 
                     vec2 shift = Physics_system::calculate_inertia(c);
                     t.position += shift;
 
                     Mesh m;
                     m.color = vec3(0.35f);//get_color(abs(core.random())) * 0.7f + 0.3f;
-                    create_mesh(m, c.vertices, c.radius);
+                    create_mesh(m, c);
                     
                     ecs.insert_component(entity, m);
                     ecs.insert_component(entity, t);
@@ -377,7 +483,17 @@ void Input_system::call() {
 
                     vec2 rel_point = transpose(tf.orientation) * (world_cursor_pos - tf.position);
 
-                    if(ps.collision_point(c, rel_point)) {
+                    bool collide = false;
+
+                    for(Collision_shape& cs : c.shapes) {
+                        vec2 rel_point2 = transpose(cs.orientation) * (rel_point - cs.position);
+
+                        collide |= Physics_system::collision_point(cs.vertices, cs.radius, rel_point2);
+
+                        if(collide) break;
+                    }
+
+                    if(collide) {
                         held_object = entity;
                         held_constraint = ps.constraints.size();
 

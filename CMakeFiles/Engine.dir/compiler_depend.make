@@ -736,8 +736,8 @@ CMakeFiles/Engine.dir/src/client_main.cpp.obj: src/client_main.cpp \
   src/render.hpp \
   src/ecs.hpp \
   src/gui.hpp \
-  src/input.hpp \
   src/physics.hpp \
+  src/input.hpp \
   C:/msys64/ucrt64/include/windows.h \
   C:/msys64/ucrt64/include/sdkddkver.h \
   C:/msys64/ucrt64/include/excpt.h \
@@ -2382,9 +2382,9 @@ include/xsimd/types/xsimd_traits.hpp:
 
 src/ecs.hpp:
 
-src/input.hpp:
-
 src/physics.hpp:
+
+src/input.hpp:
 
 C:/msys64/ucrt64/include/windows.h:
 

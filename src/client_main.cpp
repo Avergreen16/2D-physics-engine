@@ -290,9 +290,13 @@ int main() {
     };
 
     Collider c;
-    c.radius = vec2(0.0f);
-    c.vertices = square;
-    for(vec2& v : c.vertices) v *= vec2(256, 4);
+    Collision_shape cs;
+
+    cs.radius = vec2(0.0f);
+    cs.vertices = square;
+    for(vec2& v : cs.vertices) v *= vec2(256, 4);
+
+    c.shapes.push_back(cs);
     /*c.radius = planet_radius;
     c.vertices = {
         vec2(0.0f)
@@ -303,7 +307,7 @@ int main() {
     //c.allow_gravity = false;
     
     Mesh m;
-    create_mesh(m, {c.vertices}, c.radius);
+    create_mesh(m, c);
 
     ecs.insert_component(entity, m);
     ecs.insert_component(entity, t);

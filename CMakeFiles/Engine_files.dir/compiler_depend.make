@@ -4855,8 +4855,8 @@ CMakeFiles/Engine_files.dir/src/render.cpp.obj: src/render.cpp \
   include/xsimd/types/xsimd_traits.hpp \
   src/gui.hpp \
   src/core.hpp \
-  src/input.hpp \
-  src/physics.hpp
+  src/physics.hpp \
+  src/input.hpp
 
 CMakeFiles/Engine_files.dir/src/wrapper.cpp.obj: src/wrapper.cpp \
   src/wrapper.hpp \

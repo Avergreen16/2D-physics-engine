@@ -11,14 +11,8 @@ struct Object_vertex {
     vec3 v;
 };
 
-void create_mesh(Mesh& m, std::vector<vec2> v, vec2 radius, bool create_interior) {
-    m.v_tris = std::shared_ptr<Vertices>(new Vertices);
-    m.v_tris->init();
-    
-    m.v_lines = std::shared_ptr<Vertices>(new Vertices);
-    m.v_lines->init();
-    
-    float sphere_segments = max(64, int32_t(8 * max(radius.x, radius.y)));
+std::vector<vec2> create_mesh(std::vector<vec2> v, vec2 radius, bool create_interior) {
+    float sphere_segments = 64;
 
     std::vector<vec2> vv;
     if(radius.x == 0.0f && radius.y == 0.0f) {
@@ -126,70 +120,51 @@ void create_mesh(Mesh& m, std::vector<vec2> v, vec2 radius, bool create_interior
         }
     }
 
-    float min_dist = FLT_MAX;
-    std::vector<Object_vertex> vvv;
-    for(int i = 0 ; i < vv.size(); ++i) {
-        vec2 v0 = vv[i];
-        vec2 v1 = vv[(i + 1) % vv.size()];
-
-        vec2 origin_v = -v0;
-        float len = length(v1 - v0);
-        vec2 dir = (v1 - v0) / len;
-        float f = dot(dir, origin_v);
-        f = clamp(f, 0.0f, len);
-        vec2 closest_point = f * dir + v0;
-
-        min_dist = min(length(closest_point), min_dist);
+    return vv;
+}
 
 
+void create_mesh(Mesh& m, Collider& c, bool create_interior = true) {
+    std::vector<vec3> lines;
+    std::vector<vec3> tris;
 
-        Object_vertex ov;
-        ov.v = vec3(v0, 0.5);
-        vvv.push_back(ov);
+    for(Collision_shape& cs : c.shapes) {
+        std::vector<vec2> vs = create_mesh(cs.vertices, cs.radius, create_interior);
+        
+        vec2 center = vec2(0.0f);
+        for(vec2& v : vs) {
+            v = cs.orientation * v + cs.position;
+            center += v;
+        }
+        center /= float(vs.size());
 
-        ov.v = vec3(v1, 0.5);
-        vvv.push_back(ov);
-    }
-    
-    /*
-    Object_vertex ov;
-    ov.v = vec3(0.0f, 0.0f, 0.5);
-    vvv.push_back(ov);
-    ov.v = vec3(vec2(0.0f, 0.75f) * min_dist, 0.5);
-    vvv.push_back(ov);
-    */
+        for(int i = 0; i < vs.size(); ++i) {
+            vec2 v0 = vs[i];
+            vec2 v1 = vs[(i + 1) % vs.size()];
 
-    m.v_lines->vertex_buffer_data(vvv.data(), vvv.size(), sizeof(Object_vertex), GL_STATIC_DRAW);
-    m.v_lines->add_vertex_attribute(0, 3, GL_FLOAT, false, sizeof(float) * 3, 0);
+            lines.push_back(vec3(v0, 0.5));
+            lines.push_back(vec3(v1, 0.5));
 
-    vvv.clear();
-
-    if(create_interior) {
-        for(int i = 0; i < vv.size(); ++i) {
-            vec3 v0 = vec3(vv[i], 0.5f);
-            vec3 v1 = vec3(vv[(i + 1) % vv.size()], 0.5f);
-            vec3 v2 = vec3(0.0f, 0.0f, 0.5f);
-
-            vec3 vc = cross(v0 - v2, v1 - v2);
-            if(vc.z < 0.0f) {
-                vec3 temp = v1;
-                v1 = v2;
-                v2 = temp;
-            }
-
-            Object_vertex ov;
-            ov.v = v0;
-            vvv.push_back(ov);
-
-            ov.v = v1;
-            vvv.push_back(ov);
-
-            ov.v = v2;
-            vvv.push_back(ov);
+            tris.push_back(vec3(v0, 0.5));
+            tris.push_back(vec3(v1, 0.5));
+            tris.push_back(vec3(center, 0.5));
         }
     }
+
+    //
     
-    m.v_tris->vertex_buffer_data(vvv.data(), vvv.size(), sizeof(Object_vertex), GL_STATIC_DRAW);
+    m.v_lines = std::shared_ptr<Vertices>(new Vertices);
+    m.v_lines->init();
+    
+    m.v_lines->vertex_buffer_data(lines.data(), lines.size(), sizeof(Object_vertex), GL_STATIC_DRAW);
+    m.v_lines->add_vertex_attribute(0, 3, GL_FLOAT, false, sizeof(float) * 3, 0);
+
+    //
+    
+    m.v_tris = std::shared_ptr<Vertices>(new Vertices);
+    m.v_tris->init();
+    
+    m.v_tris->vertex_buffer_data(tris.data(), tris.size(), sizeof(Object_vertex), GL_STATIC_DRAW);
     m.v_tris->add_vertex_attribute(0, 3, GL_FLOAT, false, sizeof(float) * 3, 0);
 }
 

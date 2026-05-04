@@ -2,7 +2,7 @@
 #include "ecs.hpp"
 #include "random.hpp"
 #include "gui.hpp"
-//#include "physics.hpp"
+#include "physics.hpp"
 
 struct Mesh {
     std::vector<vec2> v;
@@ -19,7 +19,8 @@ struct Texture_vertex {
     vec2 tex;
 };
 
-void create_mesh(Mesh& m, std::vector<vec2> v, vec2 radius, bool create_interior = true);
+std::vector<vec2> create_mesh(std::vector<vec2> v, vec2 radius, bool create_interior = true);
+void create_mesh(Mesh& m, Collider& c, bool create_interior = true);
 
 struct Render_system : System {
     std::vector<Framebuffer> framebuffers;

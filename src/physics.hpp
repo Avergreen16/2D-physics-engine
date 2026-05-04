@@ -4,34 +4,64 @@
 #include "ecs.hpp"
 #include "random.hpp"
 
-struct Collider {
+struct Bounding_box {
+    vec2 minimum = vec2(FLT_MAX, FLT_MAX);
+    vec2 maximum = vec2(-FLT_MAX, -FLT_MAX);
+};
+
+struct BVH_node {
+    Bounding_box bounding_box;
+    std::vector<uint32_t> children;
+};
+
+struct Collision_shape {
+    Bounding_box bounding_box;
+    
+    //
+
     std::vector<vec2> vertices;
     vec2 radius = vec2(0.0f);
-    std::set<uint32_t> non_colliding;
-
-    bool colliding = false;
 
     float mass;
+    float inertia;
+
+    //
+
+    vec2 position = vec2(0.0f);
+    mat2 orientation = identity<mat2>();
+};
+
+struct Collider {
+    Bounding_box bounding_box;
+    std::vector<BVH_node> BVH;
+
+    //
+
+    std::vector<Collision_shape> shapes;
+    
+    float mass;
     float inertia = __FLT_MAX__;
+    
+    vec2 velocity = vec2(0.0f);
+    float angular_velocity = 0.0f;
+    
+    //
+    
+    std::set<uint32_t> non_colliding;
 
     bool allow_gravity = true;
     bool allow_rotation = true;
     bool is_static = false;
 
-    vec2 velocity = vec2(0.0f);
-    float angular_velocity = 0.0f;
+    std::vector<uint32_t> colliding_with;
+    std::vector<vec2> colliding_normal;
 
-    vec4 bounding_box;
+    //
 
-    bool flag = false;
-    bool flag2 = false;
-
-    float rot_delta = 0.0f;
-    vec2 pos_delta = vec2(0.0f);
-    
-    uint32_t counter = 0;
-    bool is_soft = false;
-    float timer = 0.0f;
+    void create_bounding_box();
+    void create_BVH();
+    std::vector<uint32_t> traverse_BVH(Transform& ta, Transform& tb, Bounding_box& bb);
+    std::vector<uint64_t> traverse_BVH(Transform& ta, Transform& tb, Collider& cb);
 };
 
 struct Collision_data {
@@ -193,35 +223,6 @@ struct input_data {
     uint32_t id;
 };
 
-/*
-0.0625 delta squares: 
-float fps = 180.0f;
-uint32_t iterations = 4;
-uint32_t substeps = 4;
-float contact_sep = 0.02f;
-*/
-
-/*
-SCALING:
-
-contact_sep can make shapes unstable (increase for larger, decrease for smaller)
-so can collision_compliance and friction_compliance (increase for larger, decrease for smaller)
-
-for 0.25 delta boxes:
-float fps = 60.0f;
-float contact_sep = 0.025f;
-float friction_compliance = 0.0001;
-float collision_compliance = 0.00001;
-
-for 0.015625 delta boxes:
-float fps = 240.0f;
-float contact_sep = 0.001f;
-float friction_compliance = 0.00001;
-float collision_compliance = 0.000001;
-
-also the compliances scale with fps, so turn the compliances up when using a higher timestep (it's not because of the masses, i thought it was before lol)
-*/
-
 struct Physics_system : System {
     // parameters
     float fps = 60.0f;
@@ -256,25 +257,29 @@ struct Physics_system : System {
 
     Physics_system();
 
-    static std::vector<std::vector<Collision_data>> collision(std::vector<Collision_input>& input, bool profiler);
-    static std::vector<Collision_data> collision(Collision_input& input, bool profiler);
-    //static std::vector<std::optional<Collision_data>> collision(std::vector<Collision_input>);
-    
-    static bool collision_point(Collider& ca, vec2 point);
+    //static std::vector<std::vector<Collision_data>> collision(std::vector<Collision_input>& input);
+    static std::vector<Collision_data> collision(Collision_input& input);
+    static std::vector<Collision_data> collision(Transform& ta, Collision_shape& ca, Transform& tb, Collision_shape& cb);
 
-    static void transform_vertices(Transform& t, Collider& c, std::vector<vec2>& vertices, vec2 origin);
+    static Bounding_box transform(Transform& t, Bounding_box& b);
+    static bool collision(Transform& ta, Bounding_box& a, Transform& tb, Bounding_box& b);
+    static bool collision(Bounding_box& a, Bounding_box& b);
+
+    //
+    
+    static bool collision_point(std::vector<vec2> vs, vec2 radius, vec2 point);
+
+    static vec2 transform_vertices(Transform& t, Collision_shape& c, std::vector<vec2>& vertices, vec2 origin);
 
     static vec2 support_func(std::vector<vec2>& vertices, vec2 radius, vec2 direction);
     static vec2 support_func(std::vector<vec2>& vertices, vec2 radius, vec2 direction, mat2 matrix);
 
     void insert_collision(Collision_data c);
 
-    void position_solve(std::vector<Collision_constraint>& constraints);
     void velocity_solve(std::vector<Collision_constraint>& constraints);
 
+    static vec2 calculate_inertia(Collision_shape& c);
     static vec2 calculate_inertia(Collider& c);
-
-    static vec4 calculate_bounding_box(Collider& c, Transform& t);
 
     std::vector<uint64_t> broad_phase(std::vector<input_data>& input);
     
@@ -283,7 +288,6 @@ struct Physics_system : System {
     static float calculate_inverse_mass(Collider* c, Transform* t, vec2 impulse_dir, vec2 point);
 
     static void apply_impulse(Collider* c, vec2 impulse, vec2 point);
-    static void apply_position(Collider* c, Transform* t, vec2 impulse, vec2 point);
 
     void integrate();
 
