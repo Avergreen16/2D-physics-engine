@@ -290,18 +290,31 @@ int main() {
     };
 
     Collider c;
+
+    vec2 size = vec2(1.0f);
+
     Collision_shape cs;
-
+    cs.vertices = {
+        vec2(-1, -1),
+        vec2(1, -1),
+        vec2(1, 1),
+        vec2(-1, 1)
+    };
+    for(vec2& v : cs.vertices) v *= size * 0.5f;
     cs.radius = vec2(0.0f);
-    cs.vertices = square;
-    for(vec2& v : cs.vertices) v *= vec2(256, 4);
+    cs.mass = 40.0f;
 
-    c.shapes.push_back(cs);
-    /*c.radius = planet_radius;
-    c.vertices = {
-        vec2(0.0f)
-    };*/
+    for(int y = -2; y < 2; ++y) {
+        for(int x = -128; x < 128; ++x) {
+            if(y == 1 && core.random() < 0.0f) continue;
 
+            cs.position = vec2(x + 0.5f, y + 0.5f) * size;
+            c.shapes.push_back(cs);
+        }
+    }
+    
+    c.create_BVH();
+    
     c.is_static = true;
     //c.mass = 0x100000;
     //c.allow_gravity = false;

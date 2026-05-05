@@ -470,7 +470,7 @@ std::vector<Collision_data> Physics_system::collision(Transform& ta, Collision_s
 
                         vec2 collision_normal;
 
-                        vec2 main_dir = ta.position - tb.position;
+                        vec2 main_dir = center_a - center_b;
 
                         if(r.vertices[0].a != r.vertices[1].a) {
                             vec2 sv = r.vertices[0].a - r.vertices[1].a;
@@ -1561,6 +1561,8 @@ void Physics_system::velocity_solve(std::vector<Collision_constraint>& collision
             float max_grab = FLT_MAX;
 
             for(pos_constraint& c : data.pos) {
+                if(c.is_hold) max_grab = 2.0f;
+
                 uint32_t i = 0;
                 for(vec2 v : c.vs) {
                     float bg = -c.baumgarte[i] * spring_constraint * factor_constraint;

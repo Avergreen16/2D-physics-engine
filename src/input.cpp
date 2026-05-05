@@ -505,6 +505,7 @@ void Input_system::call() {
                         pc.b = world_cursor_pos;
                         pc.vs = {vec2(1, 0), vec2(0, 1)};
                         pc.compliance = 0.00033;
+                        pc.is_hold = true;
 
                         constraint.pos.push_back(pc);
 
