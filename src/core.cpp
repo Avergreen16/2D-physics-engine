@@ -1,17 +1,5 @@
 #include "core.hpp"
 
-double get_time() {
-    return (double)std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count() / 1000000000;
-}
-
-double get_absolute_time() {
-    return (double)std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count() / 1000000;
-}
-
-time_t get_time_t() {
-    return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
-}
-
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     core.events.push_back(Key_event{key, scancode, action});
 }

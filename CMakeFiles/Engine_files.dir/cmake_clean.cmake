@@ -13,6 +13,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/Engine_files.dir/src/random.cpp.obj.d"
   "CMakeFiles/Engine_files.dir/src/render.cpp.obj"
   "CMakeFiles/Engine_files.dir/src/render.cpp.obj.d"
+  "CMakeFiles/Engine_files.dir/src/utility.cpp.obj"
+  "CMakeFiles/Engine_files.dir/src/utility.cpp.obj.d"
   "CMakeFiles/Engine_files.dir/src/wrapper.cpp.obj"
   "CMakeFiles/Engine_files.dir/src/wrapper.cpp.obj.d"
   "lib/libEngine_files.a"

@@ -113,12 +113,15 @@ struct Component_manager {
     template<typename Type>
     void register_component() {
         std::size_t code = typeid(Type).hash_code();
-        uint32_t i = id_to_code.size();
-        
-        id_to_code.emplace(i, code);
-        code_to_id.emplace(code, i);
-        
-        component_lists.emplace(code, std::shared_ptr<Component_list<Type>>(new Component_list<Type>));
+
+        if(!code_to_id.contains(code)) {
+            uint32_t i = id_to_code.size();
+            
+            id_to_code.emplace(i, code);
+            code_to_id.emplace(code, i);
+            
+            component_lists.emplace(code, std::shared_ptr<Component_list<Type>>(new Component_list<Type>));
+        }
     }
     
     template<typename Type>
@@ -181,6 +184,7 @@ struct Collector {
 struct System {
     std::vector<Collector> collectors;
     virtual void call() {};
+    virtual void init() {};
 };
 
 struct System_manager {
@@ -194,6 +198,8 @@ struct System_manager {
         std::shared_ptr<Type> ptr = std::shared_ptr<Type>(new Type);
         systems.emplace(code, ptr);
         call_order.push_back(code);
+
+        ptr->init();
     }
 };
 
@@ -201,6 +207,8 @@ struct Coordinator {
     Entity_manager entity_manager;
     Component_manager component_manager;
     System_manager system_manager;
+
+    std::atomic<uint32_t> num_lookups = 0;
     
     template<typename Type>
     void register_component() {
@@ -218,12 +226,16 @@ struct Coordinator {
     
     template<typename Type>
     std::bitset<MAX_COMPONENTS> update_signature() {
+        register_component<Type>();
+
         std::size_t code = typeid(Type).hash_code();
         return Signature(1) << component_manager.code_to_id[code];
     }
     
     template<typename Type>
     void update_signature(std::bitset<MAX_COMPONENTS>& a) {
+        register_component<Type>();
+
         std::size_t code = typeid(Type).hash_code();
         a |= Signature(1) << component_manager.code_to_id[code];
     }
@@ -232,14 +244,22 @@ struct Coordinator {
     bool has_component(uint32_t entity) {
         return (entity_manager.signatures[entity] & update_signature<Type>()) != Signature(0);
     }
+    
+    template<typename Type>
+    bool has_system() {
+        return system_manager.systems.contains(typeid(Type).hash_code());
+    }
 
     template<typename Type>
     Type& get_component(uint32_t entity) {
+        ++num_lookups;
         return component_manager.get_component<Type>(entity);
     }
     
     template<typename Type>
-    void insert_component(uint32_t entity, Type component) { 
+    void insert_component(uint32_t entity, Type component) {
+        register_component<Type>();
+
         component_manager.insert_component(entity, entity_manager.signatures[entity], component);
         Signature new_signature = entity_manager.signatures[entity];
         
@@ -268,6 +288,9 @@ struct Coordinator {
 
     template<typename Type>
     void insert_component_move(uint32_t entity, Type&& component) { 
+        using RawType = std::remove_reference_t<Type>;
+        register_component<RawType>();
+
         component_manager.insert_component_move(entity, entity_manager.signatures[entity], std::move(component));
         Signature new_signature = entity_manager.signatures[entity];
         

@@ -41,6 +41,8 @@ struct Render_system : System {
     void bind_default_framebuffer();
 
     void render_object(uint32_t object, uint32_t camera);
+
+    void render_soft_body(uint32_t object, uint32_t camera);
     
     void render_marker(vec2 pos, vec2 normal, uint32_t camera);
 

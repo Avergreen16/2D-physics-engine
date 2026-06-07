@@ -53,7 +53,7 @@ void Input_system::call() {
     // scroll
 
     if(core.scroll_delta != 0.0f) {
-        if(gui_system.capture_window == "") {
+        if(gui_system.capture_id == NULL_WIDGET) {
             vec2 difference = camera_transform.position - world_cursor_pos;
 
             float factor = pow(1.25f, core.scroll_delta);
@@ -93,7 +93,7 @@ void Input_system::call() {
     }
 
     if(core.pressed_buttons.contains(GLFW_MOUSE_BUTTON_RIGHT)) {
-        if(gui_system.capture == 0xFFFFFFFF) {
+        if(gui_system.capture_id == NULL_WIDGET) {
             if(core.key_map[GLFW_KEY_LEFT_SHIFT]) {
                 std::set<uint32_t> non_colliding;
                 Physics_system& ps = ecs.get_system<Physics_system>();
@@ -414,6 +414,25 @@ void Input_system::call() {
                 };
                 
                 if(core.key_map[GLFW_KEY_LEFT_ALT]) {
+                    Soft_body b;
+
+                    float num = 16;
+
+                    std::vector<vec2> vs;
+
+                    for(int i = 0; i < num; ++i) {
+                        float angle = float(i) / num * 2 * M_PI;
+
+                        vec2 v = vec2(cos(angle), sin(angle)) * (0.75f - b.inflate);
+
+                        vs.push_back(v);
+                    }
+                    b.create(vs, world_cursor_pos, 40.0f);
+
+                    uint32_t entity = ecs.insert_entity();
+                    ecs.insert_component(entity, b);
+
+                    /*
                     mat2 orientation = identity<mat2>();
                     float floor = 8;
                     vec2 size = vec2(0.5f, 0.5f);
@@ -433,12 +452,13 @@ void Input_system::call() {
                             insert_square(pos, size, orientation);
                         }
                     }
+                    */
                 } else {
                     vec2 origin = world_cursor_pos;
 
                     mat2 orientation = rotate(core.random(), vec3(0.0f, 0.0f, 1.0f));
 
-                    float s = 1.0f;
+                    float s = 0.25f;
 
                     uint32_t square_size = 16;
                     float separation = s * 0.25f;
@@ -473,7 +493,7 @@ void Input_system::call() {
     }
 
     if(core.pressed_buttons.contains(GLFW_MOUSE_BUTTON_LEFT)) {
-        if(gui_system.capture == 0xFFFFFFFF) {
+        if(gui_system.capture_id == NULL_WIDGET) {
             if(core.key_map[GLFW_KEY_LEFT_SHIFT]) {
                 Physics_system& ps = ecs.get_system<Physics_system>();
 

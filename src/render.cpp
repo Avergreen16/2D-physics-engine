@@ -177,6 +177,9 @@ Render_system::Render_system() {
     s = ecs.update_signature<Transform>();
     ecs.update_signature<Mesh>(s);
     collectors.push_back(Collector(s, false));
+    
+    s = ecs.update_signature<Soft_body>();
+    collectors.push_back(Collector(s, false));
 
     framebuffers.emplace_back(Framebuffer({800, 600}, {{{GL_RGBA16F, GL_RGBA, GL_HALF_FLOAT}, GL_COLOR_ATTACHMENT0, 0}, {{GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE}, GL_COLOR_ATTACHMENT1, 1}, {{GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE}, GL_COLOR_ATTACHMENT2, 2}, {{GL_DEPTH_COMPONENT32F, GL_RED, GL_FLOAT}, GL_DEPTH_ATTACHMENT}}));
     framebuffers.emplace_back(Framebuffer({800, 600}, {{{GL_RGBA16F, GL_RGBA, GL_HALF_FLOAT}, GL_COLOR_ATTACHMENT0, 0}, {{GL_DEPTH_COMPONENT32F, GL_RED, GL_FLOAT}, GL_DEPTH_ATTACHMENT}}));
@@ -445,6 +448,9 @@ void Render_system::call() {
         for(uint32_t entity : collectors[1].entities) {
             render_object(entity, camera);
         }
+        for(uint32_t entity : collectors[2].entities) {
+            render_soft_body(entity, camera);
+        }
 
         int i = 0;
         for(vec2 v : marker_points) {
@@ -666,4 +672,111 @@ void Render_system::render_background(uint32_t camera) {
     glUniformMatrix4fv(1, 1, false, &proj[0][0]);
 
     vv->draw_vertices(GL_TRIANGLES);
+}
+
+void Render_system::render_soft_body(uint32_t entity, uint32_t camera) {
+    Soft_body& soft_body = ecs.get_component<Soft_body>(entity);
+
+    //
+
+    std::vector<Object_vertex> lines;
+    std::vector<Object_vertex> tris;
+
+    vec2 center = vec2(0.0f);
+    for(auto p : soft_body.points) {
+        center += p.position;
+    }
+    center /= float(soft_body.points.size());
+
+    std::vector<vec2> offsets(soft_body.points.size(), vec2(0.0f));
+    for(int i = 0; i < soft_body.points.size(); ++i) {
+        vec2 a = soft_body.points[(i - 1 + soft_body.points.size()) % soft_body.points.size()].position;
+        vec2 b = soft_body.points[i].position;
+        vec2 c = soft_body.points[(i + 1) % soft_body.points.size()].position;
+
+        vec2 normal_a = normalize(b - a);
+        vec2 normal_b = normalize(c - b);
+
+        normal_a = vec2(normal_a.y, -normal_a.x);
+        normal_b = vec2(normal_b.y, -normal_b.x);
+
+        vec2 n = normalize(normal_a + normal_b) * soft_body.inflate;
+
+        offsets[i] = n;
+    }
+
+    for(int i = 0; i < soft_body.points.size(); ++i) {
+        vec2 a = soft_body.points[i].position + offsets[i];
+        vec2 b = soft_body.points[(i + 1) % soft_body.points.size()].position + offsets[(i + 1) % soft_body.points.size()];
+
+        Object_vertex v;
+
+        v.v = vec3(a, 0.5f);
+        lines.push_back(v);
+        v.v = vec3(b, 0.5f);
+        lines.push_back(v);
+
+        v.v = vec3(a, 0.5f);
+        tris.push_back(v);
+        v.v = vec3(b, 0.5f);
+        tris.push_back(v);
+        v.v = vec3(center, 0.5f);
+        tris.push_back(v);
+    }
+
+    //
+
+    Transform& ct = ecs.get_component<Transform>(camera);
+    Camera& cc = ecs.get_component<Camera>(camera);
+
+    Input_system& is = ecs.get_system<Input_system>();
+
+    mat4 inv_rot = mat4(transpose(ct.orientation));
+
+    mat4 view = inv_rot * scale(vec3(cc.scale, cc.scale, 1.0f)) * translate(vec3(-ct.position, 0.0f));
+
+    float aspect_ratio = float(core.window.screen_size.y) / core.window.screen_size.x;
+    mat4 proj = scale(vec3(1.0f, 1.0f / aspect_ratio, 1.0f));
+
+    //
+
+    mat4 model = identity<mat4>();
+
+    vec3 light = vec3(0.5f, -0.5f, 1.0f);
+
+    glLineWidth(1);
+
+    vec4 color = vec4(1.0f, 0.25f, 0.25f, 1.0f);
+    
+    core.shaders["color_shader"]->use();
+    color.w = 0.2f;
+
+    //
+
+    vv->vertex_buffer_data(tris.data(), tris.size(), sizeof(Object_vertex), GL_STATIC_DRAW);
+    vv->add_vertex_attribute(0, 3, GL_FLOAT, false, sizeof(float) * 3, 0);
+    vv->bind();
+
+    glUniformMatrix4fv(0, 1, false, &view[0][0]);
+    glUniformMatrix4fv(1, 1, false, &proj[0][0]);
+    glUniformMatrix4fv(2, 1, false, &model[0][0]);
+    glUniform4f(3, color.x, color.y, color.z, color.w);
+    glUniform3fv(4, 1, &light[0]);
+
+    vv->draw_vertices(GL_TRIANGLES);
+
+    //
+    color.w = 1.0f;
+
+    vv->vertex_buffer_data(lines.data(), lines.size(), sizeof(Object_vertex), GL_STATIC_DRAW);
+    vv->add_vertex_attribute(0, 3, GL_FLOAT, false, sizeof(float) * 3, 0);
+    vv->bind();
+
+    glUniformMatrix4fv(0, 1, false, &view[0][0]);
+    glUniformMatrix4fv(1, 1, false, &proj[0][0]);
+    glUniformMatrix4fv(2, 1, false, &model[0][0]);
+    glUniform4f(3, color.x, color.y, color.z, color.w);
+    glUniform3fv(4, 1, &light[0]);
+
+    vv->draw_vertices(GL_LINES);
 }

@@ -2,18 +2,13 @@
 #include "wrapper.hpp"
 #include "ecs.hpp"
 #include "core.hpp"
+#include "utility.hpp"
 
 #include <string>
 
-extern std::string integers;
-
-std::string message_callback();
-std::string null_callback();
-void button_callback();
-std::string fps_callback();
-std::string position_callback();
-std::string physics_callback();
-std::string mode_callback();
+enum cursor_mode{CURSOR_CLICK, CURSOR_RESIZE_T, CURSOR_RESIZE_TR, CURSOR_RESIZE_R, CURSOR_RESIZE_BR, CURSOR_RESIZE_B, CURSOR_RESIZE_BL, CURSOR_RESIZE_L, CURSOR_RESIZE_TL, CURSOR_TEXT};
+enum panel_split{SPLIT_X, SPLIT_Y, SPLIT_LEAF};
+const uint64_t NULL_WIDGET = 0xFFFFFFFFFFFFFFFF;
 
 struct UI_vertex {
     vec2 pos;
@@ -26,175 +21,215 @@ struct UI_vertex {
 // font
 
 struct Glyph_data {
-    bool visible;
-    uint8_t stride;
+    std::vector<uint8_t> bitmap;
+    bool visible = true;
 
-    std::array<uint8_t, 2> size;
-    std::array<uint16_t, 2> pos_tex;
-    std::array<int8_t, 2> pos_line;
+    ivec2 size;
+    ivec2 offset;
+    int advance;
+    
+    ivec2 pos_tex;
 };
 
 struct Font {
-    uint8_t line_height;
-    Glyph_data empty_data = {false, 0, 0, 0};
-    std::map<char, Glyph_data> glyph_map;
+    int line_height;
+    Glyph_data empty_data = {{}, false, {0, 0}, {0, 0}, 0, {0, 0}};
+    std::map<uint32_t, Glyph_data> glyph_map;
 
-    Glyph_data& at(char key) {
-        if(glyph_map.find(key) != glyph_map.end()) return glyph_map[key];
-        return empty_data;
-    }
+    Glyph_data& at(uint32_t key);
 
-    void init(std::string filepath) {
-        std::vector<uint8_t> bytes = get_bytes_from_file(filepath);
-        uint32_t pos = 0;
+    void init(std::string filepath);
 
-        auto read = [&](void* ptr, uint32_t num_bytes) {
-            memcpy(ptr, &bytes[pos], num_bytes);
-            pos += num_bytes;
-        };
-
-        read(&line_height, 1);
-
-        uint16_t invisible_glyphs;
-        read(&invisible_glyphs, 2);
-
-        for(int i = 0; i < invisible_glyphs; ++i) {
-            uint8_t id;
-            Glyph_data data;
-            data.visible = false;
-
-            read(&id, 1);
-            read(&data.stride, 1);
-
-            glyph_map.insert({id, data});
-        }
-
-        uint16_t visible_glyphs;
-        read(&visible_glyphs, 2);
-
-        for(int i = 0; i < visible_glyphs; ++i) {
-            uint8_t id;
-            Glyph_data data;
-            data.visible = true;
-
-            read(&id, 1);
-            read(&data.stride, 1);
-            read(&data.size[0], 1);
-            read(&data.size[1], 1);
-            read(&data.pos_tex[0], 2);
-            read(&data.pos_tex[1], 2);
-            read(&data.pos_line[0], 1);
-            read(&data.pos_line[1], 1);
-
-            glyph_map.insert({id, data});
-        }
-
-        // missing placeholder
-        Glyph_data data;
-        data.visible = true;
-        read(&data.stride, 1);
-        read(&data.size[0], 1);
-        read(&data.size[1], 1);
-        read(&data.pos_tex[0], 2);
-        read(&data.pos_tex[1], 2);
-        read(&data.pos_line[0], 1);
-        read(&data.pos_line[1], 1);
-
-        empty_data = data;
-    }
-
-    Font(std::string filepath) {
-        init(filepath);
-    }
+    Font(std::string filepath);
 
     Font() = default;
     Font(const Font& f) = default;
     Font(Font&& f) = default;
 };
 
-enum cursor_mode{CURSOR_CLICK, CURSOR_RESIZE_T, CURSOR_RESIZE_TR, CURSOR_RESIZE_R, CURSOR_RESIZE_BR, CURSOR_RESIZE_B, CURSOR_RESIZE_BL, CURSOR_RESIZE_L, CURSOR_RESIZE_TL, CURSOR_TEXT};
+enum ALIGNMENT{ALIGNMENT_LEFT, ALIGNMENT_CENTER, ALIGNMENT_RIGHT};
+std::vector<UI_vertex> mesh_text(Font& f, std::string text, uint32_t text_size, uint32_t width = 0xFFFFFFFF, ivec2 select_range = {-1, -1}, ALIGNMENT alignment = ALIGNMENT_LEFT, bool show_debug = false);
 
-struct Window_state {
+// 
+enum LAYOUT_MODE{LM_VOID, LM_ROW, LM_COLUMN, LM_GRID};
+enum POSITION_MODE{PM_STATIC, PM_TOP_LEFT, PM_TOP_RIGHT, PM_BOTTOM_LEFT, PM_BOTTOM_RIGHT, PM_TOP_CENTER, PM_BOTTOM_CENTER, PM_CENTER_LEFT, PM_CENTER_RIGHT, PM_CENTER, PM_VOID};
+enum SIZE_MODE{SM_STATIC, SM_FILL, SM_SURROUND};
+
+struct Widget {
+    uint64_t self;
+    bool flag = false;
+
     vec2 position;
     vec2 size;
-    std::string label;
-    uint32_t priority = 0xFFFFFFFF;
-    std::vector<UI_vertex> vertices;
-    uint32_t scrollbar_width = 6;
+    vec2 buffer = vec2(0.0f);
     
-    vec2 current_pos = vec2(0.0f);
-    int scroll_pos = 0;
-    ivec4 space;
+    vec4 child_region = vec4(0.0f);
+    vec2 child_offset = vec2(0.0f);
+    vec4 range;
+    std::vector<UI_vertex> vertices_before;
+    std::vector<UI_vertex> vertices_after;
 
-    // text select
-    std::string select_widget;
-    int32_t select_anchor;
-    int32_t select_position;
-    int32_t select_position_line;
+    std::function<float(std::unique_ptr<Widget>&)> get_height = [](std::unique_ptr<Widget>& w) {
+        return w->size.y;
+    };
+
+    //
+
+    LAYOUT_MODE layout_mode = LM_VOID;
+    POSITION_MODE position_mode = PM_STATIC;
+    SIZE_MODE size_mode = SM_STATIC;
+    SIZE_MODE size_mode_y = SM_STATIC;
+
+    //
+
+    vec2 rel_position = vec2(0.0f);
+    float min_width;
+    float max_width;
+    float weight_width = 1.0f;
+    float min_height;
+    float max_height;
+    float weight_height = 1.0f;
+
+    vec4 available_space;
+    bool dirty = true;
+
+    uint64_t parent = NULL_WIDGET;
+    std::vector<uint64_t> children;
+    vec2 sep = vec2(0.0f);
+
+    virtual void handle_inputs() {};
+    virtual void mesh() {};
+    virtual void get_y() {};
+    
+    virtual void on_measure() {};
+    virtual void on_transform() {};
+    virtual void on_solve_x() {};
+    virtual void on_solve_y() {};
+    virtual void on_place() {};
 };
-
-enum Alignment{ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT};
 
 struct GUI_system : System {
     std::unordered_map<std::string, Font> fonts;
-    std::vector<UI_vertex> vertices;
-
-    std::unordered_map<std::string, Window_state> window_state = {{"", Window_state()}};
-
     cursor_mode cursor_mode = CURSOR_CLICK;
+    std::vector<UI_vertex> vertices;
+    bool hex_mode = true;
 
-    uint32_t capture = 0xFFFFFFFF;
-    std::string capture_window = "";
-    std::string capture_widget = "";
-    uint32_t capture_operation;
-    float capture_position;
-
-    std::string active_window = "";
-
-    vec4 current_range = vec4(-FLT_MAX, -FLT_MAX, FLT_MAX, FLT_MAX);
-    float widget_sep = 5;
-
-    int icon_scale = 2;
-    int text_scale = 1;
-    vec4 text_range = vec4(0.0f);
-    uint32_t text_lines = 0;
-    std::vector<uint32_t> text_line_indices;
-    std::vector<int> text_line_origins;
-
-    Alignment alignment = ALIGN_LEFT;
-
-    GUI_system() {
-        fonts.emplace("default mono", Font("res/other resources/alter_mono.afont"));
-
-        Signature s = ecs.update_signature<Camera>();
-        ecs.update_signature<Transform>(s);
-        collectors.push_back(Collector(s));
-    }
-
-    void insert_window(std::string window, Window_state state);
-    void remove_window(std::string window);
-    void make_priority(std::string window);
-    void insert_vertices(std::vector<UI_vertex>& vertices);
-    void insert_vertices();
-    void window_capture();
-
-    std::vector<UI_vertex> mesh_text(Font& f, std::string text, uint32_t width = 0xFFFFFFFF, ivec2 select_range = {-1, -1}, Alignment alignment = ALIGN_LEFT);
-
-    void call();
+    uint64_t next_id = 0;
+    std::map<uint64_t, std::unique_ptr<Widget>> widgets;
     
-    void toggle_button(vec2 position, vec2 size, ivec4 icon, bool& active);
-    void button(std::string name, std::string text, vec2 size, bool& active);
-    void window(std::string name, bool& close_window);
-    void text(std::string name, std::string text, uint32_t width = 0xFFFFFFFF);
-    void slider(std::string name, std::string text, ivec2 bounds, int& value, vec2 size, float slider_width);
-    void slider(std::string name, std::string text, vec2 bounds, float& value, vec2 size, float slider_width);
+    uint64_t capture_id = NULL_WIDGET;
+    uint64_t capture_operation;
+
+    uint64_t current_widget = NULL_WIDGET;
+
+    POSITION_MODE active_position = PM_TOP_LEFT;
+
+    GUI_system() = default;
+    void init();
+
+    template<typename Type>
+    void insert_widget(Type widget, bool step = false);
+    void step();
+    void position(POSITION_MODE mode);
+    void make_dirty(uint64_t root);
+
+    float get_width_x(float x, uint64_t id, float weight);
+    float assign_width_x(float x, uint64_t id, float weight, std::vector<std::pair<uint64_t, float>>& shadowed_children);
+    
+    float get_width_y(float x, uint64_t id, float weight);
+    float assign_width_y(float x, uint64_t id, float weight, std::vector<std::pair<uint64_t, float>>& shadowed_children);
+
+    void do_layout();
+    vec4 get_range(uint64_t v);
+    void call();
+
+    void propagate_up(uint64_t start, std::function<void(std::unique_ptr<Widget>&)> func);
+    void propagate_down(uint64_t start, std::function<bool(std::unique_ptr<Widget>&)> func);
 };
 
+template<typename Type>
+void GUI_system::insert_widget(Type widget, bool step) {
+    widget.parent = current_widget;
+    widget.self = next_id;
 
-std::string to_base(int32_t num, int base, bool use_i2 = false);
+    if(current_widget != NULL_WIDGET) widgets[current_widget]->children.push_back(next_id);
 
-std::string to_base(int64_t num, int base, bool use_i2 = false);
+    if(step) current_widget = next_id;
 
-std::string to_base(float num, int base, int max_float, bool use_i2 = false);
+    widgets.emplace(next_id, std::make_unique<Type>(widget));
 
-int from_base(std::string num, int base);
+    ++next_id;
+}
+
+//
+
+struct Window_Widget : Widget {
+    void handle_inputs();
+    void mesh();
+    //void set_child_offset();
+
+    static void insert(vec2 size, vec2 position);
+};
+
+struct Debug_Widget : Widget {
+    vec3 color;
+    
+    void mesh();
+
+    static void insert(vec2 size, float max_width, vec3 color);
+};
+
+struct Row_Widget : Widget {
+    static void insert(vec2 border);
+};
+
+struct Column_Widget : Widget {
+    static void insert(vec2 border);
+};
+
+struct Grid_Widget : Widget {
+    uint32_t columns;
+    static void insert(uint32_t num_columns, vec2 border);
+};
+
+struct Panel_Constraint {
+    float value;
+    bool fill = false;
+};
+
+struct Split_Widget : Widget {
+    std::vector<Panel_Constraint> constraints;
+
+    void handle_inputs();
+    void on_measure();
+    void on_transform();
+
+    static void insert(LAYOUT_MODE layout, std::vector<Panel_Constraint> constraints);
+};
+
+struct Panel_Widget : Widget {
+    float total_scrollable = 0.0f;
+
+    void handle_inputs();
+    void mesh();
+    void on_transform();
+    void on_place();
+
+    static void insert();
+};
+
+struct Text_Widget : Widget {
+    std::string text;
+    uint32_t text_size = 1;
+    float text_width = 0.0f;
+    ALIGNMENT alignment = ALIGNMENT_LEFT;
+
+    std::function<void(std::string&)> callback = [](std::string& str) {};
+
+    void handle_inputs();
+    void mesh();
+    void get_y();
+    void set_str(std::string str);
+
+    static void insert(std::string str, ALIGNMENT alg, std::function<void(std::string&)> callback_ = [](std::string& str) {});
+};

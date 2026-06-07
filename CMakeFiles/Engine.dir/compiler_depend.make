@@ -736,6 +736,7 @@ CMakeFiles/Engine.dir/src/client_main.cpp.obj: src/client_main.cpp \
   src/render.hpp \
   src/ecs.hpp \
   src/gui.hpp \
+  src/utility.hpp \
   src/physics.hpp \
   src/input.hpp \
   C:/msys64/ucrt64/include/windows.h \
@@ -2381,6 +2382,8 @@ include/xsimd/arch/common/xsimd_common_rounding.hpp:
 include/xsimd/types/xsimd_traits.hpp:
 
 src/ecs.hpp:
+
+src/utility.hpp:
 
 src/physics.hpp:
 

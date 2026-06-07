@@ -117,25 +117,6 @@ vec3 hsv_color(float hue, float saturation, float value) {
     return color;
 }
 
-std::size_t Hash_coord::operator()(const ivec3& v) const {
-    int hash = v.x * PRIME_X;
-    hash ^= v.y * PRIME_Y;
-    hash ^= v.z * PRIME_Z;
-
-    hash ^= (hash >> 13);
-    hash = hash * 60493 + 19990303;
-    return abs(hash) % 16;
-}
-
-std::size_t Hash_coord::operator()(const ivec2& v) const {
-    int hash = v.x * PRIME_X;
-    hash ^= v.y * PRIME_Y;
-
-    hash ^= (hash >> 13);
-    hash = hash * 60493 + 19990303;
-    return abs(hash) % 16;
-}
-
 vec3 get_vec(int i) {
     return perlin_vectors[i];
 }

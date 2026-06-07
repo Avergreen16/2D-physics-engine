@@ -371,6 +371,30 @@ src/render.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Engine_files.dir/build.make CMakeFiles/Engine_files.dir/src/render.cpp.s
 .PHONY : src/render.cpp.s
 
+src/utility.obj: src/utility.cpp.obj
+.PHONY : src/utility.obj
+
+# target to build an object file
+src/utility.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Engine_files.dir/build.make CMakeFiles/Engine_files.dir/src/utility.cpp.obj
+.PHONY : src/utility.cpp.obj
+
+src/utility.i: src/utility.cpp.i
+.PHONY : src/utility.i
+
+# target to preprocess a source file
+src/utility.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Engine_files.dir/build.make CMakeFiles/Engine_files.dir/src/utility.cpp.i
+.PHONY : src/utility.cpp.i
+
+src/utility.s: src/utility.cpp.s
+.PHONY : src/utility.s
+
+# target to generate assembly for a file
+src/utility.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Engine_files.dir/build.make CMakeFiles/Engine_files.dir/src/utility.cpp.s
+.PHONY : src/utility.cpp.s
+
 src/wrapper.obj: src/wrapper.cpp.obj
 .PHONY : src/wrapper.obj
 
@@ -433,6 +457,9 @@ help:
 	@echo "... src/render.obj"
 	@echo "... src/render.i"
 	@echo "... src/render.s"
+	@echo "... src/utility.obj"
+	@echo "... src/utility.i"
+	@echo "... src/utility.s"
 	@echo "... src/wrapper.obj"
 	@echo "... src/wrapper.i"
 	@echo "... src/wrapper.s"

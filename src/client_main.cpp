@@ -3,6 +3,7 @@
 #include "input.hpp"
 #include "physics.hpp"
 #include "gui.hpp"
+#include "utility.hpp"
 
 #include <chrono>
 #include <windows.h>
@@ -162,7 +163,7 @@ void Core::init() {
     shaders.emplace("gui_shader", std::make_shared<Shader>(Shader("src/shaders/ui.vert", "src/shaders/ui.frag")));
     shaders.emplace("background", std::make_shared<Shader>(Shader("src/shaders/background.vert", "src/shaders/background.frag")));
     textures.emplace("icons", std::make_shared<Texture>(Texture("res/textures/icons.png", {GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE}, 4)));
-    textures.emplace("text_texture", std::make_shared<Texture>(Texture("res/textures/text_mono.png", {GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE}, 4)));
+    //textures.emplace("text_texture", std::make_shared<Texture>(Texture("res/textures/text_mono.png", {GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE}, 4)));
 
     // create 3d noise map
 
@@ -197,29 +198,6 @@ void Core::init() {
 
     textures.emplace("noise_map", std::make_shared<Texture>(Texture((uint8_t*)texture_data.data(), {size, size, size}, GL_TEXTURE_3D, {GL_RGBA16, GL_RGBA, GL_UNSIGNED_SHORT}, 1)));
 }
-
-struct Time {
-    std::chrono::steady_clock::time_point last_time;
-
-    void overwrite() {
-        last_time = steady_clock::now();
-    }
-
-    Time() {
-        overwrite();
-    }
-
-    double get_elapsed_time(bool overwrite = false) {
-        steady_clock::time_point current_time = steady_clock::now();
-        steady_clock::duration duration = current_time - last_time;
-    
-        if(overwrite) {
-            last_time = current_time;
-        }
-    
-        return double(duration.count()) * steady_clock::period::num / steady_clock::period::den;
-    }
-};
 
 void write(mat4& matrix) {
     std::string write_string;
@@ -383,3 +361,4 @@ int main() {
     glfwTerminate();
     return 0;
 }
+
