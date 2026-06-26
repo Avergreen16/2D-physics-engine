@@ -15,204 +15,161 @@ Glyph_data& Font::at(uint32_t key) {
 enum bdf_region{BDF_NULL, BDF_HEADER, BDF_GLYPH};
 bool bitmap = false;
 void decode_font() {
-    uint32_t line_height;
+    std::string filepath = "res/other resources/cozette.bdf";
 
-    std::string filepath = "res/other resources/alter_mono.afont";
-
-    struct Glyph_ {
-        bool visible;
-        uint8_t stride;
-        std::array<uint8_t, 2> size;
-        std::array<uint16_t, 2> pos_tex;
-        std::array<uint8_t, 2> pos_line;
-    };
-    
-    std::unordered_map<uint8_t, Glyph_> map;
-    std::vector<uint8_t> keys;
-
-    std::vector<uint8_t> bytes = get_bytes_from_file(filepath);
-    uint32_t pos = 0;
-
-    auto read = [&](void* ptr, uint32_t num_bytes) {
-        memcpy(ptr, &bytes[pos], num_bytes);
-        pos += num_bytes;
-    };
-
-    read(&line_height, 1);
-
-    uint16_t invisible_glyphs;
-    read(&invisible_glyphs, 2);
-
-    for(int i = 0; i < invisible_glyphs; ++i) {
-        uint8_t id;
-        Glyph_ data;
-        data.visible = false;
-
-        read(&id, 1);
-        read(&data.stride, 1);
-
-        map.insert({id, data});
-        keys.push_back(id);
-    }
-
-    uint16_t visible_glyphs;
-    read(&visible_glyphs, 2);
-
-    for(int i = 0; i < visible_glyphs; ++i) {
-        uint8_t id;
-        Glyph_ data;
-        data.visible = true;
-
-        read(&id, 1);
-        read(&data.stride, 1);
-        read(&data.size[0], 1);
-        read(&data.size[1], 1);
-        read(&data.pos_tex[0], 2);
-        read(&data.pos_tex[1], 2);
-        read(&data.pos_line[0], 1);
-        read(&data.pos_line[1], 1);
-
-        map.insert({id, data});
-        keys.push_back(id);
-    }
-
-    ivec2 tex_size;
-    int num_channels;
-    uint8_t* data = stbi_load("res/textures/text_mono.png", &tex_size.x, &tex_size.y, &num_channels, 0);
-    
-    std::vector<uint8_t> texture(data, data + (tex_size.x * tex_size.y * num_channels));
-
-    std::vector<bool> bitmap(tex_size.x * tex_size.y);
-    for(int i = 0; i < tex_size.x * tex_size.y; ++i) {
-        uint32_t ii = i * 4 + 3;
-        bitmap[i] = (texture[ii] != 0x0);
-    }
-
-    std::string file = R"(STARTFONT 0.0
-SIZE 13 72 72
-FONTBOUNDINGBOX 5 11 0 0
-STARTPROPERTIES 20
-FAMILY_NAME "Spleen"
-WEIGHT_NAME "Medium"
-FONT_VERSION "2.2.0"
-FOUNDRY "misc"
-SLANT "R"
-SETWIDTH_NAME "Normal"
-PIXEL_SIZE 12
-POINT_SIZE 120
-RESOLUTION_X 72
-RESOLUTION_Y 72
-SPACING "C"
-AVERAGE_WIDTH 60
-CHARSET_REGISTRY "ISO10646"
-CHARSET_ENCODING "1"
-MIN_SPACE 6
-FONT_DESCENT 2
-FONT_ASCENT 9
-DEFAULT_CHAR 32
-ENDPROPERTIES
-CHARS 103
-)";
+    std::string text = get_text_from_file(filepath);
 
     /*
-    STARTCHAR char0
-    ENCODING 0
+    STARTCHAR uni0001
+    ENCODING 1
     SWIDTH 500 0
     DWIDTH 6 0
-    BBX 6 12 0 -2
+    BBX 5 6 1 1
     BITMAP
-    00
-    00
-    D8
-    88
-    00
+    F8
     88
     88
-    00
     88
-    D8
-    00
-    00
+    88
+    F8
     ENDCHAR
     */
+
+    ivec2 size;
+    ivec2 offset;
     
-    for(uint8_t key : keys) {
-        Glyph_ g = map[key];
+    struct Glyph {
+        std::vector<uint8_t> bitmap;
+        ivec2 size;
+        ivec2 offset;
+        int advance;
+    };
 
-        file += "STARTCHAR\n";
-        file += "ENCODING " + to_base(int32_t(key), 10) + "\n";
-        file += "SWIDTH 500 0\n";
-        file += "DWIDTH " + to_base(int32_t(g.stride), 10) + " 0\n";
+    std::unordered_map<uint32_t, Glyph> glyphs;
+    std::stringstream ss(text);
+    std::vector<uint32_t> keys;
 
+    bdf_region region = BDF_NULL;
 
-        if(!g.visible) {
-            file += "BBX 0 0 0 0\n";
-            file += "BITMAP\n";
-        } else {
-            ivec2 glyph_origin = {g.pos_tex[0], g.pos_tex[1]};
-            ivec2 glyph_size = {g.size[0], g.size[1]};
+    uint32_t encoding;
+    Glyph glyph;
 
-            ivec4 bounding_box = ivec4(0x7FFFFFFF, 0x7FFFFFFF, -0x7FFFFFFF, -0x7FFFFFFF);
-            for(int y = glyph_origin.y; y < glyph_origin.y + glyph_size.y; ++y) {
-                for(int x = 0; x < glyph_size.x; ++x) {
-                    ivec2 pos = {x + glyph_origin.x, y};
-                    uint32_t index = pos.y * tex_size.x + pos.x;
+    while(true) {
+        std::string line;
+        std::getline(ss, line);
 
-                    if(bitmap[index]) {
-                        bounding_box.x = min(bounding_box.x, pos.x);
-                        bounding_box.y = min(bounding_box.y, pos.y);
-                        bounding_box.z = max(bounding_box.z, pos.x);
-                        bounding_box.w = max(bounding_box.w, pos.y);
-                    }
-                }
+        std::stringstream ss_line(line);
+        std::string name;
+        ss_line >> name;
+
+        if(region == BDF_HEADER) {
+            if(name == "FONTBOUNDINGBOX") {
+                int xsize, ysize, xoffset, yoffset;
+                ss_line >> xsize >> ysize >> xoffset >> yoffset;
+
+                size = {xsize, ysize};
+                offset = {xoffset, yoffset};
+            }
+        } else if(region == BDF_GLYPH) {
+            bool collect_bits = bitmap;
+
+            if(name == "ENCODING") {
+                int number;
+                ss_line >> number;
+
+                encoding = number;
+            } else if(name == "DWIDTH") {
+                int x, y;
+                ss_line >> x >> y;
+
+                glyph.advance = x;
+            } else if(name == "BBX") {
+                int xsize, ysize, xoffset, yoffset;
+                ss_line >> xsize >> ysize >> xoffset >> yoffset;
+
+                glyph.size = {xsize, ysize};
+                glyph.offset = {xoffset, yoffset};
+            } else if(name == "BITMAP") {
+                bitmap = true;
+                glyph.bitmap.clear();
+            } else if(name == "ENDCHAR") {
+                region = BDF_NULL;
+                bitmap = false;
+                collect_bits = false;
+
+                keys.push_back(encoding);
+                glyphs.emplace(encoding, glyph);
             }
 
-            ivec2 offset = bounding_box.xy() - glyph_origin;
-            ivec2 new_size = bounding_box.zw() - bounding_box.xy() + ivec2(1, 1);
-            glyph_size = new_size;
-            glyph_origin += offset;
+            if(collect_bits) {
+                for(int i = 0; i < name.size() / 2; ++i) {
+                    std::string bit(name.begin() + i * 2, name.begin() + (i + 1) * 2);
 
-            file += "BBX " + to_base(int32_t(glyph_size.x), 10) + " " + to_base(int32_t(glyph_size.y), 10) + " " + to_base(int32_t(offset.x + int(g.pos_line[0])), 10) + " " + to_base(int32_t(offset.y + int(g.pos_line[1])) - 2, 10) + "\n";
-            file += "BITMAP\n";
+                    uint8_t b = from_base(bit, 16);
 
-            if(!(new_size.x < 0 || new_size.y < 0)) {
-                for(int y = glyph_origin.y + glyph_size.y - 1; y >= glyph_origin.y; --y) {
-                    std::vector<uint8_t> bits;
-                    for(int x = 0; x < glyph_size.x; ++x) {
-                        if(x % 8 == 0) bits.push_back(0x00);
-
-                        ivec2 pos = {x + glyph_origin.x, y};
-                        uint32_t index = pos.y * tex_size.x + pos.x;
-
-                        if(bitmap[index]) {
-                            bits[bits.size() - 1] |= (0x1 << (7 - x % 8));
-                        }
-                    }
-
-                    for(uint8_t bit : bits) {
-                        std::stringstream ss;
-                        ss << std::uppercase << std::hex << std::setfill('0') << std::setw(2) << uint32_t(bit);
-
-                        std::string s;
-                        ss >> s;
-
-                        file += s;
-                    }
-                    
-                    file += "\n";
+                    glyph.bitmap.push_back(b);
                 }
             }
         }
-        file += "ENDCHAR\n";
+
+        if(name == "STARTFONT") region = BDF_HEADER;
+        else if(name == "ENDFONT") break;
+        else if(name == "STARTCHAR") region = BDF_GLYPH;
     }
 
-    file += "ENDFONT";
+    std::vector<bool> pixels;
+    ivec2 tex_size;
+    uint32_t width = 1024;
+    uint32_t num_per_row = width / size.x;
+    uint32_t height = ceil(float(glyphs.size()) / num_per_row) * size.y;
+    tex_size = ivec2(width, height);
 
-    std::ofstream f("res\\other resources\\infinity.bdf", std::ios::trunc);
+    pixels.resize(tex_size.x * tex_size.y, 0);
 
-    f << file;
+    uint32_t pos = 0;
+    for(uint32_t i : keys) {
+        Glyph glyph = glyphs[i];
 
-    f.close();
+        ivec2 origin = ivec2(pos % num_per_row, pos / num_per_row) * size;
+        origin = origin + (glyph.offset - offset);
+
+        uint32_t byte_row = ceil(float(glyph.size.x) / 8);
+
+        for(int y = 0; y < glyph.size.y; ++y) {
+            for(int x = 0; x < byte_row; ++x) {
+                int index = y * byte_row + x;
+                uint8_t byte = glyph.bitmap[index];
+
+                for(int xx = x * 8; xx < min((x + 1) * 8, glyph.size.x); ++xx) {
+                    int bit = 7 - (xx - x * 8);
+
+                    bool b = (byte >> bit) & 0x1;
+
+                    ivec2 bit_pos = origin + ivec2(xx, glyph.size.y - 1 - y);
+                    int bit_index = bit_pos.y * tex_size.x + bit_pos.x;
+
+                    pixels[bit_index] = b;
+                }
+            }
+        }
+
+        ++pos;
+    }
+
+    std::vector<uint8_t> texture(tex_size.x * tex_size.y * 4, 0xFF);
+
+    for(int i = 0; i < tex_size.x * tex_size.y; ++i) {
+        if(pixels[i]) {
+            texture[i * 4] = 0x0;
+            texture[i * 4 + 1] = 0x0;
+            texture[i * 4 + 2] = 0x0;
+        }
+    }
+
+    
+    stbi_flip_vertically_on_write(true);
+    std::string filename = "output/screenshot" + to_base(int64_t(get_absolute_time() * 10), 10, true) + ".png";
+    stbi_write_png(filename.c_str(), tex_size.x, tex_size.y, 4, texture.data(), 4 * tex_size.x);
 }
 
 void Font::init(std::string filepath) {
@@ -761,24 +718,20 @@ std::vector<UI_vertex> mesh_text(Font& f, std::string str, uint32_t text_size, u
 //
 
 void GUI_system::init() {
-    //decode_font();
     fonts.emplace("default mono", Font("res/other resources/infinity.bdf"));
+    //decode_font();
 
     Signature s = ecs.update_signature<Camera>();
     ecs.update_signature<Transform>(s);
     collectors.push_back(Collector(s));
 
     //
-
-    Window_Widget::insert(vec2(512, 512), vec2(96, 96));
-    Panel_Widget::insert();
     
+    Window_Widget::insert(vec2(128, 128), vec2(96, 96));
+    Split_Widget::insert(LM_COLUMN, {Panel_Constraint(1.0f, PANEL_MODE_SIZE)});
+    Panel_Widget::insert(2.0f, false);
+
     Column_Widget::insert(vec2(2.0f, 2.0f));
-
-    position(PM_TOP_LEFT);
-
-    //std::string str = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis odio nibh, vestibulum a posuere sed, egestas ac augue. Praesent quis commodo augue. Duis iaculis suscipit quam, at scelerisque turpis egestas non. Suspendisse venenatis lectus ut malesuada tempus. Suspendisse tincidunt, justo et maximus ultricies, erat sapien ultricies mi, non fermentum risus nisl nec neque. Suspendisse auctor tortor non mattis consectetur. Morbi a augue hendrerit, consequat erat molestie, elementum turpis. Vestibulum convallis eleifend urna. Aenean auctor, ex a dictum sodales, ipsum arcu blandit neque, vitae sodales sapien lorem volutpat lacus. Aliquam rhoncus nisl elit, id tincidunt mi mattis sed. Suspendisse in ornare eros. Duis vehicula ex enim, ut gravida nisi tempus in. Nulla finibus, enim nec placerat facilisis, ante nunc commodo nisl, eget rutrum dui ipsum in nunc. Proin molestie elit quis nisl sagittis tristique.\x80\x81\x82\x83\x84\x85";
-    //
 
     std::function<void(std::string&)> cb0 = [](std::string& str) {
         static double prev_time = get_time();
@@ -805,11 +758,69 @@ void GUI_system::init() {
         
         uint32_t num_objects = ps.collectors[0].entities.size();
         
-        str = "\\b\\c4F4★Physics Objects: \\r\\cFFF" + to_base(int32_t(num_objects), 10);
+        str = "\\b\\c4F4Physics Objects: \\r\\cFFF" + to_base(int32_t(num_objects), 10);
     };
 
     Text_Widget::insert("", ALIGNMENT_LEFT, cb1);
     Text_Widget::insert("", ALIGNMENT_LEFT, cb0);
+
+    //
+
+    /*
+    Window_Widget::insert(vec2(96, 96), vec2(96, 96));
+    Split_Widget::insert(LM_COLUMN, {Panel_Constraint(1.0f, PANEL_MODE_SIZE), Panel_Constraint(1.0f)});
+    //Row_Widget::insert();
+    //step();
+    Panel_Widget::insert(2.0f, false);
+    step();
+    Split_Widget::insert(LM_ROW, {Panel_Constraint(1.0f, PANEL_MODE_SIZE), Panel_Constraint(1.0f, PANEL_MODE_SIZE), Panel_Constraint(1.0f)});
+    //step();
+    Panel_Widget::insert(6.0f, true);
+    
+    Column_Widget::insert(vec2(2.0f, 2.0f));
+
+    position(PM_CENTER);
+
+    Grid_Widget::insert(10, vec2(2.0f, 2.0f));
+
+    for(int i = 0; i < 10; ++i) {
+        uint64_t h = hash(uint64_t(i));
+        if(h % 3 == 0) {
+            position(PM_CENTER);
+            Debug_Widget::insert(vec2(5, 5), 5, vec3(0.25f, 1.0f, 0.5625f));
+        } else if(h % 3 == 1) {
+            position(PM_CENTER);
+            Debug_Widget::insert(vec2(8, 8), 8, vec3(1.0f, 0.5625f, 0.25f));
+        } else if(h % 3 == 2) {
+            position(PM_CENTER);
+            Debug_Widget::insert(vec2(10, 10), 10, vec3(0.25f, 0.25f, 1.0f));
+        }
+    }
+
+    step();
+
+    std::string str = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis odio nibh, vestibulum a posuere sed, egestas ac augue. Praesent quis commodo augue. Duis iaculis suscipit quam, at scelerisque turpis egestas non. Suspendisse venenatis lectus ut malesuada tempus. Suspendisse tincidunt, justo et maximus ultricies, erat sapien ultricies mi, non fermentum risus nisl nec neque. Suspendisse auctor tortor non mattis consectetur. Morbi a augue hendrerit, consequat erat molestie, elementum turpis. Vestibulum convallis eleifend urna. Aenean auctor, ex a dictum sodales, ipsum arcu blandit neque, vitae sodales sapien lorem volutpat lacus. Aliquam rhoncus nisl elit, id tincidunt mi mattis sed. Suspendisse in ornare eros. Duis vehicula ex enim, ut gravida nisi tempus in. Nulla finibus, enim nec placerat facilisis, ante nunc commodo nisl, eget rutrum dui ipsum in nunc. Proin molestie elit quis nisl sagittis tristique.";//\x80\x81\x82\x83\x84\x85
+    //
+    Text_Widget::insert(str, ALIGNMENT_LEFT);
+    Debug_Widget::insert(vec2(40, 40), 100, vec3(1.0f, 1.0f, 0.25f));
+    Debug_Widget::insert(vec2(40, 40), 100, vec3(1.0f, 1.0f, 0.25f));
+
+    //step();
+    //Column_Widget::insert();
+    step();
+    step();
+    Panel_Widget::insert(2.0f, false);
+    Column_Widget::insert(vec2(2.0f, 2.0f));
+
+    Debug_Widget::insert(vec2(40, 40), 500, vec3(1.0f, 0.25f, 0.25f));
+    Debug_Widget::insert(vec2(40, 40), 500, vec3(1.0f, 0.25f, 0.25f));
+    step();
+    step();
+    Split_Widget::insert(LM_COLUMN, {Panel_Constraint(1.0f), Panel_Constraint(1.0f, PANEL_MODE_SIZE)});
+    Panel_Widget::insert(2.0f, false);
+    step();
+    Panel_Widget::insert(2.0f, false);
+    */
 }
 
 void GUI_system::step() {
@@ -902,9 +913,9 @@ void GUI_system::do_layout() {
         }
 
         if(widget->size_mode == SM_SURROUND) {
-            widget->min_width = children_size.x;
+            //widget->min_width = children_size.x;
         } else if(widget->size_mode == SM_STATIC) {
-            widget->min_width = widget->size.x;
+            //widget->min_width = widget->size.x;
         }
 
         widget->on_measure();
@@ -1126,207 +1137,197 @@ void GUI_system::do_layout() {
                 wchild->rel_position = position;
                 position.y += wchild->size.y + buffer;
                 wchild->rel_position.y = 0.0f;
-                
-                /*
-                if(wchild->position_mode == PM_TOP_LEFT || wchild->position_mode == PM_TOP_CENTER || wchild->position_mode == PM_TOP_RIGHT) {
-                    std::cout << widget->size.y << " " << wchild->size.y << "\n";
-                    wchild->rel_position.y = widget->size.y - wchild->size.y;
-                } else if(wchild->position_mode == PM_CENTER_LEFT || wchild->position_mode == PM_CENTER || wchild->position_mode == PM_CENTER_RIGHT) {
-                    wchild->rel_position.y = (widget->size.y - wchild->size.y) * 0.5f;
-                } else if(wchild->position_mode == PM_BOTTOM_LEFT || wchild->position_mode == PM_BOTTOM_CENTER || wchild->position_mode == PM_BOTTOM_RIGHT) {
-                    wchild->rel_position.y = 0.0f;
-                }*/
             }
         }
     };
 
-    std::vector<uint64_t> path;
-    std::vector<uint64_t> child_ids;
+    if(widgets.size()) {
+        std::vector<uint64_t> path;
+        std::vector<uint64_t> child_ids;
 
-    //
+        //
 
-    path = {0};
-    child_ids = {0};
-    while(true) {
-        if (path.size() == 0) break;
+        path = {0};
+        child_ids = {0};
+        while(true) {
+            if (path.size() == 0) break;
 
-        auto& widget = widgets[path.back()];
+            auto& widget = widgets[path.back()];
 
-        vec2 children_size = vec2(0.0f);
+            vec2 children_size = vec2(0.0f);
 
-        if (widget->children.size() <= child_ids.back()) {
-            func_measure(widget);
+            if (widget->children.size() <= child_ids.back()) {
+                func_measure(widget);
 
-            // go up
-            path.pop_back();
-            child_ids.pop_back();
-        } else {
-            path.push_back(widget->children[child_ids.back()]);
+                // go up
+                path.pop_back();
+                child_ids.pop_back();
+            } else {
+                path.push_back(widget->children[child_ids.back()]);
 
-            ++child_ids.back();
-            child_ids.push_back(0);
+                ++child_ids.back();
+                child_ids.push_back(0);
+            }
         }
-    }
 
-    //
-    path = {0};
-    child_ids = {0};
-    while(true) {
-        if (path.size() == 0) break;
+        //
+        path = {0};
+        child_ids = {0};
+        while(true) {
+            if (path.size() == 0) break;
 
-        auto& widget = widgets[path.back()];
+            auto& widget = widgets[path.back()];
 
-        if(child_ids.back() == 0) {
-            func_solve_x(widget, false);
-            widget->on_solve_x();
-        }
-        
-        vec2 children_size = vec2(0.0f);
-
-        if (widget->children.size() <= child_ids.back()) {
-            widget->get_y();
-            
-            // go up
-            path.pop_back();
-            child_ids.pop_back();
-        } else {
-            path.push_back(widget->children[child_ids.back()]);
-
-            ++child_ids.back();
-            child_ids.push_back(0);
-        }
-    }
-    
-    // solve y
-    path = {0};
-    child_ids = {0};
-    while(true) {
-        if (path.size() == 0) break;
-
-        auto& widget = widgets[path.back()];
-
-        if(child_ids.back() == 0) {
-            func_solve_y(widget, false);
-            widget->on_solve_y();
-        }
-        
-        vec2 children_size = vec2(0.0f);
-
-        if (widget->children.size() <= child_ids.back()) {
-            if(widget->layout_mode == LM_ROW) {
-                for(uint64_t child : widget->children) {
-                    auto& widget_child = widgets[child];
-                    children_size = vec2(children_size.x + widget_child->size.x, max(children_size.y, widget_child->size.y));
-                }
-                children_size.x += (widget->children.size() - 1) * widget->sep.x;
-                
-                widget->size = children_size;
-            } else if(widget->layout_mode == LM_COLUMN) {
-                for(uint64_t child : widget->children) {
-                    auto& widget_child = widgets[child];
-                    children_size = vec2(max(children_size.x, widget_child->size.x), children_size.y + widget_child->size.y);
-                }
-                children_size.y += (widget->children.size() - 1) * widget->sep.y;
-
-                widget->size = children_size;
-            } else if(widget->layout_mode == LM_GRID) {
-                Grid_Widget& w = *(Grid_Widget*)widget.get();
-
-                uint32_t num_rows = ceil(float(w.children.size()) / w.columns); 
-
-                std::vector<float> columns(w.columns, 0.0f);
-                std::vector<float> rows(num_rows, 0.0f);
-
-                uint32_t index = 0;
-                for(uint64_t child : w.children) {
-                    uint32_t column = index % w.columns;
-                    uint32_t row = index / w.columns;
-                    
-                    auto& wchild = widgets[child];
-                    rows[row] = max(rows[row], wchild->size.y);
-                    columns[column] = max(columns[column], wchild->size.x);
-                    
-                    ++index;
-                }
-
-                vec2 size = vec2(0.0f);
-                for(float f : columns) size.x += f;
-                for(float f : rows) size.y += f;
-                size.x += (columns.size() - 1) * widget->sep.x;
-                size.y += (rows.size() - 1) * widget->sep.y;
-
-                w.size = size;
+            if(child_ids.back() == 0) {
+                func_solve_x(widget, false);
             }
             
-            // go up
-            path.pop_back();
-            child_ids.pop_back();
-        } else {
-            path.push_back(widget->children[child_ids.back()]);
+            vec2 children_size = vec2(0.0f);
 
-            ++child_ids.back();
-            child_ids.push_back(0);
+            if (widget->children.size() <= child_ids.back()) {
+                widget->get_y();
+                
+                // go up
+                path.pop_back();
+                child_ids.pop_back();
+            } else {
+                path.push_back(widget->children[child_ids.back()]);
+
+                ++child_ids.back();
+                child_ids.push_back(0);
+            }
         }
-    }
-
-    //
-
-    path = {0};
-    child_ids = {0};
-    while(true) {
-        if (path.size() == 0) break;
-
-        auto& widget = widgets[path.back()];
-
-        vec2 children_size = vec2(0.0f);
-
-        if(child_ids.back() == 0) widget->on_place();
-
-        if (widget->children.size() <= child_ids.back()) {
-            func_place(widget);
-            
-            if(widget->position_mode == PM_STATIC) widget->rel_position = widget->position;
-
-            // go up
-            path.pop_back();
-            child_ids.pop_back();
-        } else {
-            path.push_back(widget->children[child_ids.back()]);
-
-            ++child_ids.back();
-            child_ids.push_back(0);
-        }
-    }
-
-    //
-
-    std::unordered_map<uint64_t, vec2> positions;
-
-    for(auto& [k, widget] : widgets) {
-        vec2 origin = vec2(0.0f);
-
-        uint64_t kk = k;
-        while(true) {
-            if(kk == NULL_WIDGET) break;
-
-            auto& ww = widgets[kk];
-
-            if(kk != k) origin += ww->child_offset.xy();
-            origin += ww->rel_position;
-
-            if(ww->position_mode == PM_STATIC) break;
-            
-            kk = ww->parent;
-        }
-
-        positions.emplace(k, origin);
-    }
-
-    for(auto& [k, origin] : positions) {
-        if(widgets[k]->position != origin) widgets[k]->dirty = true;
-        widgets[k]->position = origin;
         
-        widgets[k]->child_region = vec4(origin, origin + widgets[k]->size);
+        // solve y
+        path = {0};
+        child_ids = {0};
+        while(true) {
+            if (path.size() == 0) break;
+
+            auto& widget = widgets[path.back()];
+
+            if(child_ids.back() == 0) {
+                func_solve_y(widget, false);
+            }
+            
+            vec2 children_size = vec2(0.0f);
+
+            if (widget->children.size() <= child_ids.back()) {
+                if(widget->layout_mode == LM_ROW) {
+                    for(uint64_t child : widget->children) {
+                        auto& widget_child = widgets[child];
+                        children_size = vec2(children_size.x + widget_child->size.x, max(children_size.y, widget_child->size.y));
+                    }
+                    children_size.x += (widget->children.size() - 1) * widget->sep.x;
+                    
+                    widget->size = children_size;
+                } else if(widget->layout_mode == LM_COLUMN) {
+                    for(uint64_t child : widget->children) {
+                        auto& widget_child = widgets[child];
+                        children_size = vec2(max(children_size.x, widget_child->size.x), children_size.y + widget_child->size.y);
+                    }
+                    children_size.y += (widget->children.size() - 1) * widget->sep.y;
+
+                    widget->size = children_size;
+                } else if(widget->layout_mode == LM_GRID) {
+                    Grid_Widget& w = *(Grid_Widget*)widget.get();
+
+                    uint32_t num_rows = ceil(float(w.children.size()) / w.columns); 
+
+                    std::vector<float> columns(w.columns, 0.0f);
+                    std::vector<float> rows(num_rows, 0.0f);
+
+                    uint32_t index = 0;
+                    for(uint64_t child : w.children) {
+                        uint32_t column = index % w.columns;
+                        uint32_t row = index / w.columns;
+                        
+                        auto& wchild = widgets[child];
+                        rows[row] = max(rows[row], wchild->size.y);
+                        columns[column] = max(columns[column], wchild->size.x);
+                        
+                        ++index;
+                    }
+
+                    vec2 size = vec2(0.0f);
+                    for(float f : columns) size.x += f;
+                    for(float f : rows) size.y += f;
+                    size.x += (columns.size() - 1) * widget->sep.x;
+                    size.y += (rows.size() - 1) * widget->sep.y;
+
+                    w.size = size;
+                }
+                
+                // go up
+                path.pop_back();
+                child_ids.pop_back();
+            } else {
+                path.push_back(widget->children[child_ids.back()]);
+
+                ++child_ids.back();
+                child_ids.push_back(0);
+            }
+        }
+
+        //
+
+        path = {0};
+        child_ids = {0};
+        while(true) {
+            if (path.size() == 0) break;
+
+            auto& widget = widgets[path.back()];
+
+            vec2 children_size = vec2(0.0f);
+
+            if(child_ids.back() == 0) widget->on_place();
+
+            if (widget->children.size() <= child_ids.back()) {
+                func_place(widget);
+                
+                if(widget->position_mode == PM_STATIC) widget->rel_position = widget->position;
+
+                // go up
+                path.pop_back();
+                child_ids.pop_back();
+            } else {
+                path.push_back(widget->children[child_ids.back()]);
+
+                ++child_ids.back();
+                child_ids.push_back(0);
+            }
+        }
+
+        //
+
+        std::unordered_map<uint64_t, vec2> positions;
+
+        for(auto& [k, widget] : widgets) {
+            vec2 origin = vec2(0.0f);
+
+            uint64_t kk = k;
+            while(true) {
+                if(kk == NULL_WIDGET) break;
+
+                auto& ww = widgets[kk];
+
+                if(kk != k) origin += ww->child_offset.xy();
+                origin += ww->rel_position;
+
+                if(ww->position_mode == PM_STATIC) break;
+                
+                kk = ww->parent;
+            }
+
+            positions.emplace(k, origin);
+        }
+
+        for(auto& [k, origin] : positions) {
+            if(widgets[k]->position != origin) widgets[k]->dirty = true;
+            widgets[k]->position = origin;
+            
+            widgets[k]->child_region = vec4(origin, origin + widgets[k]->size);
+        }
     }
 }
 
@@ -1338,57 +1339,59 @@ void GUI_system::call() {
 
     // mesh
 
-    std::vector<uint64_t> path;
-    std::vector<uint64_t> child_ids;
+    if(widgets.size()) {
+        std::vector<uint64_t> path;
+        std::vector<uint64_t> child_ids;
 
-    path = {0};
-    child_ids = {0};
-    while(true) {
-        if (path.size() == 0) break;
+        path = {0};
+        child_ids = {0};
+        while(true) {
+            if (path.size() == 0) break;
 
-        auto& widget = widgets[path.back()];
+            auto& widget = widgets[path.back()];
 
-        vec2 children_size = vec2(0.0f);
+            vec2 children_size = vec2(0.0f);
 
-        if(child_ids.back() == 0) {
-            widget->mesh();
-            vertices.insert(vertices.end(), widget->vertices_before.begin(), widget->vertices_before.end());
+            if(child_ids.back() == 0) {
+                widget->mesh();
+                vertices.insert(vertices.end(), widget->vertices_before.begin(), widget->vertices_before.end());
+            }
+
+            if (widget->children.size() <= child_ids.back()) {
+                vertices.insert(vertices.end(), widget->vertices_after.begin(), widget->vertices_after.end());
+
+                // go up
+                path.pop_back();
+                child_ids.pop_back();
+            } else {
+                path.push_back(widget->children[child_ids.back()]);
+
+                ++child_ids.back();
+                child_ids.push_back(0);
+            }
         }
 
-        if (widget->children.size() <= child_ids.back()) {
-            vertices.insert(vertices.end(), widget->vertices_after.begin(), widget->vertices_after.end());
+        //
 
-            // go up
-            path.pop_back();
-            child_ids.pop_back();
-        } else {
-            path.push_back(widget->children[child_ids.back()]);
+        path = {0};
+        child_ids = {0};
+        while(true) {
+            if (path.size() == 0) break;
 
-            ++child_ids.back();
-            child_ids.push_back(0);
-        }
-    }
+            auto& widget = widgets[path.back()];
+            if(child_ids.back() == 0) widget->handle_inputs();
 
-    //
+            if (widget->children.size() <= child_ids.back()) {
 
-    path = {0};
-    child_ids = {0};
-    while(true) {
-        if (path.size() == 0) break;
+                // go up
+                path.pop_back();
+                child_ids.pop_back();
+            } else {
+                path.push_back(widget->children[child_ids.back()]);
 
-        auto& widget = widgets[path.back()];
-
-        if (widget->children.size() <= child_ids.back()) {
-            widget->handle_inputs();
-
-            // go up
-            path.pop_back();
-            child_ids.pop_back();
-        } else {
-            path.push_back(widget->children[child_ids.back()]);
-
-            ++child_ids.back();
-            child_ids.push_back(0);
+                ++child_ids.back();
+                child_ids.push_back(0);
+            }
         }
     }
 }
@@ -1481,6 +1484,7 @@ float GUI_system::get_width_x(float x, uint64_t id, float weight) {
     auto& widget = widgets[id];
 
     if(widget->layout_mode == LM_VOID) {
+        if(widget->size_mode == SM_STATIC) return widget->size.x;
         if(widget->flag) return max(widget->min_width, min(x * widget->weight_width * weight, widget->max_width));
         else return widget->min_width + min(x * widget->weight_width * weight, widget->max_width - widget->min_width);
     } else if(widget->layout_mode == LM_ROW) {
@@ -1534,7 +1538,7 @@ float GUI_system::assign_width_x(float x, uint64_t id, float weight, std::vector
 
     if(widget->layout_mode == LM_VOID) {
         float size;
-        if(widget->flag) size = max(widget->min_width, min(x * widget->weight_width * weight, widget->max_width));
+        if(widget->size_mode == SM_STATIC) size = widget->size.x;
         else size = widget->min_width + min(x * widget->weight_width * weight, widget->max_width - widget->min_width);
 
         if(size != widget->size.x) widget->dirty = true;
@@ -1641,7 +1645,7 @@ float GUI_system::get_width_y(float x, uint64_t id, float weight) {
     auto& widget = widgets[id];
 
     if(widget->layout_mode == LM_VOID) {
-        if(widget->flag) return max(widget->min_height, min(x * widget->weight_height * weight, widget->max_height));
+        if(widget->size_mode_y == SM_STATIC) return widget->size.y;
         return widget->min_height + min(x * widget->weight_height * weight, widget->max_height - widget->min_height);
     } else if(widget->layout_mode == LM_ROW) {
         float w = 0.0f;
@@ -1696,7 +1700,7 @@ float GUI_system::assign_width_y(float x, uint64_t id, float weight, std::vector
 
     if(widget->layout_mode == LM_VOID) {
         float size;
-        if(widget->flag) size = max(widget->min_height, min(x * widget->weight_height * weight, widget->max_height));
+        if(widget->size_mode_y == SM_STATIC) size = widget->size.y;
         else size = widget->min_height + min(x * widget->weight_height * weight, widget->max_height - widget->min_height);
 
         if(size != widget->size.y) widget->dirty = true;
@@ -1879,7 +1883,7 @@ void Window_Widget::handle_inputs() {
     range_top += buffer_range;
     range_bottom += buffer_range;
 
-    vec2 min_size = vec2(192, 192);
+    vec2 min_size = vec2(96, 96);
 
     auto resize_left = [&]() {
         position.x += core.cursor_delta.x;
@@ -2075,7 +2079,7 @@ void Window_Widget::mesh() {
     if(dirty) {
         GUI_system& gui_system = ecs.get_system<GUI_system>();
 
-        float header = 18;
+        float header = 15;
         float text_scale = 1;
         std::string label = "WINDOW";
         bool scrollbar = false;
@@ -2112,13 +2116,12 @@ void Window_Widget::mesh() {
         }
         total_ret.insert(total_ret.end(), ret.begin(), ret.end());
 
-        Font& f = gui_system.fonts["default mono"];
         // label
-        ret = mesh_text(f, label, 1);
+        ret = mesh_text(gui_system.fonts["default mono"], label, 1);
 
         for(UI_vertex& v : ret) {
-            float s = floor(header * 0.5f - f.line_height * float(text_scale) * 0.5f);
-            v.pos = position + v.pos * float(text_scale) + vec2(max(s, 3.0f), -s - f.line_height * float(text_scale) + size.y + header);
+            float s = floor(header * 0.5f - 11.0f * float(text_scale) * 0.5f);
+            v.pos = position + v.pos * float(text_scale) + vec2(s, -s - 11.0f * float(text_scale) + size.y + header);
             v.range = header_range;
         }
         total_ret.insert(total_ret.end(), ret.begin(), ret.end());
@@ -2294,6 +2297,7 @@ void Panel_Widget::handle_inputs() {
     if(parent != NULL_ENTITY) {
         auto& parent_widget = gui_system.widgets[parent];
 
+        /*
         if(parent_widget->layout_mode == LM_VOID) {
             vec2 new_size = vec2(parent_widget->child_region.z - parent_widget->child_region.x, parent_widget->child_region.w - parent_widget->child_region.y);
 
@@ -2308,23 +2312,62 @@ void Panel_Widget::handle_inputs() {
 
             size.y = new_size;
             child_region = {position.x, position.y, size.x + position.x, size.y + position.y};
-        } 
+        } */
     }
 
     int scroll_speed = 60;
-    
-    float scrollbar_height;
-    vec4 scrollbar_range;
 
     float min_scroll = -total_scrollable;
     float max_scroll = 0.0f;
     if(max_scroll > min_scroll) {
-        if(core.scroll_delta && includes(core.cursor_pos, child_region)) {
+        if(core.scroll_delta && includes(core.cursor_pos, child_region) && gui_system.capture_id != self) {
             dirty = true;
 
             float scroll_speed = 60.0f;
             child_offset.y -= core.scroll_delta * scroll_speed;
             child_offset.y = clamp(child_offset.y, min_scroll, max_scroll);
+        }
+    }
+
+    if(reserve) {
+        bool scrollbar = false;
+        float scrollbar_height;
+        float scrollbar_pos;
+
+        if(total_scrollable > 0.0f) {
+            scrollbar = true;
+
+            float visible_height = child_region.w - child_region.y;
+            float total_height = total_scrollable + visible_height;
+
+            scrollbar_height = visible_height / total_height;
+            scrollbar_pos = (-child_offset.y) / total_height;
+
+            scrollbar_height *= visible_height;
+            scrollbar_pos *= visible_height;
+        }
+
+        if(scrollbar) {
+            vec2 size = vec2(scroll_width, scrollbar_height);
+            vec2 pos = vec2(child_region.z - scroll_width, child_region.y + scrollbar_pos);
+
+            if(includes(core.cursor_pos, {pos, pos + size}) && core.pressed_buttons.contains(GLFW_MOUSE_BUTTON_LEFT)) {
+                gui_system.capture_id = self;
+                gui_system.capture_operation = 0;
+
+                scroll_anchor = core.cursor_pos.y - position.y - scrollbar_pos;
+            }
+        }
+
+        if(gui_system.capture_id == self) {
+            if(!core.key_map[GLFW_MOUSE_BUTTON_LEFT]) {
+                gui_system.capture_id = NULL_WIDGET;
+            } else {
+                float rel_pos = core.cursor_pos.y - position.y - scroll_anchor;
+
+                child_offset.y = -(rel_pos / (size.y - scrollbar_height)) * total_scrollable;
+                child_offset.y = clamp(child_offset.y, min_scroll, max_scroll);
+            }
         }
     }
 }
@@ -2353,6 +2396,20 @@ void Panel_Widget::mesh() {
             v.data = 1;
         }
         total_ret.insert(total_ret.end(), ret.begin(), ret.end());
+
+        if(reserve) {
+            ret = {a, b, d, a, d, c};
+            vec4 area = vec4(position.x + size.x - scroll_width, position.y, scroll_width, size.y);
+
+            for(UI_vertex& v : ret) {
+                v.pos = area.xy() + v.pos * area.zw();
+                v.tex_pos = vec2(1.0f, 63.0f);
+                v.color = vec4(0.0625f, 0.0625f, 0.0625f, 1.0f);
+                v.data = 1;
+            }
+            total_ret.insert(total_ret.end(), ret.begin(), ret.end());
+        }
+
         vertices_before = total_ret;
         total_ret.clear();
 
@@ -2370,8 +2427,8 @@ void Panel_Widget::mesh() {
         }
         
         if(scrollbar) {
-            vec2 size = vec2(2.0f, scrollbar_height);
-            vec2 pos = vec2(child_region.z - 2.0f, child_region.y + scrollbar_pos);
+            vec2 size = vec2(scroll_width, scrollbar_height);
+            vec2 pos = vec2(child_region.z - scroll_width, child_region.y + scrollbar_pos);
 
             ret = {a, b, d, a, d, c};
             for(UI_vertex& v : ret) {
@@ -2406,10 +2463,11 @@ void Panel_Widget::on_place() {
 
 void Panel_Widget::on_transform() {
     vec4 new_region = vec4(position, position + size);
-    new_region.x = floor(new_region.x);
-    new_region.y = floor(new_region.y);
-    new_region.z = ceil(new_region.z);
-    new_region.y = ceil(new_region.y);
+    if(reserve) new_region.z -= scroll_width;
+    //new_region.x = floor(new_region.x);
+    //new_region.y = floor(new_region.y);
+    //new_region.z = ceil(new_region.z);
+    //new_region.y = ceil(new_region.y);
     if(child_region != new_region) {
         GUI_system& gui_system = ecs.get_system<GUI_system>();
         gui_system.make_dirty(self);
@@ -2417,7 +2475,7 @@ void Panel_Widget::on_transform() {
     child_region = new_region;
 }
 
-void Panel_Widget::insert() {
+void Panel_Widget::insert(float scroll_width, bool reserve) {
     GUI_system& gui_system = ecs.get_system<GUI_system>();
 
     Panel_Widget widget;
@@ -2429,6 +2487,9 @@ void Panel_Widget::insert() {
     widget.max_width = FLT_MAX;
     widget.min_height = 0.0f;
     widget.max_height = FLT_MAX;
+    
+    widget.scroll_width = scroll_width;
+    widget.reserve = reserve;
 
     widget.flag = true;
 
@@ -2537,8 +2598,7 @@ void Grid_Widget::insert(uint32_t num_columns, vec2 border) {
 
 void Text_Widget::handle_inputs() {
     std::string str = text;
-    callback(str);
-
+    func(str);
     set_str(str);
 }
 
@@ -2563,7 +2623,7 @@ void Text_Widget::mesh() {
 }
 
 void Text_Widget::get_y() {
-    if(text_width != size.x) {
+    if(text_width != size.x || dirty) {
         text_width = size.x;
 
         dirty = true;
@@ -2754,6 +2814,8 @@ void Text_Widget::get_y() {
 
         min_height = size.y;
         max_height = size.y;
+
+        std::cout << min_height << "\n";
     }
 }
 
@@ -2762,13 +2824,13 @@ void Text_Widget::set_str(std::string str) {
     text = str;
 }
 
-void Text_Widget::insert(std::string str, ALIGNMENT alg, std::function<void(std::string&)> callback_) {
+void Text_Widget::insert(std::string str, ALIGNMENT alg, std::function<void(std::string&)> func) {
     GUI_system& gui_system = ecs.get_system<GUI_system>();
     
     Text_Widget widget;
 
     widget.text = str;
-    widget.callback = callback_;
+    widget.func = func;
     widget.size = vec2(0.0f);
     widget.min_width = 0.0f;
     widget.max_width = FLT_MAX;
@@ -2799,6 +2861,8 @@ void Split_Widget::insert(LAYOUT_MODE layout, std::vector<Panel_Constraint> cons
 }
 
 void Split_Widget::handle_inputs() {
+    process_size();
+
     GUI_system& gui_system = ecs.get_system<GUI_system>();
     
     float buffer = 4.0f;
@@ -2839,6 +2903,7 @@ void Split_Widget::handle_inputs() {
             }
         }
     }
+    float mw = 20.0f;
 
     if(gui_system.capture_id == self) {
         if(!core.key_map[GLFW_MOUSE_BUTTON_LEFT]) gui_system.capture_id = NULL_WIDGET;
@@ -2855,10 +2920,13 @@ void Split_Widget::handle_inputs() {
             auto& w1 = gui_system.widgets[children[i + 1]];
 
             float s = size.x;
+            float borders = (children.size() - 1) * sep.x;
+            s -= borders;
+            
             float p = position.x;
             float c = core.cursor_pos.x;
             
-            c = clamp(c, w0->position.x + w0->min_width, w1->position.x + w1->size.x - w1->min_width);
+            c = clamp(c, w0->position.x + w0->min_width + sep.x, w1->position.x + w1->size.x - w1->min_width - sep.x);
 
             float r = (c - w0->position.x);
             float new_ratio = r / s;
@@ -2878,10 +2946,13 @@ void Split_Widget::handle_inputs() {
             auto& w1 = gui_system.widgets[children[i + 1]];
 
             float s = size.y;
+            float borders = (children.size() - 1) * sep.y;
+            s -= borders;
+            
             float p = position.y;
             float c = core.cursor_pos.y;
             
-            c = clamp(c, w0->position.y + w0->min_height, w1->position.y + w1->size.y - w1->min_height);
+            c = clamp(c, w0->position.y + w0->min_height + sep.y, w1->position.y + w1->size.y - w1->min_height - sep.y);
 
             float r = (c - w0->position.y);
             float new_ratio = r / s;
@@ -2892,92 +2963,241 @@ void Split_Widget::handle_inputs() {
         }
     }
 
-    on_transform();
-
     // handle inputs
+    recalibrate();
 }
 
-void Split_Widget::on_transform() {
-    float mw = 20.0f;
+void Split_Widget::process_size() {
+    GUI_system& gui_system = ecs.get_system<GUI_system>();
+    
+    if(gui_system.widgets[parent]->flag) {
+        size.x = gui_system.widgets[parent]->child_region.z - gui_system.widgets[parent]->child_region.x;
+        size.y = gui_system.widgets[parent]->child_region.w - gui_system.widgets[parent]->child_region.y;
+    }
 
     if(layout_mode == LM_ROW) {
-        GUI_system& gui_system = ecs.get_system<GUI_system>();
+        if(prev_size != size.x && prev_size >= 0.0f) {
+            float prev_asize = prev_size - (children.size() - 1) * sep.x;
+            float new_asize = size.x - (children.size() - 1) * sep.x;
+             
+            float change = 0.0f;
+            std::set<uint32_t> locked;
 
-        float total = 0.0f;
+            for(int i = 0; i < children.size(); ++i) {
+                Panel_Constraint& constraint = constraints[i];
 
-        for(Panel_Constraint& constraint : constraints) {
-            if(constraint.fill) {
-                total += constraint.value;
+                if(constraint.panel_mode == PANEL_MODE_SIZE) {
+                    float new_frac = constraint.value * prev_asize / new_asize;
+                    
+                    float delta = new_frac - constraint.value;
+                    
+                    constraint.value += delta;
+
+                    change += delta;
+
+                    locked.insert(i);
+                }
+            }
+
+            int num = children.size() - locked.size();
+
+            if(num != 0) {
+                for(int i = 0; i < children.size(); ++i) {
+                    if(locked.find(i) == locked.end()) {
+                        Panel_Constraint& constraint = constraints[i];
+                        constraint.value -= change / num;
+                    }
+                }
             }
         }
-        for(Panel_Constraint& constraint : constraints) if(constraint.fill) constraint.value /= total;
 
-        float total_area = size.x;
-
-        float borders = (children.size() - 1) * sep.x;
-
-        total_area -= borders;
-
-        min_width = 0;
-        min_height = 0;
-
-        for(int i = 0; i < children.size(); ++i) {
-            auto& child = gui_system.widgets[children[i]];
-            Panel_Constraint& constraint = constraints[i];
-
-            if(child->flag) {
-                child->min_width = mw;
-                child->min_height = mw;
-            }
-            constraint.value = max(constraint.value, child->min_width / size.x);
-
-            child->weight_width = constraint.value;
-            child->weight_height = 1.0f;
-            
-            min_width += child->min_width;
-            min_height = max(min_height, child->min_height);
-        }
+        prev_size = size.x;
     } else if(layout_mode == LM_COLUMN) {
-        GUI_system& gui_system = ecs.get_system<GUI_system>();
+        if(prev_size != size.y && prev_size >= 0.0f) {
+            float prev_asize = prev_size - (children.size() - 1) * sep.y;
+            float new_asize = size.y - (children.size() - 1) * sep.y;
+             
+            float change = 0.0f;
+            std::set<uint32_t> locked;
 
-        float total = 0.0f;
+            for(int i = 0; i < children.size(); ++i) {
+                Panel_Constraint& constraint = constraints[i];
 
-        for(Panel_Constraint& constraint : constraints) {
-            if(constraint.fill) {
-                total += constraint.value;
+                if(constraint.panel_mode == PANEL_MODE_SIZE) {
+                    float new_frac = constraint.value * prev_asize / new_asize;
+                    
+                    float delta = new_frac - constraint.value;
+
+                    constraint.value += delta;
+
+                    change += delta;
+
+                    locked.insert(i);
+                }
+            }
+
+            int num = children.size() - locked.size();
+
+            if(num != 0) {
+                for(int i = 0; i < children.size(); ++i) {
+                    if(locked.find(i) == locked.end()) {
+                        Panel_Constraint& constraint = constraints[i];
+                        constraint.value -= change / num;
+                    }
+                }
             }
         }
-        for(Panel_Constraint& constraint : constraints) if(constraint.fill) constraint.value /= total;
+        
+        prev_size = size.y;
+    }
+}
 
-        float total_area = size.y;
+void Split_Widget::recalibrate() {
+    float mw = 20.0f;
+    GUI_system& gui_system = ecs.get_system<GUI_system>();
 
-        float borders = (children.size() - 1) * sep.y;
-
+    if(layout_mode == LM_ROW) {
+        float total_area = size.x;
+        float borders = (children.size() - 1) * sep.x;
         total_area -= borders;
         
-        min_width = 0;
-        min_height = 0;
+        float change = 1.0f;
+        std::set<uint32_t> locked;
+
+        while(change != 0.0f) {    
+            change = 0.0f;
+
+            for(int i = 0; i < children.size(); ++i) {
+                auto& child = gui_system.widgets[children[i]];
+                Panel_Constraint& constraint = constraints[i];
+                
+                float new_size = max(constraint.value, child->min_width / total_area);
+                if(constraint.value <= child->min_width / total_area) {
+                    float diff = new_size - constraint.value;
+                    constraint.value += diff;
+                    locked.insert(i);
+
+                    change += diff;
+                }
+            }
+
+            int num = children.size() - locked.size();
+
+            if(num == 0) break;
+            
+            for(int i = 0; i < children.size(); ++i) {
+                if(locked.find(i) == locked.end()) {
+                    Panel_Constraint& constraint = constraints[i];
+                    constraint.value -= change / num;
+                }
+            }
+        }
+
+        //
+
+        float total = 0.0f;
+
+        for(Panel_Constraint& constraint : constraints) {
+            total += constraint.value;
+        }
+        for(Panel_Constraint& constraint : constraints) constraint.value /= total;
 
         for(int i = 0; i < children.size(); ++i) {
             auto& child = gui_system.widgets[children[i]];
             Panel_Constraint& constraint = constraints[i];
 
-            if(child->flag) {
-                child->min_width = mw;
-                child->min_height = mw;
+            child->weight_height = 1.0f;
+            child->weight_width = 1.0f;
+
+            child->size = {constraint.value * total_area, size.y};
+            //child->on_transform();
+
+            child->size_mode = SM_STATIC;
+            child->size_mode_y = SM_STATIC;
+            
+            //min_width += child->min_width;
+            //min_height = max(min_height, child->min_height);
+        }
+    } else if(layout_mode == LM_COLUMN) {
+        float total_area = size.y;
+        float borders = (children.size() - 1) * sep.y;
+        total_area -= borders;
+
+        float change = 1.0f;
+        std::set<uint32_t> locked;
+
+        while(change != 0.0f) {    
+            change = 0.0f;
+
+            for(int i = 0; i < children.size(); ++i) {
+                auto& child = gui_system.widgets[children[i]];
+                Panel_Constraint& constraint = constraints[i];
+                
+                float new_size = max(constraint.value, child->min_height / total_area);
+                if(constraint.value <= child->min_height / total_area) {
+                    float diff = new_size - constraint.value;
+                    constraint.value += diff;
+                    locked.insert(i);
+
+                    change += diff;
+                }
             }
 
-            constraint.value = max(constraint.value, child->min_height / size.y);
+            int num = children.size() - locked.size();
+
+            if(num == 0) break;
             
-            child->weight_height = constraint.value;
+            for(int i = 0; i < children.size(); ++i) {
+                if(locked.find(i) == locked.end()) {
+                    Panel_Constraint& constraint = constraints[i];
+                    constraint.value -= change / num;
+                }
+            }
+        }
+        
+        //
+
+        float total = 0.0f;
+
+        for(Panel_Constraint& constraint : constraints) {
+            total += constraint.value;
+        }
+        for(Panel_Constraint& constraint : constraints) constraint.value /= total;
+
+        for(int i = 0; i < children.size(); ++i) {
+            auto& child = gui_system.widgets[children[i]];
+            Panel_Constraint& constraint = constraints[i];
+            
             child->weight_width = 1.0f;
+            child->weight_height = 1.0f;
+
+            child->size = {size.x, constraint.value * total_area};
             
-            min_height += child->min_height;
-            min_width = max(min_width, child->min_width);
+            child->size_mode = SM_STATIC;
+            child->size_mode_y = SM_STATIC;
         }
     }
 }
 
 void Split_Widget::on_measure() {
-    
+    min_width = 0;
+    min_height = 0;
+    GUI_system& gui_system = ecs.get_system<GUI_system>();
+
+    for(int i = 0; i < children.size(); ++i) {
+        auto& child = gui_system.widgets[children[i]];
+        
+        if(child->flag) {
+            child->min_width = 20;
+            child->min_height = 20;
+        }
+
+        if(layout_mode == LM_COLUMN) {
+            min_width = child->min_width;
+            min_height += child->min_height + ((i == 0) ? 0 : sep.y);
+        } else if(layout_mode == LM_ROW) {
+            min_width += child->min_width + ((i == 0) ? 0 : sep.x);
+            min_height = child->min_height;
+        }
+    }
 }

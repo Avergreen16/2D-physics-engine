@@ -98,7 +98,7 @@ void Input_system::call() {
                 std::set<uint32_t> non_colliding;
                 Physics_system& ps = ecs.get_system<Physics_system>();
 
-                uint32_t num_links = 8;
+                uint32_t num_links = 1;
 
                 float scale = 1.0f;
 
@@ -107,7 +107,7 @@ void Input_system::call() {
 
                 Transform t;
                 t.position = world_cursor_pos;
-                vec2 up = normalize(vec2(1.0f, 1.0f));
+                vec2 up = normalize(vec2(0.5f, 1.0f));
                 t.orientation = {up, vec2(-up.y, up.x)};
                 
                 Collider c;
@@ -116,11 +116,12 @@ void Input_system::call() {
                 cs.radius = vec2(size.x * 0.5f);
                 cs.mass = 0x6 * scale * scale;
                 c.shapes.push_back(cs);
+                c.allow_rotation = false;
 
                 vec2 shift = Physics_system::calculate_inertia(c);
                 t.position += t.orientation * shift;
                 t.position += t.orientation * vec2(0, size.y * 0.5f);
-                //c.allow_rotation = false;
+                
 
                 Mesh m;
                 m.color = vec3(0.9f, 0.9f, 0.9f);
@@ -170,6 +171,7 @@ void Input_system::call() {
                 cs.radius = vec2(asteroid_radius);
                 cs.mass = 0x30 * scale * scale;
                 c2.shapes.push_back(cs);
+                c2.allow_rotation = false;
 
                 shift = Physics_system::calculate_inertia(c2);
                 t.position += t.orientation * shift;
@@ -205,6 +207,7 @@ void Input_system::call() {
 
                 t.position = world_cursor_pos + t.orientation * -vec2(0, asteroid_radius);
 
+                /*
                 asteroid = ecs.insert_entity();
                 ecs.insert_component(asteroid, m2);
                 ecs.insert_component(asteroid, t);
@@ -223,7 +226,7 @@ void Input_system::call() {
                     constraint.pos.push_back(pc);
 
                     ps.constraints.push_back(constraint);
-                }
+                }*/
             } else if(core.key_map[GLFW_KEY_LEFT_CONTROL]) {
                 /*
                 Physics_system& ps = ecs.get_system<Physics_system>();
@@ -458,9 +461,9 @@ void Input_system::call() {
 
                     mat2 orientation = rotate(core.random(), vec3(0.0f, 0.0f, 1.0f));
 
-                    float s = 0.25f;
+                    float s = 0.333f;
 
-                    uint32_t square_size = 16;
+                    uint32_t square_size = 6;
                     float separation = s * 0.25f;
                     vec2 max_size = vec2(s);
                     vec2 min_size = vec2(s);

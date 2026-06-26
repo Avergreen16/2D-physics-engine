@@ -83,11 +83,11 @@ struct Widget {
     //
 
     vec2 rel_position = vec2(0.0f);
-    float min_width;
-    float max_width;
+    float min_width = 0.0f;
+    float max_width = 0.0f;
     float weight_width = 1.0f;
-    float min_height;
-    float max_height;
+    float min_height = 0.0f;
+    float max_height = 0.0f;
     float weight_height = 1.0f;
 
     vec4 available_space;
@@ -103,8 +103,6 @@ struct Widget {
     
     virtual void on_measure() {};
     virtual void on_transform() {};
-    virtual void on_solve_x() {};
-    virtual void on_solve_y() {};
     virtual void on_place() {};
 };
 
@@ -192,30 +190,37 @@ struct Grid_Widget : Widget {
     static void insert(uint32_t num_columns, vec2 border);
 };
 
+enum PANEL_MODE{PANEL_MODE_SCALE, PANEL_MODE_SIZE};
+
 struct Panel_Constraint {
-    float value;
-    bool fill = false;
+    float value = 1.0f;
+    PANEL_MODE panel_mode = PANEL_MODE_SCALE;
 };
 
 struct Split_Widget : Widget {
     std::vector<Panel_Constraint> constraints;
+    float prev_size = -1.0f;
 
     void handle_inputs();
     void on_measure();
-    void on_transform();
+    void recalibrate();
+    void process_size();
 
     static void insert(LAYOUT_MODE layout, std::vector<Panel_Constraint> constraints);
 };
 
 struct Panel_Widget : Widget {
     float total_scrollable = 0.0f;
+    float scroll_width;
+    bool reserve = false;
+    float scroll_anchor = 0.0f;
 
     void handle_inputs();
     void mesh();
     void on_transform();
     void on_place();
 
-    static void insert();
+    static void insert(float scroll_width, bool reserve);
 };
 
 struct Text_Widget : Widget {
@@ -223,13 +228,12 @@ struct Text_Widget : Widget {
     uint32_t text_size = 1;
     float text_width = 0.0f;
     ALIGNMENT alignment = ALIGNMENT_LEFT;
-
-    std::function<void(std::string&)> callback = [](std::string& str) {};
+    std::function<void(std::string&)> func = [](std::string& str) {};
 
     void handle_inputs();
     void mesh();
     void get_y();
     void set_str(std::string str);
 
-    static void insert(std::string str, ALIGNMENT alg, std::function<void(std::string&)> callback_ = [](std::string& str) {});
+    static void insert(std::string str, ALIGNMENT alg, std::function<void(std::string&)> func);
 };
