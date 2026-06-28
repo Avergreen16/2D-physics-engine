@@ -98,7 +98,7 @@ void Input_system::call() {
                 std::set<uint32_t> non_colliding;
                 Physics_system& ps = ecs.get_system<Physics_system>();
 
-                uint32_t num_links = 1;
+                uint32_t num_links = 6;
 
                 float scale = 1.0f;
 
@@ -114,9 +114,9 @@ void Input_system::call() {
                 Collision_shape cs;
                 cs.vertices = {vec2(0, -(size.y - size.x) * 0.5f), vec2(0.0f, (size.y - size.x) * 0.5f)};
                 cs.radius = vec2(size.x * 0.5f);
-                cs.mass = 0x6 * scale * scale;
+                cs.mass = 6.0f * scale * scale;
                 c.shapes.push_back(cs);
-                c.allow_rotation = false;
+                c.allow_rotation = true;
 
                 vec2 shift = Physics_system::calculate_inertia(c);
                 t.position += t.orientation * shift;
@@ -169,9 +169,9 @@ void Input_system::call() {
                 Collider c2;
                 cs.vertices = {vec2(0, 0)};
                 cs.radius = vec2(asteroid_radius);
-                cs.mass = 0x30 * scale * scale;
+                cs.mass = 36.0f * scale * scale;
                 c2.shapes.push_back(cs);
-                c2.allow_rotation = false;
+                c2.allow_rotation = true;
 
                 shift = Physics_system::calculate_inertia(c2);
                 t.position += t.orientation * shift;
@@ -204,10 +204,10 @@ void Input_system::call() {
                 }
 
                 //
-
+                
+                /*
                 t.position = world_cursor_pos + t.orientation * -vec2(0, asteroid_radius);
 
-                /*
                 asteroid = ecs.insert_entity();
                 ecs.insert_component(asteroid, m2);
                 ecs.insert_component(asteroid, t);
@@ -226,7 +226,8 @@ void Input_system::call() {
                     constraint.pos.push_back(pc);
 
                     ps.constraints.push_back(constraint);
-                }*/
+                }
+                */
             } else if(core.key_map[GLFW_KEY_LEFT_CONTROL]) {
                 /*
                 Physics_system& ps = ecs.get_system<Physics_system>();
