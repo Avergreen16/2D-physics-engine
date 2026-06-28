@@ -189,7 +189,6 @@ float optical_depth(vec3 ray_origin, vec3 ray_direction, float ray_length, float
 }
 
 void main() {
-    discard;
     ivec2 s = textureSize(depth_tex, 0);
     vec4 depth_tex_value = texture(depth_tex, gl_FragCoord.xy / vec2(s));
     vec4 color_tex_value = texture(color_tex, gl_FragCoord.xy / vec2(s));

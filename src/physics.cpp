@@ -1734,6 +1734,8 @@ void Physics_system::physics_loop() {
         integrate();
     }
 
+    std::cout << substeps << " " << velocity_iterations << "\n";
+
     //constraints.erase(constraints.begin() + start, constraints.end());
 
     // prune
@@ -1921,12 +1923,11 @@ void Constraint_distance::get_values() {
 }
 
 void Physics_system::velocity_solve() {
-    float spring = 0.15f;
-    float softness = 0.0f;
+    float spring = 0.35f;
+    float softness = 0.005f;
 
-    float spring_constraint = 0.15f;
-    float softness_constraint = 0.0f;
-
+    float spring_constraint = 0.35f;
+    float softness_constraint = 0.005f;
     float factor = 1.0f / physics_step;
     float factor_constraint = 1.0f / physics_step;
 
@@ -2347,11 +2348,24 @@ void Physics_system::velocity_solve() {
             }
         }
 
-        for(Constraint& data : constraints) {
+        
+
+        for(int j = 0; j < constraints.size(); ++j) { 
+        //for(Collision_constraint& data : collision_constraints) {
+            int start = 0;//core.random.next() % collision_constraints.size();
+            int dir = 1;
+
+            if(i % 2 == 1) {
+                start = constraints.size() - 1;
+                dir = -1;
+            }
+
+            Constraint& data = constraints[start + j * dir];
+
             float max_grab = FLT_MAX;
 
             for(pos_constraint& c : data.pos) {
-                max_grab = c.limit;
+                //max_grab = c.limit;
 
                 uint32_t i = 0;
                 for(vec2 v : c.vs) {
@@ -2371,7 +2385,7 @@ void Physics_system::velocity_solve() {
 
                         float L = -dot(vel, v) + bg;
                         L /= inertia;
-                        //L -= softness_constraint * c.lambda[i];
+                        L -= softness_constraint * c.lambda[i];
 
                         float new_lambda = c.lambda[i] + L;
 
@@ -2392,7 +2406,7 @@ void Physics_system::velocity_solve() {
 
                         float L = -dot(vel, v) + bg;
                         L /= inertia;
-                        //L -= softness_constraint * c.lambda[i];
+                        L -= softness_constraint * c.lambda[i];
 
                         float new_lambda = c.lambda[i] + L;
 
