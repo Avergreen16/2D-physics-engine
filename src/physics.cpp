@@ -3,6 +3,8 @@
 #include "input.hpp"
 #include "core.hpp"
 
+vec2 beta_velocity;
+
 /*
 KEY:
 white -> static
@@ -1827,10 +1829,10 @@ void Physics_system::integrate() {
         Collider& ca = ecs.get_component<Collider>(entity);
 
         if(!ca.is_static) {
-            ta.position += ca.velocity * sub_dt;
+            ta.position += (ca.velocity + ca.beta_velocity) * sub_dt;
 
             if(ca.allow_rotation) {
-                mat2 rotation = rotate(ca.angular_velocity * sub_dt, vec3(0, 0, 1));
+                mat2 rotation = rotate((ca.angular_velocity + ca.beta_angular_velocity) * sub_dt, vec3(0, 0, 1));
                 ta.orientation = rotation * ta.orientation;
             }
         }
@@ -1842,6 +1844,9 @@ void Physics_system::integrate() {
                 ca.velocity += g * sub_dt;
             }
         }
+
+        ca.beta_angular_velocity = 0.0f;
+        ca.beta_velocity = vec2(0.0f);
     }
 
     for(uint32_t entity : collectors[1].entities) {
@@ -1885,6 +1890,10 @@ void Physics_system::apply_impulse(Collider* c, vec2 impulse, vec2 point) {
     c->velocity += impulse / c->mass;
     if(c->allow_rotation) c->angular_velocity += cross(vec3(point, 0.0f), vec3(impulse, 0.0f)).z / c->inertia;
 }
+void Physics_system::apply_beta(Collider* c, vec2 impulse, vec2 point) {
+    c->beta_velocity += impulse / c->mass;
+    if(c->allow_rotation) c->beta_angular_velocity += cross(vec3(point, 0.0f), vec3(impulse, 0.0f)).z / c->inertia;
+}
 
 void Physics_system::apply_impulse(Soft_body* c, vec2 impulse, ivec2 ids, float blend) {
     vec2 i0 = impulse * (1.0f - blend) / c->points[ids.x].mass;
@@ -1923,10 +1932,10 @@ void Constraint_distance::get_values() {
 }
 
 void Physics_system::velocity_solve() {
-    float spring = 0.35f;
+    float spring = 0.5f;
     float softness = 0.005f;
 
-    float spring_constraint = 0.35f;
+    float spring_constraint = 0.5f;
     float softness_constraint = 0.005f;
     float factor = 1.0f / physics_step;
     float factor_constraint = 1.0f / physics_step;
@@ -2151,9 +2160,8 @@ void Physics_system::velocity_solve() {
 
                     float v = dot(velocity, cc.d->normal);
 
-                    float L = -v - diff;
+                    float L = -v;
                     L /= inertia;
-                    L -= softness * cc.lambdaN;
 
                     vec2 limits = vec2(0.0f, FLT_MAX);
 
@@ -2166,16 +2174,21 @@ void Physics_system::velocity_solve() {
 
                     apply_impulse(data.ca, impulse, cc.pa - data.ta->position);
 
+                    // beta
+                    
+                    float beta = max(-diff, 0.0f) / inertia;
+                    vec2 beta_impulse = cc.d->normal * beta;
+
+                    apply_beta(data.ca, beta_impulse, cc.pa - data.ta->position);
 
                     // friction
 
                     float normal_magnitude = length(impulse);
 
-                    velocity = calculate_point_velocity(data.ca, cc.pa - data.ta->position);
+                    velocity = calculate_point_velocity(data.ca, cc.pa - data.ta->position, true);
 
                     vec2 tangent_vector = vec2(cc.d->normal.y, -cc.d->normal.x);
                     float tangent_velocity = dot(velocity, tangent_vector);
-
 
                     float inverse_mass = cc.inertiaTa;
 
@@ -2193,6 +2206,18 @@ void Physics_system::velocity_solve() {
                     vec2 friction_impulse = tangent_vector * Pt;
 
                     apply_impulse(data.ca, friction_impulse, cc.pa - data.ta->position);
+
+                    // beta
+
+                    tangent_velocity = dot(beta_velocity, tangent_vector);
+
+                    max_friction = abs(mu * length(beta_impulse));
+
+                    float new_l = tangent_velocity / inverse_mass;
+
+                    beta_impulse = tangent_vector * new_l;
+
+                    apply_beta(data.ca, friction_impulse, cc.pa - data.ta->position);
                 } else {
                     float inertia = cc.inertiaNa + cc.inertiaNb;
 
@@ -2200,7 +2225,7 @@ void Physics_system::velocity_solve() {
 
                     float v = dot(velocity, cc.normal);
 
-                    float L = -v - diff;
+                    float L = -v;
                     L /= inertia;
                     L -= softness * cc.lambdaN;
 
@@ -2216,11 +2241,24 @@ void Physics_system::velocity_solve() {
                     apply_impulse(data.ca, impulse, cc.pa - data.ta->position);
                     apply_impulse(data.cb, -impulse, cc.pb - data.tb->position);
 
+                    // beta
+                    
+                    float beta = max(-diff, 0.0f) / inertia;
+                    vec2 beta_impulse = cc.d->normal * beta;
+
+                    apply_beta(data.ca, beta_impulse, cc.pa - data.ta->position);
+                    apply_beta(data.cb, -beta_impulse, cc.pb - data.tb->position);
+
                     // friction
 
-                    float normal_magnitude = length(impulse);
+                    float normal_magnitude = length(impulse + beta_impulse);
 
-                    velocity = calculate_point_velocity(data.ca, cc.pa - data.ta->position) - calculate_point_velocity(data.cb, cc.pb - data.tb->position);
+                    velocity = calculate_point_velocity(data.ca, cc.pa - data.ta->position, true);
+                    vec2 bvel = beta_velocity;
+
+                    velocity -= calculate_point_velocity(data.cb, cc.pb - data.tb->position, true);
+                    bvel -= beta_velocity;
+
                     float tangent_velocity = dot(velocity, cc.tangent);
 
                     inertia = cc.inertiaTa + cc.inertiaTb;
@@ -2240,6 +2278,19 @@ void Physics_system::velocity_solve() {
 
                     apply_impulse(data.ca, friction_impulse, cc.pa - data.ta->position);
                     apply_impulse(data.cb, -friction_impulse, cc.pb - data.tb->position);
+                    
+                    // beta
+
+                    tangent_velocity = dot(bvel, cc.tangent);
+
+                    max_friction = abs(mu * length(beta_impulse));
+
+                    float new_l = tangent_velocity / inertia;
+
+                    beta_impulse = cc.tangent * new_l;
+
+                    apply_beta(data.ca, beta_impulse, cc.pa - data.ta->position);
+                    apply_beta(data.cb, -beta_impulse, cc.pb - data.tb->position);
                 }
             }
         }
@@ -2383,7 +2434,7 @@ void Physics_system::velocity_solve() {
                         vec2 vel = velocity;
                         //if(c.tolerance != 0.0f) vel = vv * dot(vel, vv);
 
-                        float L = -dot(vel, v) + bg;
+                        float L = -dot(vel, v);
                         L /= inertia;
                         L -= softness_constraint * c.lambda[i];
 
@@ -2396,6 +2447,13 @@ void Physics_system::velocity_solve() {
                         vec2 impulse = v * L;
 
                         apply_impulse(data.ca, impulse, c.pa - data.ta->position);
+                        
+                        // beta
+                        
+                        float beta = (-dot(vel, v) + bg) / inertia;
+                        vec2 beta_impulse = v * beta;
+
+                        apply_beta(data.ca, beta_impulse, c.pa - data.ta->position);
                     } else {
                         inertia += c.inertia_b[i];
 
@@ -2404,7 +2462,7 @@ void Physics_system::velocity_solve() {
                         vec2 vel = velocity;       
                         //if(c.tolerance != 0.0f) vel = vv * dot(vel, vv);
 
-                        float L = -dot(vel, v) + bg;
+                        float L = -dot(vel, v);
                         L /= inertia;
                         L -= softness_constraint * c.lambda[i];
 
@@ -2421,6 +2479,14 @@ void Physics_system::velocity_solve() {
 
                         apply_impulse(data.ca, impulse, c.pa - data.ta->position);
                         apply_impulse(data.cb, -impulse, c.pb - data.tb->position);
+
+                        //
+                        
+                        float beta = (-dot(vel, v) + bg) / inertia;
+                        vec2 beta_impulse = v * beta;
+
+                        apply_beta(data.ca, beta_impulse, c.pa - data.ta->position);
+                        apply_beta(data.cb, -beta_impulse, c.pb - data.tb->position);
                     }
 
                     ++i;
@@ -2559,12 +2625,21 @@ vec2 Physics_system::calculate_inertia(Collider& c) {
     return center;
 }
 
-vec2 Physics_system::calculate_point_velocity(Collider* c, vec2 point) {
-    vec2 velocity = c->velocity;
-    float angular_velocity = c->angular_velocity;
-    vec2 linear_velocity = vec2(cross(vec3(0.0f, 0.0f, angular_velocity), vec3(point, 0.0f)));
+vec2 Physics_system::calculate_point_velocity(Collider* c, vec2 point, bool include_beta) {
+    vec2 velocity;
+    float angular_velocity;
+    
+    if(include_beta) {
+        velocity = c->beta_velocity;
+        angular_velocity = c->beta_angular_velocity;
+        velocity += vec2(cross(vec3(0.0f, 0.0f, angular_velocity), vec3(point, 0.0f)));
 
-    velocity += linear_velocity;
+        beta_velocity = velocity;
+    }
+
+    velocity = c->velocity;
+    angular_velocity = c->angular_velocity;
+    velocity += vec2(cross(vec3(0.0f, 0.0f, angular_velocity), vec3(point, 0.0f)));;
 
     return velocity;
 }

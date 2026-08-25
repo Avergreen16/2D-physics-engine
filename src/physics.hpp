@@ -44,6 +44,9 @@ struct Collider {
 
     vec2 velocity = vec2(0.0f);
     float angular_velocity = 0.0f;
+    
+    vec2 beta_velocity = vec2(0.0f);
+    float beta_angular_velocity = 0.0f;
 
     //
 
@@ -342,7 +345,7 @@ struct Physics_system : System {
 
     // parameters
     float fps = 60.0f;
-    uint32_t velocity_iterations = 2;
+    uint32_t velocity_iterations = 4;
     uint32_t position_iterations = 0;
     uint32_t substeps = 4;
     float contact_sep = 0.02f;
@@ -407,12 +410,14 @@ struct Physics_system : System {
 
     std::vector<uint64_t> broad_phase(std::vector<input_data>& input);
 
-    static vec2 calculate_point_velocity(Collider* c, vec2 point);
+    static vec2 calculate_point_velocity(Collider* c, vec2 point, bool include_beta = false);
     static vec2 calculate_point_velocity(Soft_body* c, ivec2 ids, float blend);
 
     static float calculate_inverse_mass(Collider* c, Transform* t, vec2 impulse_dir, vec2 point);
 
     static void apply_impulse(Collider* c, vec2 impulse, vec2 point);
+    static void apply_beta(Collider* c, vec2 impulse, vec2 point);
+
     static void apply_impulse(Soft_body* c, vec2 impulse, ivec2 ids, float blend);
 
     void integrate();
